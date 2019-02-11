@@ -200,9 +200,13 @@ void ns2ClassA_deconstructor_8(int nargout, mxArray *out[], int nargin, const mx
 void ns2ClassA_memberFunction_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<ns2::ClassA> Shared;
 >>>>>>> Global functions in Matlab Wrapper
+=======
+  typedef std::shared_ptr<ns2::ClassA> Shared;
+>>>>>>> replace boost::shared_ptr with std::shared_ptr
   checkArguments("memberFunction",nargout,nargin-1,0);
   auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   out[0] = wrap< double >(obj->memberFunction());
@@ -211,9 +215,13 @@ void ns2ClassA_memberFunction_9(int nargout, mxArray *out[], int nargin, const m
 void ns2ClassA_nsArg_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<ns2::ClassA> Shared;
 >>>>>>> Global functions in Matlab Wrapper
+=======
+  typedef std::shared_ptr<ns2::ClassA> Shared;
+>>>>>>> replace boost::shared_ptr with std::shared_ptr
   checkArguments("nsArg",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   ns1::ClassB& arg = *unwrap_shared_ptr< ns1::ClassB >(in[1], "ptr_ns1ClassB");
@@ -223,10 +231,15 @@ void ns2ClassA_nsArg_10(int nargout, mxArray *out[], int nargin, const mxArray *
 void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<ns2::ns3::ClassB> SharedClassB;
   typedef std::shared_ptr<ns2::ClassA> Shared;
 >>>>>>> Global functions in Matlab Wrapper
+=======
+  typedef std::shared_ptr<ns2::ns3::ClassB> SharedClassB;
+  typedef std::shared_ptr<ns2::ClassA> Shared;
+>>>>>>> replace boost::shared_ptr with std::shared_ptr
   checkArguments("nsReturn",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   double q = unwrap< double >(in[1]);
@@ -236,9 +249,13 @@ void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArra
 void ns2ClassA_afunction_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<ns2::ClassA> Shared;
 >>>>>>> Global functions in Matlab Wrapper
+=======
+  typedef std::shared_ptr<ns2::ClassA> Shared;
+>>>>>>> replace boost::shared_ptr with std::shared_ptr
   checkArguments("ns2ClassA.afunction",nargout,nargin,0);
   out[0] = wrap< double >(ns2::ClassA::afunction());
 }
@@ -356,9 +373,13 @@ void ns2aGlobalFunction_23(int nargout, mxArray *out[], int nargin, const mxArra
 void ns2overloadedGlobalFunction_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<ns1::ClassA> SharedClassA;
 >>>>>>> Global functions in Matlab Wrapper
+=======
+  typedef std::shared_ptr<ns1::ClassA> SharedClassA;
+>>>>>>> replace boost::shared_ptr with std::shared_ptr
   checkArguments("ns2overloadedGlobalFunction",nargout,nargin,1);
   ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
   out[0] = wrap_shared_ptr(boost::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a)),"ns1.ClassA", false);
@@ -366,9 +387,13 @@ void ns2overloadedGlobalFunction_24(int nargout, mxArray *out[], int nargin, con
 void ns2overloadedGlobalFunction_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<ns1::ClassA> SharedClassA;
 >>>>>>> Global functions in Matlab Wrapper
+=======
+  typedef std::shared_ptr<ns1::ClassA> SharedClassA;
+>>>>>>> replace boost::shared_ptr with std::shared_ptr
   checkArguments("ns2overloadedGlobalFunction",nargout,nargin,2);
   ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
   double b = unwrap< double >(in[1]);
