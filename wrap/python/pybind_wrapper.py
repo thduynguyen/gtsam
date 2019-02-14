@@ -188,7 +188,7 @@ def wrap_method_lambda(
 
 def wrap_methods(overloads, cpp_class, prefix='\n' + ' ' * 8, suffix=''):
     res = ""
-    for name, methods in overloads.iteritems():
+    for name, methods in overloads.items():
         has_overloads = (len(methods) > 1)
         for method in methods:
             is_method = isinstance(method, parser.Method)
