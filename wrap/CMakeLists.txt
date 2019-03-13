@@ -1,14 +1,10 @@
-# Build/install Wrap
+# Install cython components
+include(GtsamPybindWrap)
 
 set(WRAP_BOOST_LIBRARIES
-  optimized
-    ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-    ${Boost_SYSTEM_LIBRARY_RELEASE}
-    ${Boost_THREAD_LIBRARY_RELEASE}
-  debug
-    ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-    ${Boost_SYSTEM_LIBRARY_DEBUG}
-    ${Boost_THREAD_LIBRARY_DEBUG}
+  Boost::system
+  Boost::filesystem
+  Boost::thread
 )
 
 # Allow for disabling serialization to handle errors related to Clang's linker
@@ -26,24 +22,3 @@ if (NOT GTSAM_WRAP_SERIALIZATION)
   target_compile_definitions(wrap_lib PUBLIC -DWRAP_DISABLE_SERIALIZE)
 endif()
 
-target_link_libraries(wrap_lib ${WRAP_BOOST_LIBRARIES})
-target_include_directories(wrap_lib PUBLIC ${Boost_INCLUDE_DIR})
-
-gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
-add_executable(wrap wrap.cpp)
-target_link_libraries(wrap PRIVATE wrap_lib)
-
-# Set folder in Visual Studio
-file(RELATIVE_PATH relative_path "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-set_target_properties(wrap_lib wrap PROPERTIES FOLDER "${relative_path}")
-
-# Install wrap binary and export target
-install(TARGETS wrap EXPORT GTSAM-exports DESTINATION bin)
-list(APPEND GTSAM_EXPORTED_TARGETS wrap)
-set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-
-# Install matlab header
-install(FILES matlab.h DESTINATION include/wrap)
-
-# Build tests
-add_subdirectory(tests)
