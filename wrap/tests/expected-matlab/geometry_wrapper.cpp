@@ -184,9 +184,13 @@ void gtsamPoint2_deconstructor_3(int nargout, mxArray *out[], int nargin, const 
 void gtsamPoint2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<gtsam::Point2> Shared;
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  typedef std::shared_ptr<gtsam::Point2> Shared;
+>>>>>>> Fix expected geometry_wrapper.cpp
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
   char a = unwrap< char >(in[1]);
@@ -196,9 +200,13 @@ void gtsamPoint2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArra
 void gtsamPoint2_argUChar_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<gtsam::Point2> Shared;
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  typedef std::shared_ptr<gtsam::Point2> Shared;
+>>>>>>> Fix expected geometry_wrapper.cpp
   checkArguments("argUChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
   unsigned char a = unwrap< unsigned char >(in[1]);
@@ -208,9 +216,13 @@ void gtsamPoint2_argUChar_5(int nargout, mxArray *out[], int nargin, const mxArr
 void gtsamPoint2_dim_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<gtsam::Point2> Shared;
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  typedef std::shared_ptr<gtsam::Point2> Shared;
+>>>>>>> Fix expected geometry_wrapper.cpp
   checkArguments("dim",nargout,nargin-1,0);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
   out[0] = wrap< int >(obj->dim());
@@ -219,9 +231,13 @@ void gtsamPoint2_dim_6(int nargout, mxArray *out[], int nargin, const mxArray *i
 void gtsamPoint2_eigenArguments_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   typedef std::shared_ptr<gtsam::Point2> Shared;
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  typedef std::shared_ptr<gtsam::Point2> Shared;
+>>>>>>> Fix expected geometry_wrapper.cpp
   checkArguments("eigenArguments",nargout,nargin-1,2);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
   Vector v = unwrap< Vector >(in[1]);
@@ -446,10 +462,13 @@ void Test_return_Test_29(int nargout, mxArray *out[], int nargin, const mxArray 
   typedef std::shared_ptr<Test> Shared;
   checkArguments("return_Test",nargout,nargin-1,1);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
   out[0] = wrap_shared_ptr(boost::make_shared<Test>(obj->return_Test(value)),"Test", false);
 =======
+=======
+>>>>>>> Fix expected geometry_wrapper.cpp
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   std::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
   out[0] = wrap_shared_ptr(SharedTest(new Test(obj->return_Test(value))),"Test", false);
@@ -462,12 +481,17 @@ void Test_return_TestPtr_30(int nargout, mxArray *out[], int nargin, const mxArr
   typedef std::shared_ptr<Test> Shared;
   checkArguments("return_TestPtr",nargout,nargin-1,1);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
 =======
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   std::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  std::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
+>>>>>>> Fix expected geometry_wrapper.cpp
   out[0] = wrap_shared_ptr(obj->return_TestPtr(value),"Test", false);
 }
 
@@ -544,11 +568,14 @@ void Test_return_ptrs_38(int nargout, mxArray *out[], int nargin, const mxArray 
   typedef std::shared_ptr<Test> Shared;
   checkArguments("return_ptrs",nargout,nargin-1,2);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   boost::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
   boost::shared_ptr<Test> p2 = unwrap_shared_ptr< Test >(in[2], "ptr_Test");
   auto pairResult = obj->return_ptrs(p1,p2);
 =======
+=======
+>>>>>>> Fix expected geometry_wrapper.cpp
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   std::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
   std::shared_ptr<Test> p2 = unwrap_shared_ptr< Test >(in[2], "ptr_Test");
@@ -689,12 +716,17 @@ void MyTemplatePoint2_accept_Tptr_51(int nargout, mxArray *out[], int nargin, co
   typedef std::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("accept_Tptr",nargout,nargin-1,1);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   boost::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
 =======
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   std::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
+  std::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
+>>>>>>> Fix expected geometry_wrapper.cpp
   obj->accept_Tptr(value);
 }
 
@@ -728,10 +760,13 @@ void MyTemplatePoint2_return_T_54(int nargout, mxArray *out[], int nargin, const
   typedef std::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("return_T",nargout,nargin-1,1);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   boost::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
   out[0] = wrap_shared_ptr(boost::make_shared<gtsam::Point2>(obj->return_T(value)),"gtsam.Point2", false);
 =======
+=======
+>>>>>>> Fix expected geometry_wrapper.cpp
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   std::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
   out[0] = wrap_shared_ptr(SharedPoint2(new gtsam::Point2(obj->return_T(value))),"gtsam.Point2", false);
@@ -744,12 +779,17 @@ void MyTemplatePoint2_return_Tptr_55(int nargout, mxArray *out[], int nargin, co
   typedef std::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("return_Tptr",nargout,nargin-1,1);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   boost::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
 =======
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   std::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
 >>>>>>> replace boost::shared_ptr with std::shared_ptr
+=======
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
+  std::shared_ptr<gtsam::Point2> value = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
+>>>>>>> Fix expected geometry_wrapper.cpp
   out[0] = wrap_shared_ptr(obj->return_Tptr(value),"gtsam.Point2", false);
 }
 
@@ -760,11 +800,14 @@ void MyTemplatePoint2_return_ptrs_56(int nargout, mxArray *out[], int nargin, co
   typedef std::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("return_ptrs",nargout,nargin-1,2);
 <<<<<<< HEAD
+<<<<<<< HEAD
   auto obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   boost::shared_ptr<gtsam::Point2> p1 = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
   boost::shared_ptr<gtsam::Point2> p2 = unwrap_shared_ptr< gtsam::Point2 >(in[2], "ptr_gtsamPoint2");
   auto pairResult = obj->return_ptrs(p1,p2);
 =======
+=======
+>>>>>>> Fix expected geometry_wrapper.cpp
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   std::shared_ptr<gtsam::Point2> p1 = unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
   std::shared_ptr<gtsam::Point2> p2 = unwrap_shared_ptr< gtsam::Point2 >(in[2], "ptr_gtsamPoint2");
