@@ -135,22 +135,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   namespace {
-    template<class FACTOR, class CLIQUE>
-    int _pushClique(FactorGraph<FACTOR>& fg, const boost::shared_ptr<CLIQUE>& clique) {
-      fg.push_back(clique->conditional_);
+  template <class FACTOR, class CLIQUE>
+  struct _pushCliqueFunctor {
+    _pushCliqueFunctor(FactorGraph<FACTOR>* graph_) : graph(graph_) {}
+    FactorGraph<FACTOR>* graph;
+    int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
+      graph->push_back(clique->conditional_);
       return 0;
     }
-
-    template<class FACTOR, class CLIQUE>
-    struct _pushCliqueFunctor {
-      _pushCliqueFunctor(FactorGraph<FACTOR>& graph_) : graph(graph_) {}
-      FactorGraph<FACTOR>& graph;
-      int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
-        graph.push_back(clique->conditional_);
-        return 0;
-      }
-    };
-  }
+  };
+  }  // namespace
 
   /* ************************************************************************* */
   template <class CLIQUE>
