@@ -402,6 +402,14 @@ namespace gtsam {
       /// Return true if a particular dimension is free or constrained
       bool constrained(size_t i) const;
 
+      /// Return true if all dimensions are actually free.
+      bool areAllDimsFree() const {
+        for (int i = 0; i<dim(); ++i) {
+          if (constrained(i)) return false;
+        }
+        return true;
+      }
+
       /// Access mu as a vector
       const Vector& mu() const { return mu_; }
 

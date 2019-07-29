@@ -510,10 +510,13 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
   // Whiten the factor if it has a noise model
   const SharedDiagonal& model = get_model();
   if (model && !model->isUnit()) {
-    if (model->isConstrained())
+    if (model->isConstrained() &&
+        !std::static_pointer_cast<noiseModel::Constrained>(model)
+             ->areAllDimsFree()) {
       throw invalid_argument(
-          "JacobianFactor::updateHessian: cannot update information with "
+          "jacobianfactor::updatehessian: cannot update information with "
           "constrained noise model");
+    }
     JacobianFactor whitenedFactor = whiten();
     whitenedFactor.updateHessian(infoKeys, info);
   } else {
