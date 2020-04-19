@@ -37,7 +37,7 @@ namespace gtsam {
 namespace utilities {
 
 // Create a KeyList from indices
-FastList<Key> createKeyList(const Vector& I) {
+inline FastList<Key> createKeyList(const Vector& I) {
   FastList<Key> set;
   for (int i = 0; i < I.size(); i++)
     set.push_back(I[i]);
@@ -45,7 +45,7 @@ FastList<Key> createKeyList(const Vector& I) {
 }
 
 // Create a KeyList from indices using symbol
-FastList<Key> createKeyList(std::string s, const Vector& I) {
+inline FastList<Key> createKeyList(std::string s, const Vector& I) {
   FastList<Key> set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
@@ -54,7 +54,7 @@ FastList<Key> createKeyList(std::string s, const Vector& I) {
 }
 
 // Create a KeyVector from indices
-KeyVector createKeyVector(const Vector& I) {
+inline KeyVector createKeyVector(const Vector& I) {
   KeyVector set;
   for (int i = 0; i < I.size(); i++)
     set.push_back(I[i]);
@@ -62,7 +62,7 @@ KeyVector createKeyVector(const Vector& I) {
 }
 
 // Create a KeyVector from indices using symbol
-KeyVector createKeyVector(std::string s, const Vector& I) {
+inline KeyVector createKeyVector(std::string s, const Vector& I) {
   KeyVector set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
@@ -71,7 +71,7 @@ KeyVector createKeyVector(std::string s, const Vector& I) {
 }
 
 // Create a KeySet from indices
-KeySet createKeySet(const Vector& I) {
+inline KeySet createKeySet(const Vector& I) {
   KeySet set;
   for (int i = 0; i < I.size(); i++)
     set.insert(I[i]);
@@ -79,7 +79,7 @@ KeySet createKeySet(const Vector& I) {
 }
 
 // Create a KeySet from indices using symbol
-KeySet createKeySet(std::string s, const Vector& I) {
+inline KeySet createKeySet(std::string s, const Vector& I) {
   KeySet set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
@@ -88,7 +88,7 @@ KeySet createKeySet(std::string s, const Vector& I) {
 }
 
 /// Extract all Point2 values into a single matrix [x y]
-Matrix extractPoint2(const Values& values) {
+inline Matrix extractPoint2(const Values& values) {
   size_t j = 0;
   Values::ConstFiltered<Point2> points = values.filter<Point2>();
   Matrix result(points.size(), 2);
@@ -98,7 +98,7 @@ Matrix extractPoint2(const Values& values) {
 }
 
 /// Extract all Point3 values into a single matrix [x y z]
-Matrix extractPoint3(const Values& values) {
+inline Matrix extractPoint3(const Values& values) {
   Values::ConstFiltered<Point3> points = values.filter<Point3>();
   Matrix result(points.size(), 3);
   size_t j = 0;
@@ -108,7 +108,7 @@ Matrix extractPoint3(const Values& values) {
 }
 
 /// Extract all Pose2 values into a single matrix [x y theta]
-Matrix extractPose2(const Values& values) {
+inline Matrix extractPose2(const Values& values) {
   Values::ConstFiltered<Pose2> poses = values.filter<Pose2>();
   Matrix result(poses.size(), 3);
   size_t j = 0;
@@ -118,12 +118,12 @@ Matrix extractPose2(const Values& values) {
 }
 
 /// Extract all Pose3 values
-Values allPose3s(const Values& values) {
+inline Values allPose3s(const Values& values) {
   return values.filter<Pose3>();
 }
 
 /// Extract all Pose3 values into a single matrix [r11 r12 r13 r21 r22 r23 r31 r32 r33 x y z]
-Matrix extractPose3(const Values& values) {
+inline Matrix extractPose3(const Values& values) {
   Values::ConstFiltered<Pose3> poses = values.filter<Pose3>();
   Matrix result(poses.size(), 12);
   size_t j = 0;
@@ -138,7 +138,7 @@ Matrix extractPose3(const Values& values) {
 }
 
 /// Perturb all Point2 values using normally distributed noise
-void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
+inline void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,
       sigma);
   Sampler sampler(model, seed);
@@ -148,7 +148,7 @@ void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
 }
 
 /// Perturb all Pose2 values using normally distributed noise
-void perturbPose2(Values& values, double sigmaT, double sigmaR, int32_t seed =
+inline void perturbPose2(Values& values, double sigmaT, double sigmaR, int32_t seed =
     42u) {
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(
       Vector3(sigmaT, sigmaT, sigmaR));
@@ -159,7 +159,7 @@ void perturbPose2(Values& values, double sigmaT, double sigmaR, int32_t seed =
 }
 
 /// Perturb all Point3 values using normally distributed noise
-void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
+inline void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,
       sigma);
   Sampler sampler(model, seed);
@@ -169,7 +169,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
 }
 
 /// Insert a number of initial point values by backprojecting
-void insertBackprojections(Values& values, const SimpleCamera& camera,
+inline void insertBackprojections(Values& values, const SimpleCamera& camera,
     const Vector& J, const Matrix& Z, double depth) {
   if (Z.rows() != 2)
     throw std::invalid_argument("insertBackProjections: Z must be 2*K");
@@ -184,7 +184,7 @@ void insertBackprojections(Values& values, const SimpleCamera& camera,
 }
 
 /// Insert multiple projection factors for a single pose key
-void insertProjectionFactors(NonlinearFactorGraph& graph, Key i,
+inline void insertProjectionFactors(NonlinearFactorGraph& graph, Key i,
     const Vector& J, const Matrix& Z, const SharedNoiseModel& model,
     const Cal3_S2::shared_ptr K, const Pose3& body_P_sensor = Pose3()) {
   if (Z.rows() != 2)
@@ -200,7 +200,7 @@ void insertProjectionFactors(NonlinearFactorGraph& graph, Key i,
 }
 
 /// Calculate the errors of all projection factors in a graph
-Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
+inline Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
     const Values& values) {
   // first count
   size_t K = 0, k = 0;
@@ -221,7 +221,7 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
 }
 
 /// Convert from local to world coordinates
-Values localToWorld(const Values& local, const Pose2& base,
+inline Values localToWorld(const Values& local, const Pose2& base,
     const KeyVector user_keys = KeyVector()) {
 
   Values world;
