@@ -40,22 +40,40 @@ c(x \mid S) = \psi \oslash \phi \;\;\text{(divide)}.$$
 
 The notebook implements the first two steps in about thirty lines of numpy and
 runs them, unchanged, on the track example of Chapter 1 (three cells, two
-moves, a coin-flip policy) with five semirings. The results:
+moves, a coin-flip policy) with five semirings.
 
-| Semiring | An entry holds | Result on the track | The question it answers |
-|---|---|---|---|
-| sum-product | a probability $p$ | $1$ | What is the total probability of all trajectories? |
-| expectation | a pair $(p, v)$ | $1.4$ | What return does the policy collect on average? |
-| max-sum | a value $v$ | $9$ | What is the return of the single best trajectory? |
-| tilted, $\kappa = 0.5$ | a pair $(p, v)$ | $5.43$ | What is the average return, if lucky trajectories count more? |
-| tilted, $\kappa = -0.5$ | a pair $(p, v)$ | $-0.28$ | What is the average return, if unlucky trajectories count more? |
+Each semiring answers a question about the trajectories $\tau$ of the graph.
+Recall from Chapter 1 that $p(\tau)$ is the probability of a trajectory and
+$R(\tau)$ its return, the sum of its rewards. Two of the five need a word of
+explanation first.
 
-The tilted semiring appears twice, with two values of its parameter $\kappa$.
-The fifth member of the family, the *soft maximum* or log-sum-exp, is the
-tilted semiring under another name, as Section 2 shows.
+- **Tilted.** Between the average of the returns and their maximum lies a
+  family of in-between averages. A *tilted* average counts every trajectory
+  with its probability **and** with an extra weight $e^{\kappa R(\tau)}$ that
+  grows with its return. The number $\kappa$ is called the **tilt**. With
+  $\kappa = 0$ there is no extra weight, and the result is the plain average.
+  With $\kappa > 0$ the trajectories with a high return count more, and with
+  $\kappa < 0$ those with a low return count more.
+- **Soft maximum.** The same rule, written with $\eta = 1 / \kappa$, a positive
+  number called the *temperature*. Under this name it is used as a smooth
+  stand-in for the maximum.
+
+| Semiring | An entry holds | The question it answers | As a formula | Result on the track |
+|---|---|---|---|---|
+| sum-product | a probability $p$ | What is the total probability of all trajectories? | $\sum_\tau p(\tau)$ | $1$ |
+| expectation | a pair $(p, v)$ | What return does the policy collect on average? | $\sum_\tau p(\tau)\, R(\tau)$ | $1.4$ |
+| max-sum | a value $v$ | What is the return of the best trajectory that can occur? | $\max_{\tau \,:\, p(\tau) > 0} R(\tau)$ | $9$ |
+| tilted, with tilt $\kappa$ | a pair $(p, v)$ | What is the average return, if lucky trajectories count more ($\kappa > 0$) or less ($\kappa < 0$)? | $\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}$ | $5.43$ for $\kappa = 0.5$, and $-0.28$ for $\kappa = -0.5$ |
+| soft maximum, with temperature $\eta$ | a pair $(p, v)$ | What is a smooth version of the best return? | $\eta \log \sum_\tau p(\tau)\, e^{R(\tau) / \eta}$ | $5.43$ for $\eta = 2$ |
+
+**The last two rows are the same rule.** Substituting $\eta = 1 / \kappa$
+turns one formula into the other, which is why $\eta = 2$ gives the same
+number as $\kappa = 0.5$. They are listed separately because they have
+different names in the literature and are used for different purposes, as
+Section 2 explains. So the family has five names and four different rules.
 
 The graph, the tables and the elimination order are the same in all five rows.
-Only $\otimes$ and $\oplus$ differ.
+Only $\otimes$ and $\oplus$ differ. Section 2 defines them for each row.
 
 ## 2. The five semirings
 
@@ -63,6 +81,11 @@ A semiring is specified by four things: what an entry is, the product
 $\otimes$, the sum $\oplus$, and how the terms of the MDP are lifted to
 entries. It also has a zero $\mathbf{0}$, the entry of an impossible outcome,
 and a one $\mathbf{1}$, the entry of a factor that changes nothing.
+
+Of the five names in the table of Section 1, the first four have a
+subsection each below. The fifth, the soft maximum, is the tilted semiring
+with its parameter written differently, and has a short subsection of its
+own.
 
 ### Sum-product
 
@@ -106,21 +129,44 @@ $$J = \sum_\tau p(\tau)\, R(\tau) = 1.4 \quad \text{on the track}.$$
 
 ### Max-sum
 
-Keep the value, drop the probability, and merge two outcomes by keeping the
-*better* one.
+Merge two outcomes by keeping the *better* one, where the expectation
+semiring took their average. The probability can then be dropped, for the
+following reason.
+
+**Why the probability disappears.** Start from the pair $(p, v)$ of the
+expectation semiring and change only the value of the sum, from the average to
+the maximum:
+
+$$(p_1, v_1) \otimes (p_2, v_2) = (p_1 p_2,\;\; v_1 + v_2),
+\qquad
+(p_1, v_1) \oplus (p_2, v_2) = \big(p_1 + p_2,\;\; \max(v_1, v_2)\big).$$
+
+Look at what the value needs from the probability. In the expectation
+semiring the probabilities were the *weights* of the average, so the value
+could not be computed without them. Here neither rule for the value uses
+them: values add, and the larger one is kept. Only one fact about the
+probability still matters: an outcome with $p = 0$ cannot occur, and it must
+not win the maximum.
+
+That one fact can be stored in the value itself. Give an impossible outcome
+the value $-\infty$: it never wins a maximum, and it stays $-\infty$ whatever
+is added to it. A possible outcome keeps its value. With this convention the
+probability carries no further information, and an entry is a single number:
 
 | | |
 |---|---|
-| entry | a value $v$ |
+| entry | a value $v$, with $-\infty$ for an outcome that cannot occur |
 | product | $v_1 \otimes v_2 = v_1 + v_2$ |
 | sum | $v_1 \oplus v_2 = \max(v_1, v_2)$ |
 | zero, one | $-\infty$, $0$ |
 | a probability table $f$ becomes | $0$ where $f > 0$, and $-\infty$ where $f = 0$ |
 | a reward table $r$ becomes | $r$ |
 
-A possible outcome contributes nothing to the value and an impossible one is
-excluded. Eliminating every variable gives the return of the best trajectory
-among those that can occur:
+A probability table is lifted by keeping only that one fact: a possible
+outcome contributes $0$, which adds nothing to the value, and an impossible
+one contributes $-\infty$. How probable a possible outcome is plays no role.
+Eliminating every variable gives the return of the best trajectory among those
+that can occur:
 
 $$\bigoplus_\tau \bigotimes_i f_i = \max_{\tau \,:\, p(\tau) > 0} R(\tau) = 9
 \quad \text{on the track}.$$
@@ -183,6 +229,17 @@ $$\min_x v \;\;\xleftarrow{\;\kappa \to -\infty\;}\;\; \bar v_\kappa
 \bar v_\kappa \;\;\xrightarrow{\;\kappa \to +\infty\;}\;\; \max_x v.$$
 
 The minimum and maximum run over the outcomes with nonzero probability.
+
+*A small example.* A fair coin pays 0 or 10. Its ordinary mean is 5. The
+tilted mean is $\frac{1}{\kappa} \log\big(0.5\, e^{0} + 0.5\, e^{10 \kappa}\big)$:
+
+| $\kappa$ | $-5$ | $-0.5$ | $-0.01$ | $0.01$ | $0.5$ | $5$ |
+|---|---|---|---|---|---|---|
+| tilted mean | $0.14$ | $1.37$ | $4.88$ | $5.13$ | $8.63$ | $9.86$ |
+
+A small tilt gives nearly the mean. A positive tilt moves the result toward
+the better outcome, 10, and a negative tilt toward the worse one, 0.
+
 Eliminating every variable of the track gives the tilted mean of the return,
 $\frac{1}{\kappa} \log \mathbb{E}[e^{\kappa R}]$:
 
@@ -272,6 +329,41 @@ $$\bar v_\eta(S) = \eta \log \sum_x p(x \mid S)\, e^{v(x, S) / \eta},$$
 
 which is called log-sum-exp, or the **soft maximum**: as $\eta \to 0$ it tends
 to $\max_x v$, and as $\eta \to \infty$ to the average.
+
+:::{dropdown} Is the soft maximum the "softmax" of machine learning?
+They are two halves of the same elimination step.
+
+Machine learning calls *softmax* the function that turns a list of scores
+$v_1, \dots, v_n$ into probabilities,
+
+$$\operatorname{softmax}(v)_i = \frac{e^{v_i / \eta}}{\sum_j e^{v_j / \eta}}.$$
+
+It answers "which entry is the largest?", softly: the largest score gets the
+largest probability, and as $\eta \to 0$ it gets all of it. The soft maximum
+answers "how large is the largest entry?", softly:
+
+$$\bar v_\eta = \eta \log \sum_j e^{v_j / \eta} \;\;\xrightarrow{\;\eta \to 0\;}\;\; \max_j v_j.$$
+
+So the softmax is a soft version of the *arg max*, and the soft maximum, also
+called log-sum-exp, is a soft version of the *max*. The first is the
+derivative of the second:
+$\partial \bar v_\eta / \partial v_i = \operatorname{softmax}(v)_i$.
+
+In elimination both appear at once. Summing out $x$ with the soft maximum
+gives the new factor, whose value is $\bar v_\eta(S)$. The conditional that
+is left on $x$, reweighted by its value channel as in Section 5, is
+
+$$q(x \mid S) = \frac{p(x \mid S)\, e^{v(x, S) / \eta}}{\sum_{x'} p(x' \mid S)\, e^{v(x', S) / \eta}},$$
+
+which is the softmax of the values, with $p(x \mid S)$ as a prior weight. With
+a uniform $p$ over $n$ outcomes it is exactly the formula above, and the soft
+maximum is the log-sum-exp minus the constant $\eta \log n$.
+
+| Maximum, exact | Soft version | In elimination |
+|---|---|---|
+| $\max_x v$: the best value | soft maximum, log-sum-exp | the value of the new factor $\phi(S)$ |
+| $\arg\max_x v$: the best choice | softmax | the reweighted conditional $q(x \mid S)$ |
+:::
 
 It is the same operator as the tilted mean. It has its own name because it is
 used for a different purpose, and the purpose depends on *which* variables it
@@ -436,7 +528,8 @@ The third row deserves a closer look. It says that
 $$q(x \mid S) = p(x \mid S)\, e^{\kappa\, c_v(x \mid S)}$$
 
 is itself a normalized distribution over $x$: the original conditional,
-reweighted toward the outcomes with a high value. For the last action on the
+reweighted toward the outcomes with a high value. It is the *softmax* of the
+values, with the original conditional as a prior weight (Section 2). For the last action on the
 track, with $\kappa = 1$:
 
 | cell | coin flip $\pi(L \mid s)$, $\pi(R \mid s)$ | tilted $q(L \mid s)$, $q(R \mid s)$ |

@@ -8,6 +8,7 @@
 
 # %%
 import numpy as np
+from scipy.special import logsumexp, softmax
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -181,6 +182,28 @@ assert abs(returns[20] - 9.0) < 0.3  # approaches the best return
 assert abs(returns[-20] + 2.0) < 0.3  # approaches the worst return
 
 # %% [markdown]
+# The soft maximum with temperature $\eta$ is the same rule with
+# $\kappa = 1 / \eta$: for $\eta = 2$ it gives the number of $\kappa = 0.5$.
+
+# %%
+eta = 2.0
+soft = Tilted(1 / eta)
+soft_maximum = float(soft.read(eliminate(soft, terms, order)))
+print(f"soft maximum, eta = {eta:g}: {soft_maximum:.4f}")
+assert np.isclose(soft_maximum, returns[0.5])
+
+# %% [markdown]
+# A smaller example of the tilted mean: a fair coin that pays 0 or 10.
+
+# %%
+coin_p, coin_v = np.array([0.5, 0.5]), np.array([0.0, 10.0])
+for kappa in [-5, -0.5, -0.01, 0.01, 0.5, 5]:
+    tilted = np.log(coin_p @ np.exp(kappa * coin_v)) / kappa
+    print(f"kappa = {kappa:5.2f}   tilted mean = {tilted:.3f}")
+assert np.isclose(np.log(coin_p @ np.exp(0.5 * coin_v)) / 0.5, 8.627, atol=1e-3)
+assert np.isclose(np.log(coin_p @ np.exp(-0.5 * coin_v)) / -0.5, 1.373, atol=1e-3)
+
+# %% [markdown]
 # The best return is 9 and the worst is $-2$ (move right twice from cell 0 and
 # slip both times). A brute-force check over all trajectories:
 
@@ -241,6 +264,12 @@ print("tilted policy pi * exp(kappa * soft advantage) =\n", tilted_policy)
 print("its rows sum to", tilted_policy.sum(1))
 assert np.allclose(tilted_policy.sum(1), 1)
 
+# With a uniform policy, the tilted policy is the softmax of kappa * Q, and
+# the soft value is the log-sum-exp of kappa * Q (up to the constant log 2).
+assert np.allclose(tilted_policy, softmax(kappa * Q1, axis=1))
+assert np.allclose(soft_V1.ravel(),
+                   (logsumexp(kappa * Q1, axis=1) - np.log(2)) / kappa)
+
 # %% [markdown]
 # ## The log-dual form (Section 6)
 #
@@ -248,9 +277,6 @@ assert np.allclose(tilted_policy.sum(1), 1)
 # channels. A product of many small probabilities then stays finite.
 
 # %%
-from scipy.special import logsumexp
-
-
 def log_dual_plus(l, v, axis):
     """Add (l, v) entries over an axis: log-sum-exp and a weighted mean."""
     total = logsumexp(l, axis=axis)
