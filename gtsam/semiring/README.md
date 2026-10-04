@@ -14,9 +14,18 @@ for readers who know factor graphs from SLAM.
 
 ## Documentation
 
-The documentation is a series of chapters in [`doc/`](doc). Each chapter has a
-companion notebook that runs its examples. The notebooks open in Google Colab,
-where their first cell installs a GTSAM wheel that contains this module.
+The documentation is a book of chapters, best read online at
+**https://thduynguyen.github.io/gtsam/**, where the maths, figures and
+collapsible notes are typeset properly.
+
+The sources are in [`doc/`](doc), written in [MyST Markdown](https://mystmd.org).
+GitHub's own preview of those files shows the text but not the book's
+formatting. To build the book locally, run `myst build --html` or `myst start`
+in `doc/`.
+
+Each chapter has a companion notebook that runs its examples. The notebooks
+open in Google Colab, where their first cell installs a GTSAM wheel that
+contains this module.
 
 | Chapter | Content | Run the examples |
 |---|---|---|

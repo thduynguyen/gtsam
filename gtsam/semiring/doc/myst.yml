@@ -1,0 +1,18 @@
+# Book of the semiring chapters. Build with `myst build --html` in this
+# directory, or preview with `myst start`. See https://mystmd.org.
+version: 1
+project:
+  title: Semiring factor graphs
+  description: Optimal control and reinforcement learning as variable elimination on factor graphs, with GTSAM.
+  github: https://github.com/thduynguyen/gtsam
+  toc:
+    - file: index.md
+    - file: chapter01.md
+      children:
+        - file: chapter01_examples.ipynb
+    - file: chapter02.md
+      children:
+        - file: chapter02_examples.ipynb
+site:
+  template: book-theme
+  title: Semiring factor graphs
