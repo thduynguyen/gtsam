@@ -1,5 +1,10 @@
 # Chapter 7: Policy optimization with exact messages
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 6](chapter06.md) found the best linear-quadratic policy in one
 backward pass. That was possible because the agent could choose a separate
 action for every state and step. [Chapter 4](chapter04.md) showed that this

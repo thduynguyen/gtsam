@@ -1,5 +1,10 @@
 # Chapter 14: Stale messages and trust regions
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 In the loops of Chapters [11](chapter11.md) and [13](chapter13.md), Stage 1
 was run afresh for every small step of Stage 2: sample with the current
 policy, estimate the messages, take one gradient step, throw the samples

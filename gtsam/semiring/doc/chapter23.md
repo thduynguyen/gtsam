@@ -1,5 +1,10 @@
 # Chapter 23: Inverse problems
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 In every chapter so far the rewards were given and the policy was the
 unknown. This chapter turns the problem around. The **behavior** is given, as
 a set of recorded trajectories of an expert, and the **rewards** are the

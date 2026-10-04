@@ -1,5 +1,10 @@
 # Chapter 2: The semiring family
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 1](chapter01.md) changed two things: what a factor entry holds, a
 pair $(p, v)$ in place of one number, and how two entries are multiplied and
 added. Variable elimination itself was not touched.

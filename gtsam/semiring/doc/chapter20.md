@@ -1,5 +1,10 @@
 # Chapter 20: Guided policy search
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 19](chapter19.md) learned one model of the dynamics for the whole
 state space and optimized one policy through it. For a robot with many
 joints, both are hard: a global model needs data everywhere, and a policy

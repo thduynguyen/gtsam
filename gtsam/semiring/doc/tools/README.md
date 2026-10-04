@@ -12,7 +12,7 @@ directory is among them.
 | `bookfig.py` | A small library for drawing factor graphs as SVG, in the visual language of the book. |
 | `nb.py` | Builds a notebook from its source, adds the standard preamble, executes it and prints its outputs. |
 | `lint.py` | Checks a chapter without building the site: every formula in KaTeX, dropdowns, links, figures. |
-| `assemble.py` | Regenerates `myst.yml`, `index.md`, the chapter footers and the chapter list of the module's README from the chapter headings. |
+| `assemble.py` | Regenerates `myst.yml`, `index.md`, `footer.md`, the work-in-progress notice and the footer of every page, and the chapter list of the module's README, from the chapter headings. The copyright line and the notice are constants at its top. |
 | `check_site.py` | Checks every page of a built site for maths errors and leftovers of raw TeX. |
 
 All commands below are run from the repository root.

@@ -1,5 +1,10 @@
 # Chapter 17: Soft and EM methods
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 The last two chapters took a hard maximum over the action: by comparing table
 entries in [Chapter 15](chapter15.md), and by climbing a learned $\hat Q$ in
 [Chapter 16](chapter16.md). A hard maximum trusts the estimate completely,

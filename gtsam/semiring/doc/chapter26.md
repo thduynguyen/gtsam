@@ -1,5 +1,10 @@
 # Chapter 26: Robotics case studies
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 The chapters before this one took algorithms apart. This last chapter looks
 at how they are put to work on robots. It introduces no new algorithm. It
 takes four ways in which reinforcement learning is used in robotics today

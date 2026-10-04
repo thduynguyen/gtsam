@@ -1,5 +1,10 @@
 # Chapter 13: Actor-critic
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 The last two chapters each replaced one exact message of
 [Chapter 5](chapter05.md) by an estimate from samples.
 [Chapter 11](chapter11.md) estimated the gradient from whole rollouts, with

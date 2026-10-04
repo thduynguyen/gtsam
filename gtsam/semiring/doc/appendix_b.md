@@ -1,5 +1,10 @@
 # Appendix B: Notation
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 The symbols in the first six tables have one meaning throughout the book.
 They are grouped by where they are introduced, and where the control or RL
 literature uses another letter, the last column says so. The last table lists

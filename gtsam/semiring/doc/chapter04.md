@@ -1,5 +1,10 @@
 # Chapter 4: Decision nodes and elimination order
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 1](chapter01.md) *evaluated* a policy: $\pi$ was given, as a factor in
 the graph, and elimination computed how good it is. In optimal control and in
 RL the policy is the unknown: the goal is to **find** the policy with the

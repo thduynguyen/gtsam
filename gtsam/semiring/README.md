@@ -85,6 +85,13 @@ wheel that contains it in their first cell.
 - [The taxonomy table](doc/appendix_c.md)
 <!-- chapters:end -->
 
+## Copyright and license
+
+The module's code, the code of the notebooks and the scripts in `doc/tools`
+are part of GTSAM, under its BSD license. The text and figures of the book in
+`doc/` are Copyright © 2026 Duy Ta, all rights reserved; see
+[`doc/LICENSE.md`](doc/LICENSE.md). The book is a work in progress.
+
 ## Classes
 
 | Class | Role |

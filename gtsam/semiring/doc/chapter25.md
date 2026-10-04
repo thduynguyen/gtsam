@@ -1,5 +1,10 @@
 # Chapter 25: Distributional RL
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Every value in this book so far has been an *average*: $V(s)$ is the average
 return from a state, and $J$ the average return of a policy. An average hides
 a lot. A robot that reaches its charger in one episode out of four and

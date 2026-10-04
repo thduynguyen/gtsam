@@ -1,5 +1,10 @@
 # Chapter 3: Infinite horizon and discounting
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 The examples of [Chapter 1](chapter01.md) had two moves. Most problems in
 control and RL have no fixed number of moves: a robot balances, walks or
 drives for as long as it is switched on. This chapter extends the factor graph

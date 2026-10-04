@@ -1,5 +1,10 @@
 # Semiring factor graphs
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 This book expresses optimal control and reinforcement learning (RL) as
 operations on factor graphs, for readers who know factor graphs from SLAM
 and have not met control or RL before.
@@ -95,3 +100,9 @@ others need only numpy.
 
 The source of the module, the chapters and the notebooks is in
 [`gtsam/semiring`](https://github.com/thduynguyen/gtsam/tree/feature/semiringfactor/gtsam/semiring).
+
+## Copyright and license
+
+Copyright © 2026 Duy Ta. All rights reserved. The text and figures of this book may not be reproduced or
+redistributed without permission. The example code in the notebooks and tools is
+under the BSD license of GTSAM. See [Copyright and license](LICENSE.md).

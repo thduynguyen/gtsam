@@ -78,3 +78,22 @@
     white-space: nowrap;
   }
 }
+
+/* The work-in-progress notice under the title of every page: bold and red. */
+.in-progress,
+.in-progress p,
+.in-progress strong {
+  color: #cf222e;
+  font-weight: 700;
+}
+html.dark .in-progress,
+html.dark .in-progress p,
+html.dark .in-progress strong {
+  color: #ff7b72;
+}
+
+/* The site-wide copyright footer (footer.md). */
+footer.footer p {
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+}

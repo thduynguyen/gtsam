@@ -1,5 +1,10 @@
 # Chapter 24: Exploration and dual control
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Part III of this book estimates messages from samples, and Part IV learns the
 dynamics factor from data. Both take for granted that the samples are there.
 This chapter is about the question they skip: **which samples to collect.**

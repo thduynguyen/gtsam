@@ -5,9 +5,14 @@ Run after chapters change:  python3 gtsam/semiring/doc/tools/assemble.py
 It reads the title of every chapter from its first heading and rewrites
   - myst.yml (the table of contents, grouped in parts),
   - index.md (the landing page),
+  - the work-in-progress notice under the title of every page,
   - the "Previous / Next" footer of every chapter and appendix,
   - the chapter table of gtsam/semiring/README.md (between two markers).
 Chapters that do not exist yet are left out.
+
+The copyright line and the work-in-progress notice are the constants COPYRIGHT
+and NOTICE below. To remove the notice from every page, set NOTICE to None and
+run this script.
 """
 import os
 import re
@@ -36,6 +41,17 @@ PARTS = [
      "where elimination needs more structure, or is not enough."),
 ]
 APPENDICES = ["appendix_a.md", "appendix_b.md", "appendix_c.md"]
+LICENSE = "LICENSE.md"
+
+COPYRIGHT = "Copyright © 2026 Duy Ta. All rights reserved."
+# Shown in bold red under the title of every page (see custom.css).
+NOTICE = ("**This book is a work in progress.** It is still being written "
+          "and revised: its content is incomplete and may contain errors.")
+NOTICE_BLOCK = re.compile(r"\n:::\{div\}\n:class: in-progress\n.*?\n:::\n", re.S)
+
+
+def notice():
+    return f"\n:::{{div}}\n:class: in-progress\n{NOTICE}\n:::\n"
 
 SUMMARY = {
     1: "A Markov decision process as a factor graph; why ordinary elimination "
@@ -153,9 +169,15 @@ def write_toc():
     if present:
         lines += ["    - title: Appendices", "      children:"]
         lines += [f"        - file: {name}" for name in present]
+    if exists(LICENSE):
+        lines.append(f"    - file: {LICENSE}")
     lines += ["site:", "  template: book-theme",
               "  title: Semiring factor graphs", "  options:",
-              "    style: custom.css", ""]
+              "    style: custom.css", "  parts:",
+              "    footer: footer.md", ""]
+    with open(DOC + "footer.md", "w") as f:
+        f.write(f"{COPYRIGHT} The example code is under the BSD license of "
+                f"GTSAM. See [Copyright and license]({LICENSE}).\n")
     with open(DOC + "myst.yml", "w") as f:
         f.write("\n".join(lines))
 
@@ -166,8 +188,10 @@ def short(title):
 
 
 def write_index():
-    out = ["# Semiring factor graphs", "",
-           "This book expresses optimal control and reinforcement learning "
+    out = ["# Semiring factor graphs", ""]
+    if NOTICE:
+        out += notice().strip("\n").split("\n") + [""]
+    out += ["This book expresses optimal control and reinforcement learning "
            "(RL) as\noperations on factor graphs, for readers who know factor "
            "graphs from SLAM\nand have not met control or RL before.", "",
            "It accompanies the `gtsam/semiring` module of GTSAM, in which "
@@ -222,7 +246,12 @@ def write_index():
             "cell; the\nothers need only numpy.", "",
             "The source of the module, the chapters and the notebooks is in\n"
             "[`gtsam/semiring`](https://github.com/thduynguyen/gtsam/tree/"
-            "feature/semiringfactor/gtsam/semiring).", ""]
+            "feature/semiringfactor/gtsam/semiring).", "",
+            "## Copyright and license", "",
+            f"{COPYRIGHT} The text and figures of this book may not be "
+            "reproduced or\nredistributed without permission. The example "
+            "code in the notebooks and tools is\nunder the BSD license of "
+            f"GTSAM. See [Copyright and license]({LICENSE}).", ""]
     with open(DOC + "index.md", "w") as f:
         f.write("\n".join(out))
 
@@ -236,6 +265,11 @@ def write_footers():
     pages += [name for name in APPENDICES if exists(name)]
     for i, name in enumerate(pages):
         text = open(DOC + name).read()
+        # The work-in-progress notice, directly under the title.
+        text = NOTICE_BLOCK.sub("", text, count=1)
+        if NOTICE:
+            title, rest = text.split("\n", 1)
+            text = title + "\n" + notice() + rest
         text = FOOTER.sub("", text).rstrip("\n")
         links = []
         if i > 0:

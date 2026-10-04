@@ -1,5 +1,10 @@
 # Chapter 15: Value-based control
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Chapters 11 to 14 improved a policy with parameters $\theta$ by following a
 gradient, with messages estimated from samples. This chapter goes back to the
 other way of finding a policy, the one of [Chapter 4](chapter04.md): let the

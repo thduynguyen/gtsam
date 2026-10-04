@@ -1,5 +1,10 @@
 # Appendix A: The GTSAM implementation
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 This appendix describes how the `gtsam/semiring` module is built: its classes,
 how it plugs into GTSAM's elimination machinery, how the two factor families
 store and eliminate their entries, and the tests that check the laws of

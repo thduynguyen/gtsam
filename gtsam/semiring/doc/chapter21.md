@@ -1,5 +1,10 @@
 # Chapter 21: Planning in learned models
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Chapters [18](chapter18.md) to [20](chapter20.md) learned small dynamics
 factors: a linear model, a Gaussian process, a set of local linear models.
 The model-based methods that scale to camera images and to robots with many

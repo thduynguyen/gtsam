@@ -1,5 +1,10 @@
 # Chapter 18: Learning the dynamics factor
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Parts I and II assumed that the dynamics factor $p(x' \mid x, u)$ is known.
 Part III did without it: it replaced the factor by transitions sampled from
 the real system and never wrote the factor down.

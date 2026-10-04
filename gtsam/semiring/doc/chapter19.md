@@ -1,5 +1,10 @@
 # Chapter 19: PILCO
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 18](chapter18.md) learned a dynamics factor of a fixed form,
 $x' = F x + B u + w$, and then used its estimate as if it were exact. Both
 choices are limiting. A robot's dynamics are rarely linear, and an estimate

@@ -106,8 +106,11 @@ project:
         - file: appendix_a.md
         - file: appendix_b.md
         - file: appendix_c.md
+    - file: LICENSE.md
 site:
   template: book-theme
   title: Semiring factor graphs
   options:
     style: custom.css
+  parts:
+    footer: footer.md

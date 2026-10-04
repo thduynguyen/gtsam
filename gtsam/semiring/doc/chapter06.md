@@ -1,5 +1,10 @@
 # Chapter 6: LQR and LQG
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Part I worked with tables: a value for every state, a maximum by comparing
 entries. A robot's state is a vector of real numbers, and no table can hold a
 value for each. This part of the book keeps elimination *exact* in the one

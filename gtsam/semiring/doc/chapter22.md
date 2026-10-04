@@ -1,5 +1,10 @@
 # Chapter 22: Partial observability
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Every chapter so far let the agent see the state: the action $a_t$ was chosen
 knowing $s_t$. A real robot does not see its state. It has sensors, and the
 sensors are noisy. This chapter adds them to the graph and asks what is left

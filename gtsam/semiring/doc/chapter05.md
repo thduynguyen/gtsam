@@ -1,5 +1,10 @@
 # Chapter 5: Gradients by elimination: the two-stage framework
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 4](chapter04.md) ended with a decision that elimination could not
 take: a policy parameter $\theta$ shared by every policy factor. The maximum
 over $\theta$ had to be searched for from outside, by trying values of

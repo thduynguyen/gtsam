@@ -1,5 +1,10 @@
 # Chapter 16: Off-policy actor-critic
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 15](chapter15.md) learned the backward message $Q$ from replayed
 transitions and read the policy from it with a maximum, taken by comparing
 the entries of a table. A robot arm or a car does not have a table of

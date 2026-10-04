@@ -1,5 +1,10 @@
 # Chapter 1: MDPs as factor graphs: evaluating a policy by variable elimination
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 This chapter shows how a factor graph can represent a Markov decision process
 (MDP) and evaluate a given policy on it with GTSAM's ordinary variable
 elimination (VE). It is written for readers who know factor graphs from SLAM

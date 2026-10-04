@@ -1,5 +1,10 @@
 # Chapter 12: Bootstrapped messages
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 11](chapter11.md) replaced the backward message by a sampled return:
 the rewards one rollout collects from a step to the end of the episode. That
 estimate is correct on average, but it is noisy, and it is only available

@@ -1,5 +1,10 @@
 # Chapter 10: Sampling-based control
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 9](chapter09.md) handled nonlinear dynamics by linearizing them. That
 needs the derivatives of the model, and a model smooth enough for a
 linearization to mean something. Many robot models are not: contacts,

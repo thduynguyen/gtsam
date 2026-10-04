@@ -1,5 +1,10 @@
 # Chapter 8: Softness and risk
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Chapters [4](chapter04.md), [6](chapter06.md) and [7](chapter07.md) used two
 sums: the average, for what the agent does not choose, and the maximum, for
 what it does. [Chapter 2](chapter02.md) introduced a third, the *tilted

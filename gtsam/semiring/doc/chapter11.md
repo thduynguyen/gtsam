@@ -1,5 +1,10 @@
 # Chapter 11: Monte Carlo messages
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 Parts I and II assumed that the dynamics factor $p(s' \mid s, a)$ can be
 *read*: as a table, or as a linear-Gaussian formula. Elimination then summed
 over the next state exactly.

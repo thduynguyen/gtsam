@@ -1,5 +1,10 @@
 # Appendix C: The taxonomy table
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 This appendix is the index of the book. It lists every algorithm with the
 choices it makes along the five axes of the two-stage framework
 ([Chapter 5](chapter05.md), Section 6). Each row is the *framework card* of

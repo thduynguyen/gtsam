@@ -1,5 +1,10 @@
 # Chapter 9: Nonlinear dynamics
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 [Chapter 6](chapter06.md) found the best policy of a linear-Gaussian problem
 in one backward pass: average over the next state, maximize over the action,
 and the result is the Riccati recursion. That pass needs every factor to be a
