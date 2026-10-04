@@ -14,12 +14,15 @@ for readers who know factor graphs from SLAM.
 
 ## Documentation
 
-The documentation is a series of chapters in [`doc/`](doc).
+The documentation is a series of chapters in [`doc/`](doc). Each chapter is a
+Jupyter notebook whose code cells run the examples in the text. The badge at
+the top of a notebook opens it in Google Colab, where the first cell installs a
+GTSAM wheel that contains this module.
 
 | Chapter | Content |
 |---|---|
-| [1. MDPs as factor graphs: evaluating a policy by variable elimination](doc/chapter01.md) | An MDP as a factor graph; why ordinary elimination cannot evaluate it; semiring factors and their operators; the correspondence between RL quantities and elimination; a discrete and a continuous (LQR) worked example; how to use the module. |
-| [2. Finding the best policy in one pass](doc/chapter02.md) | A teaser for policy optimization: for tabular MDPs and for LQR, replacing the expectation over actions by a maximum yields the best policy in one backward pass. For LQR this is, line by line, the Riccati recursion of classic control. |
+| [1. MDPs as factor graphs: evaluating a policy by variable elimination](doc/chapter01.ipynb) | An MDP as a factor graph; why ordinary elimination cannot evaluate it; semiring factors and their operators; the correspondence between RL quantities and elimination; a discrete and a continuous (LQR) worked example; how to use the module. |
+| [2. Finding the best policy in one pass](doc/chapter02.ipynb) | A teaser for policy optimization: for tabular MDPs and for LQR, replacing the expectation over actions by a maximum yields the best policy in one backward pass. For LQR this is, line by line, the Riccati recursion of classic control. |
 
 Planned chapters:
 
@@ -66,8 +69,8 @@ graph.expectation()  # 5.6, the expected total reward
 bayesNet = graph.eliminateSequential()
 ```
 
-Chapter 1 explains what the conditionals of the Bayes net contain, and builds
-two larger examples in [Section 10](doc/chapter01.md#10-using-the-module).
+[Chapter 1](doc/chapter01.ipynb) explains what the conditionals of the Bayes net
+contain, and works through two larger examples in its Sections 7 and 8.
 
 ## Tests
 
