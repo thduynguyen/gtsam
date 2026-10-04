@@ -463,6 +463,35 @@ left on $x'$. That is the integral of Section 4 with $\kappa = 1 / \eta$.
 Gaussian inference on this graph is LEQG with a positive tilt: it expects
 the noise to help, and under-corrects.
 
+**In GTSAM's terms: the weight of the cost factors is the tilt.** A GTSAM
+user does not choose a temperature. The user chooses noise models. The factor
+$e^{-z^2 / \eta}$ is a Gaussian factor on $z$ whose error is
+
+$$\frac{z^2}{\eta} = \frac{1}{2}\, \frac{z^2}{\Sigma_c},
+\qquad \Sigma_c = \frac{\eta}{2},$$
+
+that is, a cost factor with variance $\Sigma_c$. A small $\Sigma_c$ is a
+heavily weighted cost. Since the graph computes LEQG with
+$\kappa = 1 / \eta$, the tilt is fixed by that variance:
+
+$$\kappa = \frac{1}{\eta} = \frac{1}{2\, \Sigma_c}.$$
+
+Substituting into the tilted matrix of Section 4,
+
+$$P^\kappa_{t+1} = \big(P_{t+1}^{-1} + 2\, \kappa\, \Sigma_w\big)^{-1}
+= \Big(P_{t+1}^{-1} + \frac{\Sigma_w}{\Sigma_c}\Big)^{-1}.$$
+
+So the optimism depends on one number, the ratio $\Sigma_w / \Sigma_c$ of the
+variance of the dynamics factors to the variance of the cost factors.
+
+- If the dynamics factors are much tighter than the cost factors,
+  $\Sigma_w / \Sigma_c \to 0$, then $P^\kappa_{t+1} \to P_{t+1}$ and the graph
+  gives the Riccati gains.
+- If they are comparable, the future is discounted by the noise. On the line,
+  the row $\eta = 1$ has $\Sigma_c = 0.5 = \Sigma_w$, a ratio of 1. At the
+  last move $P_2 = 1$, so $P^\kappa_2 = (1 + 1)^{-1} = 0.5$ and
+  $K_1 = 0.5 / (1 + 0.5) = 0.333$, where the Riccati gain is $0.5$.
+
 **When it does not matter.** If the dynamics are deterministic,
 $\Sigma_w = 0$, then $P^\kappa_{t+1} = P_{t+1}$ for every $\kappa$: there is
 no luck to be optimistic about, and the Gaussian factor graph gives the

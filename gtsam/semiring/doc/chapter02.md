@@ -485,10 +485,10 @@ noise is comparable to what the costs care about, when a given policy has to
 be evaluated, or when the expected return itself is the quantity of interest.
 
 **One more choice matters: the weights.** In a joint graph the user chooses
-how heavily the cost factors weigh against the dynamics factors. That weight
-is not neutral: it sets how optimistic the plan is. The Tilted subsection
-below shows this with numbers, in the note
-[In joint optimization, the weight of the costs is a tilt](#ch02-weight-is-a-tilt).
+how heavily the cost factors weigh against the dynamics factors, through
+their noise models. That choice is not neutral: it sets how optimistic the
+plan is. [Chapter 8](chapter08.md), Section 5, derives this for the
+linear-Gaussian case, once the tools it needs are in place.
 ::::
 
 ### Tilted
@@ -501,7 +501,58 @@ $$\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}$$
 This formula is called **log-sum-exp**: the logarithm of a sum of
 exponentials.
 
-**How to read it.** From the inside out, it does three things.
+**What the tilt is for.** The average and the maximum are two extreme
+attitudes: the average treats every outcome by its probability alone, and the
+maximum looks only at the best one. Many problems need something in between,
+and the tilt is the parameter that moves between them. It is used in four
+situations.
+
+- **Control that avoids rare disasters.** A robot that is fast on average but
+  crashes once in a hundred runs has a good average return and is still a bad
+  robot. With a negative tilt applied at the states, the unlucky outcomes
+  count more, and the best policy becomes the *reliable* one. To first order
+  the tilted mean is the average plus a multiple of the variance,
+
+  $$\bar v_\kappa \approx \mathbb{E}[v] + \frac{\kappa}{2}\, \operatorname{Var}[v],$$
+
+  so $\kappa < 0$ is a penalty on variance (a note below derives this). This
+  is *risk-sensitive* control
+  ([Chapter 8](chapter08.md)).
+- **Choosing softly instead of committing.** With a positive tilt applied at
+  the actions, the maximum over the actions becomes a *soft* maximum. The
+  agent prefers the good actions and still gives the others some probability.
+  That keeps it trying alternatives, makes the result change smoothly when the
+  values change, and makes it less sensitive to errors in values that were
+  only estimated. Much of modern RL improves a policy this way
+  ([Chapter 17](chapter17.md)).
+- **Optimizing with samples.** The tilted mean is an average of
+  $e^{\kappa R}$, and an average can be estimated from samples: draw random
+  plans, weight each by $e^{\kappa R}$, and average. A maximum cannot be
+  estimated that way. This is how sampling-based controllers plan
+  ([Chapter 10](chapter10.md)).
+- **Understanding what other methods compute.** Planning by joint optimization
+  and "control as inference" apply a positive tilt at the states without
+  saying so, which makes them optimistic. Seeing the tilt explains when they
+  work and when they do not ([Chapter 8](chapter08.md)).
+
+| The tilt is applied to | Sign | What it gives | Typical use |
+|---|---|---|---|
+| the states | $\kappa < 0$ | a cautious value: unlucky outcomes count more | risk-averse control, safety |
+| the states | $\kappa > 0$ | an optimistic value: lucky outcomes count more | what joint optimization computes, usually unintended |
+| the actions | $\kappa > 0$ | a soft choice among the actions | exploration, policy improvement in RL, sampling-based control |
+| either | $\kappa \to 0$ | the average | evaluating a policy (Chapter 1) |
+| the actions | $\kappa \to +\infty$ | the maximum | optimal control ([Chapter 4](chapter04.md)) |
+
+The rest of this subsection defines the semiring. Its rules look heavier than
+those of the other members, but the stored form reduces them to plain
+sum-product, done twice.
+
+**How to read the formula.** Here is the log-sum-exp formula from the top of
+this subsection again:
+
+$$\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}.$$
+
+From the inside out, the formula does three things.
 
 1. *Stretch.* Each return $R$ is replaced by $e^{\kappa R}$. For $\kappa > 0$
    this magnifies the high returns far more than the low ones.
@@ -597,9 +648,29 @@ $$\sum_x p(x \mid S)\, e^{\kappa v} \approx 1 + \kappa \sum_x p(x \mid S)\, v
 Then $\log(1 + \kappa\, \mathbb{E}[v \mid S]) \approx \kappa\, \mathbb{E}[v \mid S]$,
 and dividing by $\kappa$ leaves $\mathbb{E}[v \mid S]$.
 
-Keeping one more term of the expansion shows what the tilt adds:
+**One more term: the variance.** Keep the terms in $\kappa^2$ in both
+approximations. Write $\mathbb{E}[v]$ and $\mathbb{E}[v^2]$ for the averages
+of $v$ and of $v^2$ given $S$.
+
+*Step 1: the exponential.* $e^{\kappa v} \approx 1 + \kappa v + \tfrac{1}{2} \kappa^2 v^2$,
+so its average is
+
+$$\sum_x p(x \mid S)\, e^{\kappa v} \approx 1 + \kappa\, \mathbb{E}[v] + \tfrac{1}{2} \kappa^2\, \mathbb{E}[v^2].$$
+
+*Step 2: the logarithm.* $\log(1 + z) \approx z - \tfrac{1}{2} z^2$, with
+$z = \kappa\, \mathbb{E}[v] + \tfrac{1}{2} \kappa^2\, \mathbb{E}[v^2]$. Up to
+$\kappa^2$, $z^2 \approx \kappa^2\, \mathbb{E}[v]^2$, so
+
+$$\log \sum_x p(x \mid S)\, e^{\kappa v} \approx \kappa\, \mathbb{E}[v]
++ \tfrac{1}{2} \kappa^2 \big(\mathbb{E}[v^2] - \mathbb{E}[v]^2\big).$$
+
+*Step 3: divide by $\kappa$.* The bracket is the variance of $v$, by its
+definition $\operatorname{Var}[v] = \mathbb{E}[v^2] - \mathbb{E}[v]^2$:
 
 $$\bar v_\kappa = \mathbb{E}[v \mid S] + \frac{\kappa}{2}\, \operatorname{Var}[v \mid S] + \dots$$
+
+The dots stand for terms in $\kappa^2$ and higher, which are small when the
+tilt is small.
 
 A positive tilt rewards variance, a negative tilt penalizes it. This is why
 the tilted mean is used to model the attitude toward risk: $\kappa > 0$ is
@@ -622,23 +693,64 @@ The term $\log p_{\max} / \kappa$ vanishes as $\kappa$ grows. The same argument
 with $\kappa \to -\infty$ gives the minimum.
 :::
 
-**Stored form.** Like the expectation semiring, the tilted semiring is awkward
-in the form $(p, v)$ and simple in a stored form. Store the probability
-together with the *tilted value* $m = p\, e^{\kappa v}$. Then
+**Stored form.** The rules in the table above are written for the pair in
+the form $(p, v)$. In that form the sum rule is awkward to compute with,
+because of its logarithm and its division. As in Chapter 1, a different way
+of *storing* the pair makes the rules simple. Store the probability together
+with the **weighted stretched value**
 
-$$\begin{aligned}
-\text{product:} \quad & m = p_1 p_2\, e^{\kappa (v_1 + v_2)}
-  = \big(p_1 e^{\kappa v_1}\big)\big(p_2 e^{\kappa v_2}\big) = m_1\, m_2, \\
-\text{sum:} \quad & m = (p_1 + p_2)\, e^{\kappa \bar v_\kappa}
-  = p_1 e^{\kappa v_1} + p_2 e^{\kappa v_2} = m_1 + m_2.
-\end{aligned}$$
+$$m = p\, e^{\kappa v},$$
 
-Both stored numbers follow the plain sum-product rules, each on its own:
+the stretched value $e^{\kappa v}$ weighted by its probability. It is to the
+tilted semiring what the weighted value $w = p\, v$ of Chapter 1 is to the
+expectation semiring. The value can always be read back
+from the stored pair $(p, m)$:
+
+$$\frac{m}{p} = e^{\kappa v} \quad\Longrightarrow\quad v = \frac{1}{\kappa} \log \frac{m}{p}.$$
+
+The question is what happens to $m$ when two entries are multiplied or
+summed. In both cases, apply the rule in the form $(p, v)$, compute the $m$ of
+the result from its definition, and express it with the $m_1$ and $m_2$ of the
+two inputs.
+
+*Product.* The rule gives a result with probability $p_1 p_2$ and value
+$v_1 + v_2$. Its weighted stretched value is, by definition, its probability
+times its stretched value:
+
+$$m = \underbrace{p_1 p_2}_{\text{probability}}\; \underbrace{e^{\kappa (v_1 + v_2)}}_{\text{stretched value}}.$$
+
+The exponential of a sum is the product of the exponentials,
+$e^{\kappa (v_1 + v_2)} = e^{\kappa v_1}\, e^{\kappa v_2}$, so the terms can be
+regrouped:
+
+$$m = \big(p_1 e^{\kappa v_1}\big)\, \big(p_2 e^{\kappa v_2}\big) = m_1\, m_2.$$
+
+*Sum.* The rule gives a result with probability $p_1 + p_2$ and value
+$\bar v_\kappa$, the tilted mean. Start from the definition of the tilted
+mean and undo its logarithm:
+
+$$\bar v_\kappa = \frac{1}{\kappa} \log \frac{p_1 e^{\kappa v_1} + p_2 e^{\kappa v_2}}{p_1 + p_2}
+\quad\Longrightarrow\quad
+e^{\kappa \bar v_\kappa} = \frac{p_1 e^{\kappa v_1} + p_2 e^{\kappa v_2}}{p_1 + p_2}.$$
+
+The weighted stretched value of the result is its probability times its
+stretched value,
+and the probability cancels the denominator:
+
+$$m = (p_1 + p_2)\; e^{\kappa \bar v_\kappa}
+= p_1 e^{\kappa v_1} + p_2 e^{\kappa v_2} = m_1 + m_2.$$
+
+So in the stored form the awkward rules are gone. Each of the two stored
+numbers follows the plain sum-product rules, on its own:
 
 $$(p_1, m_1) \otimes (p_2, m_2) = (p_1 p_2,\; m_1 m_2), \qquad
 (p_1, m_1) \oplus (p_2, m_2) = (p_1 + p_2,\; m_1 + m_2).$$
 
-The value is read back at the end as $v = \frac{1}{\kappa} \log (m / p)$.
+*The coin once more,* with $\kappa = 0.5$. The two outcomes are stored as
+$(p, m) = (0.5,\; 0.5\, e^{0}) = (0.5,\; 0.5)$ and
+$(0.5,\; 0.5\, e^{5}) = (0.5,\; 74.2)$. Summing them is two additions,
+$(1,\; 74.7)$, and the value is read back as
+$\frac{1}{0.5} \log \frac{74.7}{1} = 8.63$, as before.
 
 :::{dropdown} How is the stored form of Chapter 1 related to this one?
 The stored form of Chapter 1 is the pair $(p, w)$ with the weighted value
@@ -657,68 +769,10 @@ So the expectation semiring is the first derivative of the tilted semiring
 with respect to the tilt, taken at $\kappa = 0$.
 :::
 
-(ch02-weight-is-a-tilt)=
-**For GTSAM users.** In a graph that optimizes states and actions jointly, the
-weight of the cost factors relative to the dynamics factors is a tilt:
-
-::::{dropdown} In joint optimization, the weight of the costs is a tilt
-Joint optimization with GTSAM puts the dynamics factors and the cost factors
-of a problem in one graph and optimizes all states and actions together (the
-note at the end of the Max-sum subsection). The user chooses how heavily the
-cost factors weigh against the dynamics factors. **That weight is the tilt
-$\kappa$ of this subsection, applied at the states: a risk dial.**
-
-On the line example of Chapter 1 (noise variance $\Sigma_w = 0.5$), put a
-weight $\kappa$ on the rewards, so that the plan maximizes $\kappa R + \log p$ over the actions and
-over the slips. The gains of the resulting feedback law, and the return that
-each policy really collects on the noisy system:
-
-| weight $\kappa$ of the reward factors | $\to 0$ | $0.5$ | $1$ | $2$ |
-|---|---|---|---|---|
-| gains $K_0$, $K_1$ of the joint plan | $0.6$, $0.5$ | $0.452$, $0.4$ | $0.364$, $0.333$ | $0.263$, $0.25$ |
-| true expected return | $-9.25$ | $-9.565$ | $-10.089$ | $-11.070$ |
-
-The first column is the best policy, the Riccati gains of
-[Chapter 6](chapter06.md). As the costs weigh more, the plan relies more on
-favorable slips to bring the robot home and uses weaker gains, and the real
-return drops.
-
-What matters is the product $\kappa\, \Sigma_w$: the variance of the dynamics
-factor relative to that of the cost factors. With a tight dynamics factor,
-variance $10^{-6}$, the plan has the gains $0.6$ and $0.5$ at any weight.
-That is why stiff dynamics factors work well in practice: for linear dynamics
-and quadratic costs the best action does not depend on the noise, so planning
-as if there were none gives the right actions.
-
-:::{dropdown} Why is the weight a tilt?
-Take one step. The future is worth $V(x') = -P\, x'^2$, and the next state is
-$x' = m + w$, with $m$ the predicted state and $w$ the slip, of variance
-$\Sigma_w$. Joint optimization maximizes over the slip, at the price of its
-log-probability:
-
-$$\max_w \Big[-\kappa\, P\,(m + w)^2 - \frac{w^2}{2 \Sigma_w}\Big]
-= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2.$$
-
-The tilted mean of this subsection, with a positive tilt $\kappa$, gives the same
-quadratic, plus a constant that does not affect the actions:
-
-$$\log \mathbb{E}_w\big[e^{-\kappa P (m + w)^2}\big]
-= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2 - \tfrac{1}{2} \log(1 + 2 \kappa P \Sigma_w).$$
-
-Both replace $P$ by the smaller $P / (1 + 2 \kappa P \Sigma_w)$: the future
-looks less costly than it is, because the slip is assumed to help. The correct
-average, the limit $\kappa \to 0$, keeps $P$ and adds the constant
-$P\, \Sigma_w$. So for Gaussian factors, joint optimization is the tilted
-semiring at the states, with a positive, risk-seeking tilt equal to the weight
-of the costs, and the maximum at the actions. [Chapter 8](chapter08.md)
-develops this under the name LEQG, and [Chapter 9](chapter09.md) compares
-joint optimization with the exact treatment on a nonlinear example.
-:::
-::::
-
 ### Log-sum-exp, the soft maximum
 
-**The question it answers.** What is a smooth version of the best return?
+**The question it answers.** What is a smooth version of the best return,
+one that changes gradually where the maximum jumps?
 
 $$\eta \log \sum_\tau p(\tau)\, e^{R(\tau) / \eta}$$
 
@@ -729,6 +783,74 @@ $$\bar v_\eta(S) = \eta \log \sum_x p(x \mid S)\, e^{v(x, S) / \eta},$$
 
 which is called log-sum-exp, or the **soft maximum**: as $\eta \to 0$ it tends
 to $\max_x v$, and as $\eta \to \infty$ to the average.
+
+**What "smooth" means.** A function is smooth if a small change of its input
+gives a small change of its output. The maximum is not smooth in how it
+*chooses*. Take two actions, Left with value $0$ and Right with value $d$. The
+maximum picks Left for every $d < 0$ and Right for every $d > 0$: at $d = 0$
+the choice jumps from one action to the other, however small the change of
+$d$.
+
+The soft maximum replaces the jump by a gradual transition. With equal prior
+weights on the two actions, its value and the probability it gives to Right
+are
+
+$$\bar v_\eta = \eta \log\big(\tfrac{1}{2}\, e^{0} + \tfrac{1}{2}\, e^{d / \eta}\big),
+\qquad
+q(R) = \frac{e^{d / \eta}}{1 + e^{d / \eta}}.$$
+
+For $\eta = 1$:
+
+| value $d$ of Right | $-1$ | $-0.1$ | $0$ | $0.1$ | $1$ |
+|---|---|---|---|---|---|
+| maximum: probability of Right | $0$ | $0$ | tie | $1$ | $1$ |
+| soft maximum: probability of Right | $0.269$ | $0.475$ | $0.5$ | $0.525$ | $0.731$ |
+| maximum: value | $0$ | $0$ | $0$ | $0.1$ | $1$ |
+| soft maximum: value | $-0.380$ | $-0.049$ | $0$ | $0.051$ | $0.620$ |
+
+The probability of Right now moves gradually through $0.5$, where the maximum
+jumped from $0$ to $1$. The probability $q(R)$ is the function $\sigma$ that
+[Chapter 5](chapter05.md) uses for its policy.
+
+**What the temperature does.** It sets how wide the transition is. The
+formula depends on $d$ only through $d / \eta$, so a difference of values
+counts as large or small *relative to* $\eta$. With a small $\eta$ any
+difference is large, and the transition is sharp: the maximum is recovered.
+With a large $\eta$ every difference is small, and the choice stays close to
+the prior weights.
+
+The soft value is never above the maximum, and it is below it whenever the
+two actions differ, because part of the probability is spent on the worse
+one. For $n$ actions with equal prior weights the gap is at most
+$\eta \log n$:
+
+$$\max_x v - \eta \log n \;\le\; \bar v_\eta \;\le\; \max_x v.$$
+
+**What the soft maximum is for.** A gradual choice is worth this small loss of
+value in five situations.
+
+- **Learning by gradient.** A policy with parameters is improved by following
+  a derivative ([Chapter 5](chapter05.md)). The choice of the maximum has no
+  useful derivative: it is constant, then jumps. The soft choice has one
+  everywhere.
+- **Values that are only estimates.** When the values come from samples or
+  from a learned function, they carry errors. A maximum over noisy values
+  picks whichever action the noise favors, and its value is too high on
+  average. The soft maximum averages over the actions that are nearly tied,
+  and is less sensitive to such errors (Chapters [15](chapter15.md) to
+  [17](chapter17.md)).
+- **Trying the other actions.** An agent that learns must keep trying actions
+  that currently look worse, or it never finds out that it was wrong about
+  them. The soft choice gives every action some probability
+  ([Chapter 17](chapter17.md)).
+- **Optimizing with samples.** The soft maximum is an average of
+  $e^{v / \eta}$, which random samples can estimate. A maximum over a
+  continuous set of plans cannot be found by comparing entries
+  ([Chapter 10](chapter10.md)).
+- **Describing imperfect experts.** A person who demonstrates a task chooses
+  good actions more often than bad ones, and not always the best. The soft
+  choice is a model of that behavior, used to recover the rewards a
+  demonstrator is following ([Chapter 23](chapter23.md)).
 
 :::{dropdown} Is the soft maximum the "softmax" of machine learning?
 They are two halves of the same elimination step.

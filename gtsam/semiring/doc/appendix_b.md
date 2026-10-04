@@ -53,7 +53,7 @@ a few letters are used again, with another meaning, in a different chapter.
 | $(p, v)$ | an entry of a semiring factor: probability and value | Ch. 1 |
 | $(p, w)$, $w = p\,v$ | the stored form: probability and weighted value | Ch. 1 |
 | $(\ell, v)$, $\ell = \log p$ | the log-dual form | Ch. 2 |
-| $(p, m)$, $m = p\, e^{\kappa v}$ | the stored form of the tilted semiring | Ch. 2 |
+| $(p, m)$, $m = p\, e^{\kappa v}$ | the stored form of the tilted semiring: probability and weighted stretched value | Ch. 2 |
 | $\otimes$, $\oplus$, $\oslash$ | the product, sum and division of a semiring | Ch. 1, 2 |
 | $\mathbf{0}$, $\mathbf{1}$ | its zero and its one | Ch. 2 |
 | $x$, $S$ | the variable being eliminated, and its separator | Ch. 1 |
@@ -130,7 +130,7 @@ and the return.
 |---|---|
 | 6 | $L_t$, the Kalman gain; $\hat x_t$ and $\hat x_{t \mid t-1}$, the estimate of the state after and before the observation; $\Sigma_{t \mid t}$ and $\Sigma_{t \mid t-1}$, their covariances; $n_t$, the observation noise. Also used in Chapter 22 |
 | 7 | $K^+_t$, the greedy gain $H_{uu}^{-1} H_{ux}$; $\mu_t$, $\Sigma_t$, the mean and covariance of the state marginal (also in Chapter 19) |
-| 8 | $q_t$, the soft policy; $P^\kappa_{t+1}$, the tilted value matrix; $J_\eta$, $J_\kappa$, the soft and tilted values at the root; $Z$, the normalizer of the inference graph |
+| 8 | $q_t$, the soft policy; $P^\kappa_{t+1}$, the tilted value matrix; $J_\eta$, $J_\kappa$, the soft and tilted values at the root; $Z$, the normalizer of the inference graph; $\Sigma_c$, the variance of a cost factor |
 | 9 | $\bar x_t$, $\bar u_t$, the current trajectory; $\Delta x$, $\Delta u$, deviations from it; $F_t$, $B_t$, the local Jacobians |
 | 10 | $\mathbf{u}$, a plan (a whole sequence of actions); $\omega^{(i)}$, the normalized weight of a sample; $M_{\text{elite}}$; $M_{\text{eff}}$, the effective number of samples; $q(\mathbf{u})$, the tilted distribution over plans |
 | 12 | $\zeta(s)$, the fraction of updates made in state $s$; $z(s)$, the eligibility trace |

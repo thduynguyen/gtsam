@@ -83,7 +83,7 @@ class MaxSum:
 
 
 class Tilted:
-    """Probability and tilted value (p, m), m = p exp(kappa v)."""
+    """Probability and weighted stretched value (p, m), m = p exp(kappa v)."""
 
     def __init__(self, kappa):
         self.kappa, self.name = kappa, f"tilted, kappa = {kappa:g}"
@@ -269,6 +269,12 @@ stretched = np.exp(0.5 * coin_v)
 print("stretched:", stretched, " average:", coin_p @ stretched)
 assert np.allclose(stretched, [1, 148.4], atol=0.05)
 assert np.isclose(coin_p @ stretched, 74.7, atol=0.05)
+# The same in the stored form (p, m): the sum is two additions.
+coin_m = coin_p * stretched
+print("stored (p, m):", list(zip(coin_p, coin_m.round(1))),
+      " sum:", (coin_p.sum(), round(coin_m.sum(), 1)))
+assert np.allclose(coin_m, [0.5, 74.2], atol=0.05)
+assert np.isclose(np.log(coin_m.sum() / coin_p.sum()) / 0.5, 8.63, atol=0.005)
 assert np.isclose(np.log(coin_p @ np.exp(0.5 * coin_v)) / 0.5, 8.627, atol=1e-3)
 assert np.isclose(np.log(coin_p @ np.exp(-0.5 * coin_v)) / -0.5, 1.373, atol=1e-3)
 
@@ -355,76 +361,30 @@ print("score of the trajectory with the slip:", round(slip_score, 2))
 assert np.isclose(slip_score, 6.47, atol=0.005) and slip_score < joint
 
 # %% [markdown]
-# On the line of Chapter 1 (linear dynamics with noise of variance 0.5,
-# quadratic rewards) the joint optimization is a least-squares problem. With a
-# weight $\kappa$ on the reward factors, the plan from a state $x$ minimizes
-# $\kappa\,(\text{costs}) + \sum w^2 / (2 \Sigma_w)$ over the actions and
-# the slips $w$. Its feedback gains are compared with the Riccati gains, and
-# each policy is then evaluated on the real, noisy system.
-
+# ## What "smooth" means (Section 2)
+#
+# Two actions: Left with value 0, Right with value d, equal prior weights.
+# The maximum switches abruptly at d = 0; the soft maximum, here with
+# temperature 1, moves gradually.
 
 # %%
-def joint_gains(weight, noise=0.5):
-    """Gains of the joint least-squares plan, by its backward recursion.
-
-    Maximizing over the slip w as well as over the action replaces the value
-    matrix P by P / (1 + 2 * weight * P * noise) before each Riccati step.
-    """
-    P, gains = 1.0, []
-    for _ in range(2):
-        tilted = P / (1 + 2 * weight * P * noise)
-        K = tilted / (1 + tilted)
-        P = 1 + tilted - tilted ** 2 / (1 + tilted)
-        gains.append(K)
-    return gains[::-1]  # K0, K1
-
-
-def least_squares_gain(weight, noise=0.5):
-    """The first gain again, by solving the joint problem as one linear system.
-
-    Unknowns z = (u0, x1, u1, x2), for x0 = 1; minimizes
-    weight * (x0^2 + u0^2 + x1^2 + u1^2 + x2^2)
-      + (x1 - x0 - u0)^2 / (2 noise) + (x2 - x1 - u1)^2 / (2 noise).
-    """
-    rows, rhs = [], []
-    for index in range(4):  # the four cost terms on u0, x1, u1, x2
-        row = np.zeros(4)
-        row[index] = np.sqrt(weight)
-        rows.append(row), rhs.append(0.0)
-    scale = 1 / np.sqrt(2 * noise)
-    rows.append(scale * np.array([-1.0, 1, 0, 0])), rhs.append(scale * 1.0)
-    rows.append(scale * np.array([0.0, -1, -1, 1])), rhs.append(0.0)
-    z = np.linalg.lstsq(np.array(rows), np.array(rhs), rcond=None)[0]
-    return -z[0]  # u0 = -K0 x0 with x0 = 1
-
-
-def true_return(K0, K1, noise=0.5):
-    """Expected return of u = -K x on the real system, x0 ~ N(2, 1)."""
-    P, beta = 1.0, 0.0
-    for K in [K1, K0]:
-        beta += P * noise
-        P = 1 + K ** 2 + P * (1 - K) ** 2
-    return -(P * (2 ** 2 + 1) + beta)
-
-
-assert np.isclose(true_return(0.6, 0.5), -9.25)  # the Riccati gains
-print("weight    K0      K1     true expected return")
-print(f"   -> 0  0.6000  0.5000  {true_return(0.6, 0.5):.3f}   (Riccati)")
-expected = {0.5: (0.4516, 0.4, -9.565), 1.0: (0.3636, 0.3333, -10.089),
-            2.0: (0.2632, 0.25, -11.070)}
-for weight, (K0_ref, K1_ref, J_ref) in expected.items():
-    K0, K1 = joint_gains(weight)
-    J = true_return(K0, K1)
-    print(f"  {weight:4.1f}   {K0:.4f}  {K1:.4f}  {J:.3f}")
-    assert np.isclose(K0, least_squares_gain(weight))
-    assert np.allclose([K0, K1, J], [K0_ref, K1_ref, J_ref], atol=1e-3)
-K0, K1 = joint_gains(1e-6)
-assert np.allclose([K0, K1], [0.6, 0.5], atol=1e-4)
-
-# With a tight dynamics factor the plan is the Riccati plan, whatever the weight.
-K0, K1 = joint_gains(1.0, noise=1e-6)
-print("weight 1, dynamics variance 1e-6:", round(K0, 4), round(K1, 4))
-assert np.allclose([K0, K1], [0.6, 0.5], atol=1e-4)
+eta = 1.0
+print("    d   max P(R)  soft P(R)  max value  soft value")
+smooth = {}
+for d in [-1.0, -0.1, 0.0, 0.1, 1.0]:
+    values = np.array([0.0, d])
+    soft_value = eta * np.log(0.5 * np.exp(values / eta).sum())
+    soft_right = softmax(values / eta)[1]
+    hard_right = "tie" if d == 0 else str(int(d > 0))
+    smooth[d] = (soft_right, soft_value)
+    print(f"{d:5.1f}   {hard_right:>5}     {soft_right:.3f}     "
+          f"{values.max():5.1f}      {soft_value:.3f}")
+    # The gap to the maximum is at most eta * log(number of actions).
+    assert values.max() - eta * np.log(2) <= soft_value <= values.max()
+assert np.allclose([smooth[d][0] for d in [-1.0, -0.1, 0.0, 0.1, 1.0]],
+                   [0.269, 0.475, 0.5, 0.525, 0.731], atol=5e-4)
+assert np.allclose([smooth[d][1] for d in [-1.0, -0.1, 0.0, 0.1, 1.0]],
+                   [-0.380, -0.049, 0.0, 0.051, 0.620], atol=5e-4)
 
 # %% [markdown]
 # ## Conditionals and the normalization invariant (Section 5)
