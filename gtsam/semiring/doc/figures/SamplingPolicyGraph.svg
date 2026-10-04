@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="900" height="500" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The decision graph with a sampling distribution over plans</title>
+  <desc id="desc">The decision graph of Chapter 9, with states x, actions u, dynamics and reward factors. Each action has one more factor, a Gaussian around a planned action that does not depend on the state. The planned actions form one parameter node, joined to all of these factors.</desc>
+  <rect x="0.5" y="0.5" width="899" height="499" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="100" y1="40" x2="100" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="250.0" y1="120" x2="100" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="250.0" y1="120" x2="250.0" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="250.0" y1="120" x2="400" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="250" x2="100" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="250" x2="250.0" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="550.0" y1="120" x2="400" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="550.0" y1="120" x2="550.0" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="550.0" y1="120" x2="700" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="250" x2="400" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="250" x2="550.0" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="400" x2="250" y2="330" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="330" x2="250.0" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="400" x2="550" y2="330" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="330" x2="550.0" y2="250" stroke="#57606a" stroke-width="2"/>
+  <rect x="92.0" y="32.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="242.0" y="112.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="92.0" y="242.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="542.0" y="112.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="392.0" y="242.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="242.0" y="322.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="542.0" y="322.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <circle cx="100" cy="120" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="100" y="126" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="120" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="126" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="700" cy="120" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="700" y="126" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="250.0" cy="250" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="250.0" y="256" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="550.0" cy="250" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="550.0" y="256" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="400" r="24" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="400" y="406" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">ū</text>
+  <text x="116" y="45" font-size="13" text-anchor="start" fill="#24292f">p(x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="250.0" y="104" font-size="13" text-anchor="middle" fill="#24292f">p(x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="100" y="278" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="550.0" y="104" font-size="13" text-anchor="middle" fill="#24292f">p(x<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="400" y="278" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="790" y="126" font-size="22" text-anchor="middle" fill="#57606a">…</text>
+  <text x="234" y="335" font-size="13" text-anchor="end" fill="#24292f">N(u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>; ū<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, Σ<tspan dy="3.9" font-size="9.4">e</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="566" y="335" font-size="13" text-anchor="start" fill="#24292f">N(u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>; ū<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, Σ<tspan dy="3.9" font-size="9.4">e</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="440" y="418" font-size="12" text-anchor="start" fill="#57606a">the plan: the mean of the sampling distribution</text>
+  <line x1="16" y1="450" x2="884" y2="450" stroke="#d0d7de"/>
+  <circle cx="32" cy="471" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="475" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="471" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="475" font-size="12" fill="#57606a">action</text>
+  <rect x="185.3" y="465" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="206.3" y="475" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="350.0" y="465" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="371.0" y="475" font-size="12" fill="#57606a">(1, v): value</text>
+  <circle cx="482.9" cy="471" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="497.9" y="475" font-size="12" fill="#57606a">parameter</text>
+</svg>

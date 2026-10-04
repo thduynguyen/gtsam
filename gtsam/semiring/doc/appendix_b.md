@@ -1,8 +1,10 @@
 # Appendix B: Notation
 
-Every symbol in this book has one meaning. This appendix lists them, grouped
-by where they are introduced. Where the control or RL literature uses another
-letter, the last column says so.
+The symbols in the first six tables have one meaning throughout the book.
+They are grouped by where they are introduced, and where the control or RL
+literature uses another letter, the last column says so. The last table lists
+the symbols that are local to one chapter: each is defined in its chapter, and
+a few letters are used again, with another meaning, in a different chapter.
 
 ## The problem
 
@@ -117,8 +119,35 @@ and the return.
 | $\mathcal{D}$ | a set of stored transitions: the replay buffer | Ch. 15 | |
 | $\rho$ | an importance weight, a ratio of two probabilities | Ch. 14 | |
 
-Other symbols are local to one chapter and are defined where they are used.
+## Symbols local to one chapter
+
+| Chapter | Symbols |
+|---|---|
+| 6 | $L_t$, the Kalman gain; $\hat x_t$ and $\hat x_{t \mid t-1}$, the estimate of the state after and before the observation; $\Sigma_{t \mid t}$ and $\Sigma_{t \mid t-1}$, their covariances; $n_t$, the observation noise. Also used in Chapter 22 |
+| 7 | $K^+_t$, the greedy gain $H_{uu}^{-1} H_{ux}$; $\mu_t$, $\Sigma_t$, the mean and covariance of the state marginal (also in Chapter 19) |
+| 8 | $q_t$, the soft policy; $P^\kappa_{t+1}$, the tilted value matrix; $J_\eta$, $J_\kappa$, the soft and tilted values at the root; $Z$, the normalizer of the inference graph |
+| 9 | $\bar x_t$, $\bar u_t$, the current trajectory; $\Delta x$, $\Delta u$, deviations from it; $F_t$, $B_t$, the local Jacobians |
+| 10 | $\mathbf{u}$, a plan (a whole sequence of actions); $\omega^{(i)}$, the normalized weight of a sample; $M_{\text{elite}}$; $M_{\text{eff}}$, the effective number of samples; $q(\mathbf{u})$, the tilted distribution over plans |
+| 12 | $\zeta(s)$, the fraction of updates made in state $s$; $z(s)$, the eligibility trace |
+| 13 | $\alpha_V$, $\alpha_\theta$, the step sizes of the critic and of the policy; $g(s, a)$, the score term as a function of the pair |
+| 14 | $L(\pi_{\text{new}})$, $L^{\text{clip}}$, the surrogate objective and its clipped form |
+| 16 | $\mu_\theta(x)$, the action of a deterministic policy; $\theta^-$, a slowly updated copy of the policy parameters; $\hat H_{xx}$, $\hat H_{ux}$, $\hat H_{uu}$, $\hat H_0$, the coefficients of a learned quadratic critic |
+| 17 | $q(a \mid s)$, the tilted policy; $\pi_{\text{ref}}$, the reference policy; $V_\eta$, $Q_\eta$, $\pi_\eta$, soft values and policy; $\mathcal{L}(\eta)$, the dual function of the temperature; $n_a$, the number of actions |
+| 18 | $z^{(i)} = (x, u)$, a regression input; $\Sigma_{\theta_p}$, the covariance of the model parameters; $E$, the size of an ensemble (also in Chapter 21) |
+| 19 | $k(z, z')$, the kernel; $\Lambda$, its squared length scales; $\sigma_f^2$, its signal variance; $\Gamma$, the Gram matrix; $\xi$, the regression weights |
+| 20 | $\nu^{(i)}_t$, a dual variable; $\zeta$, the penalty weight; $\Delta u^{(i)}_t$, the disagreement between a local action and the policy; $\mathcal{L}$, the augmented objective |
+| 21 | $D_p$, the one-step error of the model; $h$, the number of model steps; a hat on $p$, $d_t$, $J$, $r$ for learned or predicted quantities |
+| 23 | $\chi(\tau)$, the features of a trajectory; $\hat\chi$, counted features; $\Phi(s)$, a shaping potential; $\mathcal{L}(\theta_r)$, the log-likelihood; $\pi_0$, the base policy |
+| 24 | $\nu = (\nu^+_a, \nu^-_a)$, the counts of a belief; $N_a$, $N$, numbers of pulls |
+| 25 | $h(z)$, a distribution over the accumulated reward $z$; $z_j$, grid values; $m(\kappa)$, the tilted moment; $\omega$, the second moment |
+| 26 | $u_{\text{nominal}}(x)$, a nominal controller; $u_\theta(x)$, a learned correction |
+
+Letters used with different meanings in different chapters: $\mathcal{L}$
+(Chapters 17, 20, 23), $\zeta$ (12, 20), $\nu$ (20, 24), $\omega$ (10, 25),
+$z$ (12, 18, 25), $h$ (21, 25) and $L$ (the Kalman gain $L_t$ in Chapters 6
+and 22, the surrogate objective in Chapter 14, and the action Left).
 
 ---
 
 Previous: [Appendix A: The GTSAM implementation](appendix_a.md).
+Next: [Appendix C: The taxonomy table](appendix_c.md).

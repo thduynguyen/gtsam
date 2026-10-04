@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">A bandit with an unknown model</title>
+  <desc id="desc">Three pulls. Each pull has an action, the arm, and an observed outcome, joined by an outcome factor. One parameter node, the unknown success probabilities, is joined to every outcome factor and has a prior. Dashed arrows show that each action may depend on the outcomes before it.</desc>
+  <rect x="0.5" y="0.5" width="899" height="419" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="150" y1="190" x2="80" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="150" y1="190" x2="220" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="150" y1="190" x2="450" y2="60" stroke="#57606a" stroke-width="2"/>
+  <line x1="220" y1="350" x2="220" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="450" y1="190" x2="380" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="450" y1="190" x2="520" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="450" y1="190" x2="450" y2="60" stroke="#57606a" stroke-width="2"/>
+  <line x1="520" y1="350" x2="520" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="750" y1="190" x2="680" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="750" y1="190" x2="820" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="750" y1="190" x2="450" y2="60" stroke="#57606a" stroke-width="2"/>
+  <line x1="820" y1="350" x2="820" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="560" y1="60" x2="450" y2="60" stroke="#57606a" stroke-width="2"/>
+  <path d="M 247.0 300.0 Q 300.0 300.0 342.0 300.0" fill="none" stroke="#075e7a" stroke-width="2" stroke-dasharray="5 4"/><polygon points="353.0,300.0 342.0,304.5 342.0,295.5" fill="#075e7a"/>
+  <path d="M 547.0 300.0 Q 600.0 300.0 642.0 300.0" fill="none" stroke="#075e7a" stroke-width="2" stroke-dasharray="5 4"/><polygon points="653.0,300.0 642.0,304.5 642.0,295.5" fill="#075e7a"/>
+  <rect x="142.0" y="182.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="212.0" y="342.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="442.0" y="182.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="512.0" y="342.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="742.0" y="182.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="812.0" y="342.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="552.0" y="52.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <circle cx="450" cy="60" r="24" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="450" y="66" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">θ<tspan dy="5.4" font-size="13.0">p</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="80" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="80" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="220" cy="300" r="24" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/><text x="220" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">y<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="380" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="380" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="520" cy="300" r="24" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/><text x="520" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">y<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="680" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="680" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="820" cy="300" r="24" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/><text x="820" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">y<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="164" y="212" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | a<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, θ<tspan dy="3.9" font-size="9.4">p</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="242" y="355" font-size="13" text-anchor="start" fill="#a85a08">r = y<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="464" y="212" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | a<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, θ<tspan dy="3.9" font-size="9.4">p</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="542" y="355" font-size="13" text-anchor="start" fill="#a85a08">r = y<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="764" y="212" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | a<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, θ<tspan dy="3.9" font-size="9.4">p</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="842" y="355" font-size="13" text-anchor="start" fill="#a85a08">r = y<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="576" y="65" font-size="13" text-anchor="start" fill="#24292f">p(θ<tspan dy="3.9" font-size="9.4">p</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="170" y="60" font-size="12" text-anchor="middle" fill="#57606a">the unknown model: joined to every outcome factor</text>
+  <line x1="16" y1="370" x2="884" y2="370" stroke="#d0d7de"/>
+  <circle cx="32" cy="391" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="47" y="395" font-size="12" fill="#57606a">parameter</text>
+  <circle cx="133.7" cy="391" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="148.7" y="395" font-size="12" fill="#57606a">action</text>
+  <circle cx="216.5" cy="391" r="8" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/>
+  <text x="231.5" y="395" font-size="12" fill="#57606a">observation</text>
+  <rect x="324.8" y="385" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="345.8" y="395" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="489.5" y="385" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="510.5" y="395" font-size="12" fill="#57606a">(1, v): value</text>
+</svg>

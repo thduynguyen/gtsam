@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The two stages of DDPG</title>
+  <desc id="desc">Four boxes in a loop. The data policy is the deterministic policy plus noise; it stores transitions in the buffer. Stage 1 moves the critic toward a bootstrapped target computed from frozen copies of the critic and the actor. Stage 2 moves the policy parameters along the product of the derivative of the action and the derivative of the critic, averaged over the buffer.</desc>
+  <rect x="0.5" y="0.5" width="899" height="319" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="30" y="90" width="180" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="255" y="90" width="170" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="470" y="90" width="200" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="715" y="90" width="160" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <path d="M 213.0 150.0 Q 232.5 150.0 241.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="252.0,150.0 241.0,154.5 241.0,145.5" fill="#57606a"/>
+  <path d="M 428.0 150.0 Q 447.5 150.0 456.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="467.0,150.0 456.0,154.5 456.0,145.5" fill="#57606a"/>
+  <path d="M 673.0 150.0 Q 692.5 150.0 701.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="712.0,150.0 701.0,154.5 701.0,145.5" fill="#57606a"/>
+  <path d="M 792.1 210.9 Q 457.5 318.0 133.3 214.3" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="122.9,210.9 134.7,210.0 132.0,218.6" fill="#6639ba"/>
+  <text x="40" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">data policy</text>
+  <text x="120.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">u = μ<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(x) + noise;</text>
+  <text x="120.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">acts and stores</text>
+  <text x="120.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">transitions</text>
+  <text x="265" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">buffer D</text>
+  <text x="340.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">old transitions</text>
+  <text x="340.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">(x, u, r, x′):</text>
+  <text x="340.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">old forward messages</text>
+  <text x="480" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1: critic</text>
+  <text x="570.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">Q̂(x, u) toward</text>
+  <text x="570.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">r + γ Q̂⁻(x′, μ⁻(x′)),</text>
+  <text x="570.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">from frozen copies</text>
+  <text x="725" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 2: actor</text>
+  <text x="795.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">θ moves along</text>
+  <text x="795.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">dμ<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>/dθ · dQ̂/du,</text>
+  <text x="795.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">averaged over D</text>
+  <text x="450" y="296" font-size="12" text-anchor="middle" fill="#6639ba">the new policy collects the next transitions</text>
+  <text x="450" y="50" font-size="14" text-anchor="middle" fill="#24292f" font-weight="bold">DDPG: a learned critic and a deterministic actor</text>
+
+</svg>

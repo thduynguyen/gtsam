@@ -456,7 +456,7 @@ occurs.
 
 | Policy optimization | Nonlinear least squares in GTSAM |
 |---|---|
-| Fisher matrix $\mathcal{I}(\theta)$ | the information matrix $J^\top J$ of the linearized problem |
+| Fisher matrix $\mathcal{I}(\theta)$ | the information matrix (the Gauss-Newton Hessian) of the linearized problem |
 | natural gradient step $\mathcal{I}^{-1} \nabla_\theta J$ | a Gauss-Newton step |
 | damped step $(\mathcal{I} + \lambda_{\text{LM}} I)^{-1} \nabla_\theta J$ | a Levenberg-Marquardt step |
 | a step limited by $\tfrac{1}{2} \Delta\theta^\top \mathcal{I}\, \Delta\theta \le D_{\max}$ | a trust-region (Dogleg) step |
@@ -657,4 +657,4 @@ table.
 ---
 
 Previous: [Chapter 4: Decision nodes and elimination order](chapter04.md).
-Next: [Appendix A: The GTSAM implementation](appendix_a.md).
+Next: [Chapter 6: LQR and LQG](chapter06.md).

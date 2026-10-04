@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">A partially observed decision problem</title>
+  <desc id="desc">The decision graph of Chapter 4 with an observation node attached to each of the first two states by a sensor factor. Dashed arrows run from each observation to the action chosen after it: an action may depend on the readings made so far, and on nothing else.</desc>
+  <rect x="0.5" y="0.5" width="899" height="469" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="110" y1="110" x2="110" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="110" y1="110" x2="110" y2="50" stroke="#57606a" stroke-width="2"/>
+  <line x1="410" y1="110" x2="410" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="410" y1="110" x2="410" y2="50" stroke="#57606a" stroke-width="2"/>
+  <line x1="30" y1="170" x2="110" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="170" x2="110" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="170" x2="260" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="170" x2="410" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="110" y1="300" x2="110" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="110" y1="300" x2="260" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="560" y1="170" x2="410" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="560" y1="170" x2="560" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="560" y1="170" x2="710" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="410" y1="300" x2="410" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="410" y1="300" x2="560" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="800" y1="170" x2="710" y2="170" stroke="#57606a" stroke-width="2"/>
+  <path d="M 130.9 67.1 Q 230.0 148.0 252.6 262.7" fill="none" stroke="#075e7a" stroke-width="2" stroke-dasharray="5 4"/><polygon points="254.8,273.5 248.2,263.6 257.1,261.8" fill="#075e7a"/>
+  <path d="M 430.9 67.1 Q 530.0 148.0 552.6 262.7" fill="none" stroke="#075e7a" stroke-width="2" stroke-dasharray="5 4"/><polygon points="554.8,273.5 548.2,263.6 557.1,261.8" fill="#075e7a"/>
+  <rect x="102.0" y="102.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="402.0" y="102.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="22.0" y="162.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="252.0" y="162.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="102.0" y="292.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="552.0" y="162.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="402.0" y="292.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="792.0" y="162.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <circle cx="110" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="110" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="410" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="410" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="710" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="710" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="260" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="260" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="560" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="560" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="110" cy="50" r="24" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/><text x="110" y="56" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">y<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="410" cy="50" r="24" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/><text x="410" y="56" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">y<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="126" y="115" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="426" y="115" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="30" y="154" font-size="13" text-anchor="middle" fill="#24292f">p(s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="260" y="154" font-size="13" text-anchor="middle" fill="#24292f">p(s<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, a<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="110" y="328" font-size="13" text-anchor="middle" fill="#a85a08">r(s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, a<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="560" y="154" font-size="13" text-anchor="middle" fill="#24292f">p(s<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, a<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="410" y="328" font-size="13" text-anchor="middle" fill="#a85a08">r(s<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, a<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="800" y="154" font-size="13" text-anchor="middle" fill="#a85a08">r(s<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="700" y="350" font-size="12" text-anchor="middle" fill="#075e7a">dashed arrows: what a decision sees: the reading,</text>
+  <text x="700" y="366" font-size="12" text-anchor="middle" fill="#075e7a">never the state. It also remembers earlier readings.</text>
+  <line x1="16" y1="420" x2="884" y2="420" stroke="#d0d7de"/>
+  <circle cx="32" cy="441" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="445" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="441" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="445" font-size="12" fill="#57606a">action</text>
+  <circle cx="191.3" cy="441" r="8" fill="#fff4c2" stroke="#9a6700" stroke-width="2"/>
+  <text x="206.3" y="445" font-size="12" fill="#57606a">observation</text>
+  <rect x="299.6" y="435" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="320.6" y="445" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="464.3" y="435" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="485.3" y="445" font-size="12" fill="#57606a">(1, v): value</text>
+</svg>

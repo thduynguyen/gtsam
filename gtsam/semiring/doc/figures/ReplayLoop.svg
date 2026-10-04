@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The two stages of Q-learning with a replay buffer</title>
+  <desc id="desc">Four boxes in a loop. The data policy acts and stores transitions in the buffer. Stage 1 draws old transitions from the buffer and moves the estimate of Q toward the bootstrapped target. Stage 2 makes the policy greedy. The new policy collects the next transitions.</desc>
+  <rect x="0.5" y="0.5" width="899" height="299" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="30" y="90" width="170" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="250" y="90" width="170" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="470" y="90" width="190" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="710" y="90" width="160" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <path d="M 203.0 150.0 Q 225.0 150.0 236.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="247.0,150.0 236.0,154.5 236.0,145.5" fill="#57606a"/>
+  <path d="M 423.0 150.0 Q 445.0 150.0 456.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="467.0,150.0 456.0,154.5 456.0,145.5" fill="#57606a"/>
+  <path d="M 663.0 150.0 Q 685.0 150.0 696.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="707.0,150.0 696.0,154.5 696.0,145.5" fill="#57606a"/>
+  <path d="M 787.1 210.9 Q 452.5 318.0 128.3 214.3" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="117.9,210.9 129.7,210.0 127.0,218.6" fill="#6639ba"/>
+  <text x="40" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">data policy π<tspan dy="3.6" font-size="8.6">D</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="115.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">acts in the world;</text>
+  <text x="115.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">mostly greedy,</text>
+  <text x="115.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">sometimes random</text>
+  <text x="260" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">buffer D</text>
+  <text x="335.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">old transitions</text>
+  <text x="335.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">(s, a, r, s′):</text>
+  <text x="335.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">old forward messages</text>
+  <text x="480" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1</text>
+  <text x="565.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">bootstrapped backup:</text>
+  <text x="565.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">Q̂(s, a) toward</text>
+  <text x="565.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">r + γ max Q̂(s′, a′)</text>
+  <text x="720" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 2</text>
+  <text x="790.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">greedy: the best</text>
+  <text x="790.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">move of Q̂</text>
+  <text x="790.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">in every state</text>
+  <text x="450" y="282" font-size="12" text-anchor="middle" fill="#6639ba">the new greedy policy collects the next transitions</text>
+  <text x="450" y="50" font-size="14" text-anchor="middle" fill="#24292f" font-weight="bold">Q-learning with a replay buffer</text>
+
+</svg>

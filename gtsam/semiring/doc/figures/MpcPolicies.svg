@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The first control of the plan, as a function of the state</title>
+  <desc id="desc">Two curves of the first control against the state, both passing through zero at the origin and negative for positive states. The curve of iLQR is steeper: at state three it commands minus 1.27, the curve of MAP minus 0.97.</desc>
+  <rect x="0.5" y="0.5" width="759" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="70" y="50" width="430" height="270" fill="none" stroke="#d0d7de"/>
+  <line x1="70.0" y1="50" x2="70.0" y2="320" stroke="#eaeef2"/>
+  <line x1="141.7" y1="50" x2="141.7" y2="320" stroke="#eaeef2"/>
+  <line x1="213.3" y1="50" x2="213.3" y2="320" stroke="#eaeef2"/>
+  <line x1="285.0" y1="50" x2="285.0" y2="320" stroke="#eaeef2"/>
+  <line x1="356.7" y1="50" x2="356.7" y2="320" stroke="#eaeef2"/>
+  <line x1="428.3" y1="50" x2="428.3" y2="320" stroke="#eaeef2"/>
+  <line x1="500.0" y1="50" x2="500.0" y2="320" stroke="#eaeef2"/>
+  <line x1="70" y1="288.8" x2="500" y2="288.8" stroke="#eaeef2"/>
+  <line x1="70" y1="236.9" x2="500" y2="236.9" stroke="#eaeef2"/>
+  <line x1="70" y1="185.0" x2="500" y2="185.0" stroke="#eaeef2"/>
+  <line x1="70" y1="133.1" x2="500" y2="133.1" stroke="#eaeef2"/>
+  <line x1="70" y1="81.2" x2="500" y2="81.2" stroke="#eaeef2"/>
+  <polyline points="70.0,73.0 77.2,78.4 84.3,83.9 91.5,89.6 98.7,95.5 105.8,101.5 113.0,107.7 120.2,113.9 127.3,120.3 134.5,126.7 141.7,133.1 148.8,139.5 156.0,145.9 163.2,152.2 170.3,158.5 177.5,164.6 184.7,170.7 191.8,176.6 199.0,182.3 206.2,187.8 213.3,193.1 220.5,198.2 227.7,203.1 234.8,207.8 242.0,212.4 249.2,216.7 256.3,220.8 263.5,224.8 270.7,228.6 277.8,232.3 285.0,235.8 292.2,239.2 299.3,242.5 306.5,245.7 313.7,248.7 320.8,251.7 328.0,254.5 335.2,257.2 342.3,259.9 349.5,262.5 356.7,265.0 363.8,267.4 371.0,269.7 378.2,272.0 385.3,274.2 392.5,276.3 399.7,278.3 406.8,280.3 414.0,282.3 421.2,284.2 428.3,286.0 435.5,287.8 442.7,289.5 449.8,291.1 457.0,292.8 464.2,294.4 471.3,295.9 478.5,297.4 485.7,298.8 492.8,300.3 500.0,301.6" fill="none" stroke="#1a4fa0" stroke-width="2.5"/>
+  <polyline points="70.0,86.7 77.2,90.7 84.3,95.0 91.5,99.4 98.7,103.9 105.8,108.6 113.0,113.3 120.2,118.2 127.3,123.1 134.5,128.1 141.7,133.1 148.8,138.1 156.0,143.1 163.2,148.0 170.3,152.8 177.5,157.6 184.7,162.3 191.8,166.8 199.0,171.2 206.2,175.4 213.3,179.5 220.5,183.4 227.7,187.2 234.8,190.8 242.0,194.2 249.2,197.5 256.3,200.6 263.5,203.7 270.7,206.5 277.8,209.3 285.0,211.9 292.2,214.5 299.3,216.9 306.5,219.2 313.7,221.5 320.8,223.6 328.0,225.7 335.2,227.7 342.3,229.7 349.5,231.5 356.7,233.3 363.8,235.1 371.0,236.8 378.2,238.4 385.3,240.0 392.5,241.5 399.7,243.0 406.8,244.5 414.0,245.9 421.2,247.3 428.3,248.6 435.5,249.9 442.7,251.2 449.8,252.4 457.0,253.6 464.2,254.8 471.3,255.9 478.5,257.1 485.7,258.1 492.8,259.2 500.0,260.3" fill="none" stroke="#cf222e" stroke-width="2.5"/>
+  <line x1="525" y1="86" x2="555" y2="86" stroke="#1a4fa0" stroke-width="2.5"/>
+  <line x1="525" y1="114" x2="555" y2="114" stroke="#cf222e" stroke-width="2.5"/>
+  <text x="70.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">-1</text>
+  <text x="141.66666666666666" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">0</text>
+  <text x="213.33333333333331" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">1</text>
+  <text x="285.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">2</text>
+  <text x="356.66666666666663" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">3</text>
+  <text x="428.33333333333337" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">4</text>
+  <text x="500.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">5</text>
+  <text x="64.0" y="292.84615384615387" font-size="11" text-anchor="end" fill="#57606a">-1.5</text>
+  <text x="64.0" y="240.9230769230769" font-size="11" text-anchor="end" fill="#57606a">-1</text>
+  <text x="64.0" y="189.0" font-size="11" text-anchor="end" fill="#57606a">-0.5</text>
+  <text x="64.0" y="137.0769230769231" font-size="11" text-anchor="end" fill="#57606a">0</text>
+  <text x="64.0" y="85.15384615384619" font-size="11" text-anchor="end" fill="#57606a">0.5</text>
+  <text x="285.0" y="354" font-size="12" text-anchor="middle" fill="#57606a">state x</text>
+  <text x="70" y="40" font-size="12" text-anchor="start" fill="#57606a">first control of the plan</text>
+  <text x="562" y="90" font-size="12" text-anchor="start" fill="#24292f">iLQR: average over the slip</text>
+  <text x="562" y="118" font-size="12" text-anchor="start" fill="#24292f">MAP: maximum over the slip</text>
+  <text x="525" y="170" font-size="12" text-anchor="start" fill="#57606a">MAP commands less: it counts</text>
+  <text x="525" y="186" font-size="12" text-anchor="start" fill="#57606a">on slips toward the origin.</text>
+
+</svg>

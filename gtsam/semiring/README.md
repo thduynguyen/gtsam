@@ -42,10 +42,44 @@ wheel that contains it in their first cell.
 - 4. [Decision nodes and elimination order](doc/chapter04.md) ([notebook](doc/chapter04_examples.ipynb))
 - 5. [Gradients by elimination: the two-stage framework](doc/chapter05.md) ([notebook](doc/chapter05_examples.ipynb))
 
+**Part II: Gaussian elimination and stochastic optimal control**
+
+- 6. [LQR and LQG](doc/chapter06.md) ([notebook](doc/chapter06_examples.ipynb))
+- 7. [Policy optimization with exact messages](doc/chapter07.md) ([notebook](doc/chapter07_examples.ipynb))
+- 8. [Softness and risk](doc/chapter08.md) ([notebook](doc/chapter08_examples.ipynb))
+- 9. [Nonlinear dynamics](doc/chapter09.md) ([notebook](doc/chapter09_examples.ipynb))
+- 10. [Sampling-based control](doc/chapter10.md) ([notebook](doc/chapter10_examples.ipynb))
+
+**Part III: Sampled and learned messages: model-free RL**
+
+- 11. [Monte Carlo messages](doc/chapter11.md) ([notebook](doc/chapter11_examples.ipynb))
+- 12. [Bootstrapped messages](doc/chapter12.md) ([notebook](doc/chapter12_examples.ipynb))
+- 13. [Actor-critic](doc/chapter13.md) ([notebook](doc/chapter13_examples.ipynb))
+- 14. [Stale messages and trust regions](doc/chapter14.md) ([notebook](doc/chapter14_examples.ipynb))
+- 15. [Value-based control](doc/chapter15.md) ([notebook](doc/chapter15_examples.ipynb))
+- 16. [Off-policy actor-critic](doc/chapter16.md) ([notebook](doc/chapter16_examples.ipynb))
+- 17. [Soft and EM methods](doc/chapter17.md) ([notebook](doc/chapter17_examples.ipynb))
+
+**Part IV: Learned factors: model-based RL**
+
+- 18. [Learning the dynamics factor](doc/chapter18.md) ([notebook](doc/chapter18_examples.ipynb))
+- 19. [PILCO](doc/chapter19.md) ([notebook](doc/chapter19_examples.ipynb))
+- 20. [Guided policy search](doc/chapter20.md) ([notebook](doc/chapter20_examples.ipynb))
+- 21. [Planning in learned models](doc/chapter21.md) ([notebook](doc/chapter21_examples.ipynb))
+
+**Part V: Beyond the clean story**
+
+- 22. [Partial observability](doc/chapter22.md) ([notebook](doc/chapter22_examples.ipynb))
+- 23. [Inverse problems](doc/chapter23.md) ([notebook](doc/chapter23_examples.ipynb))
+- 24. [Exploration and dual control](doc/chapter24.md) ([notebook](doc/chapter24_examples.ipynb))
+- 25. [Distributional RL](doc/chapter25.md) ([notebook](doc/chapter25_examples.ipynb))
+- 26. [Robotics case studies](doc/chapter26.md) ([notebook](doc/chapter26_examples.ipynb))
+
 **Appendices**
 
 - [The GTSAM implementation](doc/appendix_a.md)
 - [Notation](doc/appendix_b.md)
+- [The taxonomy table](doc/appendix_c.md)
 <!-- chapters:end -->
 
 ## Classes

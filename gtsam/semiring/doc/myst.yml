@@ -30,10 +30,82 @@ project:
         - file: chapter05.md
           children:
             - file: chapter05_examples.ipynb
+    - title: "Part II: Gaussian elimination and stochastic optimal control"
+      children:
+        - file: chapter06.md
+          children:
+            - file: chapter06_examples.ipynb
+        - file: chapter07.md
+          children:
+            - file: chapter07_examples.ipynb
+        - file: chapter08.md
+          children:
+            - file: chapter08_examples.ipynb
+        - file: chapter09.md
+          children:
+            - file: chapter09_examples.ipynb
+        - file: chapter10.md
+          children:
+            - file: chapter10_examples.ipynb
+    - title: "Part III: Sampled and learned messages: model-free RL"
+      children:
+        - file: chapter11.md
+          children:
+            - file: chapter11_examples.ipynb
+        - file: chapter12.md
+          children:
+            - file: chapter12_examples.ipynb
+        - file: chapter13.md
+          children:
+            - file: chapter13_examples.ipynb
+        - file: chapter14.md
+          children:
+            - file: chapter14_examples.ipynb
+        - file: chapter15.md
+          children:
+            - file: chapter15_examples.ipynb
+        - file: chapter16.md
+          children:
+            - file: chapter16_examples.ipynb
+        - file: chapter17.md
+          children:
+            - file: chapter17_examples.ipynb
+    - title: "Part IV: Learned factors: model-based RL"
+      children:
+        - file: chapter18.md
+          children:
+            - file: chapter18_examples.ipynb
+        - file: chapter19.md
+          children:
+            - file: chapter19_examples.ipynb
+        - file: chapter20.md
+          children:
+            - file: chapter20_examples.ipynb
+        - file: chapter21.md
+          children:
+            - file: chapter21_examples.ipynb
+    - title: "Part V: Beyond the clean story"
+      children:
+        - file: chapter22.md
+          children:
+            - file: chapter22_examples.ipynb
+        - file: chapter23.md
+          children:
+            - file: chapter23_examples.ipynb
+        - file: chapter24.md
+          children:
+            - file: chapter24_examples.ipynb
+        - file: chapter25.md
+          children:
+            - file: chapter25_examples.ipynb
+        - file: chapter26.md
+          children:
+            - file: chapter26_examples.ipynb
     - title: Appendices
       children:
         - file: appendix_a.md
         - file: appendix_b.md
+        - file: appendix_c.md
 site:
   template: book-theme
   title: Semiring factor graphs

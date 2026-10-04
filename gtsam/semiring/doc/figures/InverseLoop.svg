@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" width="900" height="330" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The loop of inverse reinforcement learning</title>
+  <desc id="desc">Three boxes. The demonstrations give counted features. Stage 1 eliminates the graph with the reward parameters fixed and gives the expected features of the model. Stage 2 moves the reward parameters by the difference of the two and passes new reward factors back to Stage 1.</desc>
+  <rect x="0.5" y="0.5" width="899" height="329" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="40" y="40" width="330" height="105" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="40" y="185" width="330" height="105" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="560" y="110" width="300" height="110" rx="10" fill="none" stroke="#6639ba" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <path d="M 373.9 96.0 Q 465.0 120.0 545.5 141.2" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="556.1,144.0 544.3,145.5 546.6,136.8" fill="#57606a"/>
+  <path d="M 373.9 224.1 Q 465.0 202.5 545.4 183.5" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="556.1,180.9 546.4,187.8 544.4,179.1" fill="#57606a"/>
+  <path d="M 696.6 224.1 Q 545.7 316.2 386.4 270.2" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="375.8,267.1 387.7,265.8 385.2,274.5" fill="#6639ba"/>
+  <text x="50" y="58" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Demonstrations of the expert</text>
+  <text x="205" y="100" font-size="12" text-anchor="middle" fill="#24292f">count the features along each trajectory</text>
+  <text x="205" y="122" font-size="12" text-anchor="middle" fill="#57606a">→ counted features</text>
+  <text x="50" y="203" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1: eliminate, with θ<tspan dy="3.6" font-size="8.6">r</tspan><tspan dy="-3.6" font-size="8.6">​</tspan> fixed</text>
+  <text x="205" y="240" font-size="12" text-anchor="middle" fill="#24292f">backward: soft action values, soft-optimal policy</text>
+  <text x="205" y="258" font-size="12" text-anchor="middle" fill="#24292f">forward: visitations d<tspan dy="3.6" font-size="8.6">t</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="205" y="278" font-size="12" text-anchor="middle" fill="#57606a">→ expected features of the model</text>
+  <text x="570" y="128" font-size="12" text-anchor="start" fill="#6639ba" font-weight="bold">Stage 2: update θ<tspan dy="3.6" font-size="8.6">r</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="710" y="165" font-size="13" text-anchor="middle" fill="#24292f">θ<tspan dy="3.9" font-size="9.4">r</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> ← θ<tspan dy="3.9" font-size="9.4">r</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> + α (counted − expected)</text>
+  <text x="710" y="190" font-size="12" text-anchor="middle" fill="#57606a">until the features match</text>
+  <text x="560" y="296" font-size="12" text-anchor="middle" fill="#6639ba">new reward factors</text>
+
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 400" width="920" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">Reusing messages inside a trust region</title>
+  <desc id="desc">On the left, Stage 1 is run once at theta old and produces a forward and a backward message. On the right, Stage 2 makes several small updates of theta from those same messages, all inside a dashed region around theta old where the KL divergence from the old policy is at most D max. A long dashed red arrow shows one large step that leaves the region, where the old messages are stale. At theta new, Stage 1 is run again.</desc>
+  <rect x="0.5" y="0.5" width="919" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="30" y="50" width="300" height="290" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="430" y="50" width="460" height="290" rx="10" fill="none" stroke="#6639ba" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <ellipse cx="600" cy="215" rx="125" ry="85" fill="#f3ecff" stroke="#6639ba" stroke-width="2" stroke-dasharray="6 4"/>
+  <circle cx="530" cy="210" r="5" fill="#6639ba"/>
+  <circle cx="562" cy="229" r="5" fill="#6639ba"/>
+  <circle cx="598" cy="241" r="5" fill="#6639ba"/>
+  <circle cx="636" cy="245" r="5" fill="#6639ba"/>
+  <circle cx="674" cy="241" r="5" fill="#6639ba"/>
+  <path d="M 334.0 195.0 Q 380.0 195.0 415.0 195.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="426.0,195.0 415.0,199.5 415.0,190.5" fill="#57606a"/>
+  <path d="M 534.3 212.6 Q 546.0 219.5 548.2 220.8" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="557.7,226.4 545.9,224.7 550.5,217.0" fill="#6639ba"/>
+  <path d="M 566.7 230.6 Q 580.0 235.0 582.8 235.9" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="593.3,239.4 581.4,240.2 584.2,231.7" fill="#6639ba"/>
+  <path d="M 603.0 241.5 Q 617.0 243.0 620.1 243.3" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="631.0,244.5 619.6,247.8 620.6,238.8" fill="#6639ba"/>
+  <path d="M 641.0 244.5 Q 655.0 243.0 658.1 242.7" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="669.0,241.5 658.6,247.2 657.6,238.2" fill="#6639ba"/>
+  <path d="M 535.6 207.9 Q 682.5 152.5 819.1 101.0" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="5 4"/><polygon points="829.4,97.1 820.7,105.2 817.5,96.8" fill="#cf222e"/>
+  <text x="40" y="68" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1, run once at θ<tspan dy="3.6" font-size="8.6">old</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="180" y="120" font-size="13" text-anchor="middle" fill="#075e7a" font-weight="bold">forward message d<tspan dy="3.9" font-size="9.4">old</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="180" y="142" font-size="12" text-anchor="middle" fill="#57606a">where the old policy goes</text>
+  <text x="180" y="200" font-size="13" text-anchor="middle" fill="#a85a08" font-weight="bold">backward message A<tspan dy="3.9" font-size="9.4">old</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="180" y="222" font-size="12" text-anchor="middle" fill="#57606a">how good each action is,</text>
+  <text x="180" y="238" font-size="12" text-anchor="middle" fill="#57606a">under the old policy</text>
+  <text x="180" y="300" font-size="12" text-anchor="middle" fill="#24292f">both describe π<tspan dy="3.6" font-size="8.6">old</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>, not π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="380" y="180" font-size="12" text-anchor="middle" fill="#57606a">reused</text>
+  <text x="440" y="68" font-size="12" text-anchor="start" fill="#6639ba" font-weight="bold">Stage 2: several updates of θ from the same messages</text>
+  <text x="600" y="325" font-size="12" text-anchor="middle" fill="#6639ba" font-weight="bold">trust region: KL(π<tspan dy="3.6" font-size="8.6">old</tspan><tspan dy="-3.6" font-size="8.6">​</tspan> ‖ π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>) ≤ D<tspan dy="3.6" font-size="8.6">max</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="518" y="198" font-size="13" text-anchor="end" fill="#24292f" font-weight="bold">θ<tspan dy="3.9" font-size="9.4">old</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="686" y="246" font-size="13" text-anchor="start" fill="#24292f" font-weight="bold">θ<tspan dy="3.9" font-size="9.4">new</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="875" y="80" font-size="12" text-anchor="end" fill="#cf222e" font-weight="bold">one large step</text>
+  <text x="878" y="155" font-size="12" text-anchor="end" fill="#cf222e">outside, the old</text>
+  <text x="878" y="171" font-size="12" text-anchor="end" fill="#cf222e">messages are stale</text>
+  <text x="878" y="265" font-size="12" text-anchor="end" fill="#24292f">at θ<tspan dy="3.6" font-size="8.6">new</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>:</text>
+  <text x="878" y="281" font-size="12" text-anchor="end" fill="#24292f">run Stage 1 again</text>
+
+</svg>

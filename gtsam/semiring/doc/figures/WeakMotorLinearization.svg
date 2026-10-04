@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The motor curve and two linearizations</title>
+  <desc id="desc">The displacement tanh of u as a function of the command u, an S-shaped curve that levels off at plus and minus one. Two tangent lines: at u equal to zero, with slope one, and at u equal to minus 1.27, with slope 0.27.</desc>
+  <rect x="0.5" y="0.5" width="759" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="70" y="50" width="620" height="270" fill="none" stroke="#d0d7de"/>
+  <line x1="70.0" y1="50" x2="70.0" y2="320" stroke="#eaeef2"/>
+  <line x1="173.3" y1="50" x2="173.3" y2="320" stroke="#eaeef2"/>
+  <line x1="276.7" y1="50" x2="276.7" y2="320" stroke="#eaeef2"/>
+  <line x1="380.0" y1="50" x2="380.0" y2="320" stroke="#eaeef2"/>
+  <line x1="483.3" y1="50" x2="483.3" y2="320" stroke="#eaeef2"/>
+  <line x1="586.7" y1="50" x2="586.7" y2="320" stroke="#eaeef2"/>
+  <line x1="690.0" y1="50" x2="690.0" y2="320" stroke="#eaeef2"/>
+  <line x1="70" y1="269.4" x2="690" y2="269.4" stroke="#eaeef2"/>
+  <line x1="70" y1="185.0" x2="690" y2="185.0" stroke="#eaeef2"/>
+  <line x1="70" y1="100.6" x2="690" y2="100.6" stroke="#eaeef2"/>
+  <polyline points="70.0,269.0 75.2,268.9 80.3,268.9 85.5,268.8 90.7,268.8 95.8,268.7 101.0,268.6 106.2,268.5 111.3,268.4 116.5,268.4 121.7,268.2 126.8,268.1 132.0,268.0 137.2,267.9 142.3,267.7 147.5,267.5 152.7,267.3 157.8,267.1 163.0,266.9 168.2,266.6 173.3,266.3 178.5,266.0 183.7,265.7 188.8,265.3 194.0,264.9 199.2,264.4 204.3,263.9 209.5,263.4 214.7,262.8 219.8,262.1 225.0,261.4 230.2,260.6 235.3,259.7 240.5,258.7 245.7,257.7 250.8,256.6 256.0,255.3 261.2,254.0 266.3,252.5 271.5,251.0 276.7,249.3 281.8,247.4 287.0,245.4 292.2,243.3 297.3,241.0 302.5,238.6 307.7,236.0 312.8,233.2 318.0,230.3 323.2,227.2 328.3,224.0 333.5,220.6 338.7,217.1 343.8,213.4 349.0,209.6 354.2,205.7 359.3,201.7 364.5,197.6 369.7,193.4 374.8,189.2 380.0,185.0 385.2,180.8 390.3,176.6 395.5,172.4 400.7,168.3 405.8,164.3 411.0,160.4 416.2,156.6 421.3,152.9 426.5,149.4 431.7,146.0 436.8,142.8 442.0,139.7 447.2,136.8 452.3,134.0 457.5,131.4 462.7,129.0 467.8,126.7 473.0,124.6 478.2,122.6 483.3,120.7 488.5,119.0 493.7,117.5 498.8,116.0 504.0,114.7 509.2,113.4 514.3,112.3 519.5,111.3 524.7,110.3 529.8,109.4 535.0,108.6 540.2,107.9 545.3,107.2 550.5,106.6 555.7,106.1 560.8,105.6 566.0,105.1 571.2,104.7 576.3,104.3 581.5,104.0 586.7,103.7 591.8,103.4 597.0,103.1 602.2,102.9 607.3,102.7 612.5,102.5 617.7,102.3 622.8,102.1 628.0,102.0 633.2,101.9 638.3,101.8 643.5,101.6 648.7,101.6 653.8,101.5 659.0,101.4 664.2,101.3 669.3,101.2 674.5,101.2 679.7,101.1 684.8,101.1 690.0,101.0" fill="none" stroke="#1a4fa0" stroke-width="2.5"/>
+  <polyline points="214.7,320.0 545.3,50.0" fill="none" stroke="#8c959f" stroke-width="2" stroke-dasharray="6 4"/>
+  <circle cx="380.0" cy="185.0" r="5" fill="#8c959f"/>
+  <polyline points="83.4,293.6 414.1,220.5" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="6 4"/>
+  <circle cx="248.8" cy="257.0" r="5" fill="#cf222e"/>
+  <text x="70.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">-3</text>
+  <text x="173.33333333333331" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">-2</text>
+  <text x="276.66666666666663" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">-1</text>
+  <text x="380.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">0</text>
+  <text x="483.3333333333333" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">1</text>
+  <text x="586.6666666666667" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">2</text>
+  <text x="690.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">3</text>
+  <text x="64.0" y="273.375" font-size="11" text-anchor="end" fill="#57606a">-1</text>
+  <text x="64.0" y="189.0" font-size="11" text-anchor="end" fill="#57606a">0</text>
+  <text x="64.0" y="104.625" font-size="11" text-anchor="end" fill="#57606a">1</text>
+  <text x="380.0" y="354" font-size="12" text-anchor="middle" fill="#57606a">command u</text>
+  <text x="70" y="40" font-size="12" text-anchor="start" fill="#57606a">displacement of one move</text>
+  <text x="392.0" y="207.0" font-size="12" text-anchor="start" fill="#8c959f">linearized at u = 0: slope 1</text>
+  <text x="80.33333333333334" y="218.75" font-size="12" text-anchor="start" fill="#cf222e">linearized at u = −1.27: slope 0.27</text>
+  <text x="607.3333333333334" y="126.67167340359629" font-size="12" text-anchor="middle" fill="#1a4fa0">tanh(u): the true motor</text>
+
+</svg>

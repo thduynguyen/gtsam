@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 390" width="900" height="390" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The control graph with a learned dynamics factor</title>
+  <desc id="desc">The decision graph of the two-move line problem. Its dynamics factors are drawn in teal: they are learned. Both depend on the same parameter theta p, a variable joined to every dynamics factor.</desc>
+  <rect x="0.5" y="0.5" width="899" height="389" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="100" y1="70" x2="100" y2="150" stroke="#57606a" stroke-width="2"/>
+  <path d="M 400 40 Q 250 60 250 150" fill="none" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="150" x2="100" y2="150" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="150" x2="250" y2="280" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="150" x2="400" y2="150" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="280" x2="100" y2="150" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="280" x2="250" y2="280" stroke="#57606a" stroke-width="2"/>
+  <path d="M 400 40 Q 550 60 550 150" fill="none" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="150" x2="400" y2="150" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="150" x2="550" y2="280" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="150" x2="700" y2="150" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="280" x2="400" y2="150" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="280" x2="550" y2="280" stroke="#57606a" stroke-width="2"/>
+  <line x1="790" y1="150" x2="700" y2="150" stroke="#57606a" stroke-width="2"/>
+  <rect x="92.0" y="62.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="242.0" y="142.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="92.0" y="272.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="542.0" y="142.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="392.0" y="272.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="782.0" y="142.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <circle cx="100" cy="150" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="100" y="156" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="150" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="156" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="700" cy="150" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="700" y="156" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="250" cy="280" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="250" y="286" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="550" cy="280" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="550" y="286" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="40" r="24" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="400" y="46" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">θ<tspan dy="5.4" font-size="13.0">p</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="116" y="75" font-size="13" text-anchor="start" fill="#24292f">p(x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="262" y="174" font-size="13" text-anchor="start" fill="#075e7a">p(x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>; θ<tspan dy="3.9" font-size="9.4">p</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="100" y="308" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="562" y="174" font-size="13" text-anchor="start" fill="#075e7a">p(x<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>; θ<tspan dy="3.9" font-size="9.4">p</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="400" y="308" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="790" y="134" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="445" y="30" font-size="12" text-anchor="start" fill="#57606a">one unknown, shared by every dynamics factor</text>
+  <line x1="16" y1="340" x2="884" y2="340" stroke="#d0d7de"/>
+  <circle cx="32" cy="361" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="365" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="361" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="365" font-size="12" fill="#57606a">action</text>
+  <circle cx="191.3" cy="361" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="206.3" y="365" font-size="12" fill="#57606a">parameter</text>
+  <rect x="287.0" y="355" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="308.0" y="365" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="451.7" y="355" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="472.7" y="365" font-size="12" fill="#57606a">learned factor</text>
+  <rect x="584.9" y="355" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="605.9" y="365" font-size="12" fill="#57606a">(1, v): value</text>
+</svg>

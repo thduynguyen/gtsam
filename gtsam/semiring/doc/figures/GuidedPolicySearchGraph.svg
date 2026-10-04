@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The graph of guided policy search</title>
+  <desc id="desc">Two local trajectory problems, one per start position, each a chain of states and actions with dynamics factors fitted locally and reward factors. In each, an agreement factor joins every state and its action to the parameter theta of one global policy, which is shared by all local problems.</desc>
+  <rect x="0.5" y="0.5" width="899" height="559" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="182" y="117.0" width="16" height="16" fill="#ffffff" stroke="#6639ba" stroke-width="3"/>
+  <rect x="462" y="117.0" width="16" height="16" fill="#ffffff" stroke="#6639ba" stroke-width="3"/>
+  <rect x="182" y="387.0" width="16" height="16" fill="#ffffff" stroke="#6639ba" stroke-width="3"/>
+  <rect x="462" y="387.0" width="16" height="16" fill="#ffffff" stroke="#6639ba" stroke-width="3"/>
+  <rect x="652" y="250" width="14" height="14" fill="#ffffff" stroke="#6639ba" stroke-width="3"/>
+  <line x1="260" y1="80" x2="120" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="80" x2="260" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="80" x2="400" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="120" y1="170" x2="120" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="120" y1="170" x2="260" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="190" y1="125.0" x2="120" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="190" y1="125.0" x2="260" y2="170" stroke="#57606a" stroke-width="2"/>
+  <path d="M 190 125.0 Q 200 258 450 258" fill="none" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="540" y1="80" x2="400" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="540" y1="80" x2="540" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="540" y1="80" x2="680" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="170" x2="400" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="170" x2="540" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="470" y1="125.0" x2="400" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="470" y1="125.0" x2="540" y2="170" stroke="#57606a" stroke-width="2"/>
+  <path d="M 470 125.0 Q 480 258 450 258" fill="none" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="770" y1="80" x2="680" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="440" x2="120" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="440" x2="260" y2="350" stroke="#57606a" stroke-width="2"/>
+  <line x1="260" y1="440" x2="400" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="120" y1="350" x2="120" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="120" y1="350" x2="260" y2="350" stroke="#57606a" stroke-width="2"/>
+  <line x1="190" y1="395.0" x2="120" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="190" y1="395.0" x2="260" y2="350" stroke="#57606a" stroke-width="2"/>
+  <path d="M 190 395.0 Q 200 258 450 258" fill="none" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="540" y1="440" x2="400" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="540" y1="440" x2="540" y2="350" stroke="#57606a" stroke-width="2"/>
+  <line x1="540" y1="440" x2="680" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="350" x2="400" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="350" x2="540" y2="350" stroke="#57606a" stroke-width="2"/>
+  <line x1="470" y1="395.0" x2="400" y2="440" stroke="#57606a" stroke-width="2"/>
+  <line x1="470" y1="395.0" x2="540" y2="350" stroke="#57606a" stroke-width="2"/>
+  <path d="M 470 395.0 Q 480 258 450 258" fill="none" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="770" y1="440" x2="680" y2="440" stroke="#57606a" stroke-width="2"/>
+  <rect x="252.0" y="72.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="112.0" y="162.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="532.0" y="72.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="392.0" y="162.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="762.0" y="72.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="252.0" y="432.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="112.0" y="342.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="532.0" y="432.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="392.0" y="342.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="762.0" y="432.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <circle cx="450" cy="258" r="24" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="450" y="264" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">θ</text>
+  <circle cx="120" cy="80" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="120" y="86" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="80" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="86" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="680" cy="80" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="680" y="86" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="260" cy="170" r="20" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="260" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="540" cy="170" r="20" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="540" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="120" cy="440" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="120" y="446" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="440" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="446" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="680" cy="440" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="680" y="446" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="260" cy="350" r="20" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="260" y="356" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="540" cy="350" r="20" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="540" y="356" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="484" y="263" font-size="12" text-anchor="start" fill="#57606a">one global policy π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="60" y="34" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">local problem 1: start x<tspan dy="3.6" font-size="8.6">0</tspan><tspan dy="-3.6" font-size="8.6">​</tspan><tspan dy="-5.04" font-size="8.6">(1)</tspan><tspan dy="5.04" font-size="8.6">​</tspan></text>
+  <text x="60" y="492" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">local problem 2: start x<tspan dy="3.6" font-size="8.6">0</tspan><tspan dy="-3.6" font-size="8.6">​</tspan><tspan dy="-5.04" font-size="8.6">(2)</tspan><tspan dy="5.04" font-size="8.6">​</tspan></text>
+  <text x="676" y="255" font-size="12" text-anchor="start" fill="#6639ba">agreement factor: u<tspan dy="3.6" font-size="8.6">t</tspan><tspan dy="-3.6" font-size="8.6">​</tspan> = −K<tspan dy="3.6" font-size="8.6">t</tspan><tspan dy="-3.6" font-size="8.6">​</tspan> x<tspan dy="3.6" font-size="8.6">t</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>,</text>
+  <text x="676" y="271" font-size="12" text-anchor="start" fill="#6639ba">with a dual variable ν<tspan dy="3.6" font-size="8.6">t</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <line x1="16" y1="510" x2="884" y2="510" stroke="#d0d7de"/>
+  <circle cx="32" cy="531" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="47" y="535" font-size="12" fill="#57606a">parameter</text>
+  <circle cx="133.7" cy="531" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="148.7" y="535" font-size="12" fill="#57606a">state</text>
+  <circle cx="210.2" cy="531" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="225.2" y="535" font-size="12" fill="#57606a">action</text>
+  <rect x="287.0" y="525" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="308.0" y="535" font-size="12" fill="#57606a">learned factor</text>
+  <rect x="420.2" y="525" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="441.2" y="535" font-size="12" fill="#57606a">(1, v): value</text>
+</svg>

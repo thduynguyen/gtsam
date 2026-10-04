@@ -294,5 +294,5 @@ These are listed as limitations in the module's README.
 
 ---
 
-Previous: [Chapter 5: Gradients by elimination: the two-stage framework](chapter05.md).
+Previous: [Chapter 26: Robotics case studies](chapter26.md).
 Next: [Appendix B: Notation](appendix_b.md).

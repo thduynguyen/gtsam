@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The E-step and the M-step as the two stages</title>
+  <desc id="desc">Three boxes in a loop. Stage 1 first evaluates the current policy, giving the backward message Q, and then eliminates the action by soft maximum, giving the tilted policy q. Stage 2 fits the parametric policy to q by weighted maximum likelihood. The fitted policy is evaluated next.</desc>
+  <rect x="0.5" y="0.5" width="899" height="319" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="40" y="90" width="230" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="330" y="90" width="230" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="620" y="90" width="240" height="120" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <path d="M 273.0 150.0 Q 300.0 150.0 316.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="327.0,150.0 316.0,154.5 316.0,145.5" fill="#57606a"/>
+  <path d="M 563.0 150.0 Q 590.0 150.0 606.0 150.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="617.0,150.0 606.0,154.5 606.0,145.5" fill="#57606a"/>
+  <path d="M 737.1 210.9 Q 447.5 303.6 168.3 214.3" fill="none" stroke="#6639ba" stroke-width="2"/><polygon points="157.9,210.9 169.7,210.0 167.0,218.6" fill="#6639ba"/>
+  <text x="50" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1, part 1: evaluate</text>
+  <text x="155.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">backward message Q̂</text>
+  <text x="155.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">of the current policy π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>,</text>
+  <text x="155.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">exact or learned</text>
+  <text x="340" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1, part 2: tilt (E-step)</text>
+  <text x="445.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">eliminate a by soft maximum:</text>
+  <text x="445.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">q(a | s) ∝ π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(a | s) e<tspan dy="-5.04" font-size="8.6">Â/η</tspan><tspan dy="5.04" font-size="8.6">​</tspan></text>
+  <text x="445.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">a target policy, not parametric</text>
+  <text x="630" y="108" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 2: fit (M-step)</text>
+  <text x="740.0" y="142" font-size="12" text-anchor="middle" fill="#24292f">weighted maximum likelihood:</text>
+  <text x="740.0" y="160" font-size="12" text-anchor="middle" fill="#24292f">θ maximizes the average of</text>
+  <text x="740.0" y="178" font-size="12" text-anchor="middle" fill="#24292f">q(a | s) log π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(a | s)</text>
+  <text x="450" y="296" font-size="12" text-anchor="middle" fill="#6639ba">the fitted policy is evaluated next</text>
+  <text x="450" y="50" font-size="14" text-anchor="middle" fill="#24292f" font-weight="bold">Policy improvement as expectation-maximization</text>
+
+</svg>
