@@ -91,6 +91,11 @@ own.
 
 ### Sum-product
 
+**The question it answers.** What is the total probability of all
+trajectories?
+
+$$\sum_\tau p(\tau)$$
+
 This is ordinary elimination, the one GTSAM uses for discrete factor graphs.
 
 | | |
@@ -112,6 +117,10 @@ rewards.
 
 ### Expectation
 
+**The question it answers.** What return does the policy collect on average?
+
+$$\sum_\tau p(\tau)\, R(\tau)$$
+
 This is the semiring of Chapter 1.
 
 | | |
@@ -130,6 +139,11 @@ probability. Summing out every variable gives $(1, J)$ with
 $$J = \sum_\tau p(\tau)\, R(\tau) = 1.4 \quad \text{on the track}.$$
 
 ### Max-sum
+
+**The question it answers.** What is the return of the best trajectory that
+can occur?
+
+$$\max_{\tau \,:\, p(\tau) > 0} R(\tau)$$
 
 Merge two outcomes by keeping the *better* one, where the expectation
 semiring took their average. The probability can then be dropped, for the
@@ -183,12 +197,108 @@ choose its start and choose to slip. An agent chooses only its actions.
 [Chapter 4](chapter04.md) takes the maximum over the actions alone, and gets
 $6.1$.
 
+#### Two steps of max-sum elimination, on the track
+
+The first two eliminations of the track show how the number $9$ comes about.
+They are the last move: eliminate the last state $s_2$, then the last action
+$a_1$. In the figures every square is a value. A black square is a lifted
+probability, $0$ or $-\infty$.
+
+**Starting point.**
+
+![The last move of the track, before elimination](figures/MaxSumStart.svg)
+
+Three factors are involved. The reward of the move is $r(s_1, a_1)$: $0$ for
+Left and $-1$ for Right. The final reward is $r(s_2) = (0, 0, 10)$ for cells
+0, 1 and 2. The dynamics table of Chapter 1 is lifted to "possible or not",
+below. The coin-flip policy is left out of the figures: both actions are
+possible in every cell, so its lifted table is $0$ everywhere and adds nothing.
+
+| $s_1$ | $a_1$ | $s_2 = 0$ | $s_2 = 1$ | $s_2 = 2$ | in words |
+|---|---|---|---|---|---|
+| 0 | L | $0$ | $-\infty$ | $-\infty$ | the robot stays in cell 0 |
+| 0 | R | $0$ | $0$ | $-\infty$ | it stays, or reaches cell 1 |
+| 1 | L | $0$ | $0$ | $-\infty$ | it reaches cell 0, or stays |
+| 1 | R | $-\infty$ | $0$ | $0$ | it stays, or reaches cell 2 |
+| 2 | L | $-\infty$ | $0$ | $0$ | it reaches cell 1, or stays |
+| 2 | R | $-\infty$ | $-\infty$ | $0$ | it stays in cell 2 |
+
+The probabilities $0.8$ and $0.2$ are gone. A move that succeeds four times
+out of five and a slip that happens one time out of five are both just
+"possible".
+
+**Step 1: eliminate the last state.** The bucket of $s_2$ holds the lifted
+dynamics and the final reward.
+
+- *Multiply.* In max-sum the product is a sum: add $r(s_2)$ to every entry of
+  the table above. A possible outcome gets the final reward of its cell, and
+  an impossible one stays at $-\infty$.
+- *Add over $s_2$.* In max-sum the sum is a maximum: keep the largest entry of
+  each row. That is the new factor $\phi(s_1, a_1)$, the best final reward
+  among the cells the move can reach.
+
+| $s_1$ | $a_1$ | $s_2 = 0$ | $s_2 = 1$ | $s_2 = 2$ | $\phi(s_1, a_1)$: the maximum | for comparison, the average of Chapter 1 |
+|---|---|---|---|---|---|---|
+| 0 | L | $0$ | $-\infty$ | $-\infty$ | $0$ | $0$ |
+| 0 | R | $0$ | $0$ | $-\infty$ | $0$ | $0$ |
+| 1 | L | $0$ | $0$ | $-\infty$ | $0$ | $0$ |
+| 1 | R | $-\infty$ | $0$ | $10$ | $10$ | $8$ |
+| 2 | L | $-\infty$ | $0$ | $10$ | $10$ | $2$ |
+| 2 | R | $-\infty$ | $-\infty$ | $10$ | $10$ | $10$ |
+
+The last two columns differ in two rows. Moving Right from cell 1 reaches the
+charger four times out of five, and the average says $0.8 \cdot 10 = 8$; the
+maximum says $10$, as if the move always succeeded. Moving Left from cell 2
+leaves the charger four times out of five, and the average says
+$0.2 \cdot 10 = 2$; the maximum says $10$, as if the robot always slipped and
+stayed.
+
+![After eliminating the last state by maximum](figures/MaxSumNextState.svg)
+
+The conditional that is left on $s_2$ records which outcome was assumed: for
+each $s_1$ and $a_1$, the cell that attains the maximum.
+
+**Step 2: eliminate the last action.** The bucket of $a_1$ holds the reward of
+the move and the new factor $\phi(s_1, a_1)$.
+
+- *Multiply.* Add them: $r(s_1, a_1) + \phi(s_1, a_1)$.
+- *Add over $a_1$.* Keep the larger of the two actions. That is the new
+  factor $\phi(s_1)$.
+
+| $s_1$ | Left: $r + \phi$ | Right: $r + \phi$ | $\phi(s_1)$: the maximum | the action kept | for comparison, Chapter 4 |
+|---|---|---|---|---|---|
+| 0 | $0 + 0 = 0$ | $-1 + 0 = -1$ | $0$ | Left | $0$, Left |
+| 1 | $0 + 0 = 0$ | $-1 + 10 = 9$ | $9$ | Right | $7$, Right |
+| 2 | $0 + 10 = 10$ | $-1 + 10 = 9$ | $10$ | Left | $9$, Right |
+
+![After eliminating the last action by maximum](figures/MaxSumAction.svg)
+
+The conditional that is left on $a_1$ holds the action kept in each cell, and
+its value is the regret of the other action: $-1$ in cells 0 and 2, and $-9$
+in cell 1.
+
+The last column is the correct treatment of a decision, from
+[Chapter 4](chapter04.md): the average over $s_2$ in Step 1, and the maximum
+over $a_1$ in Step 2. Max-sum agrees with it in cell 0 and is too high in
+cells 1 and 2. In cell 2 it even keeps the wrong action: it moves Left, away
+from the charger, because Left is free and it assumes the slip that keeps the
+robot in place.
+
+**The remaining steps** repeat the same two operations one move earlier, and
+then take the best start cell. They leave $9$ at the root: start in cell 1,
+move Right and reach cell 2, which Step 2 values at $10$, for $-1 + 10 = 9$.
+
 GTSAM users know this semiring well, with a different lifting: optimizing all
 the variables of a graph jointly is max-sum elimination. The last subsection
 of this section places trajectory optimization, as it is done with GTSAM, in
 the family, with what that choice gets right and wrong.
 
 ### Tilted
+
+**The question it answers.** What is the average return, if lucky
+trajectories count more ($\kappa > 0$) or less ($\kappa < 0$)?
+
+$$\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}$$
 
 Keep the pair $(p, v)$ and the product of the expectation semiring, and change
 how the values of two outcomes merge: use an average that leans toward the
@@ -309,6 +419,10 @@ with respect to the tilt, taken at $\kappa = 0$.
 :::
 
 ### Log-sum-exp, the soft maximum
+
+**The question it answers.** What is a smooth version of the best return?
+
+$$\eta \log \sum_\tau p(\tau)\, e^{R(\tau) / \eta}$$
 
 Write the tilt as $\kappa = 1/\eta$, with a *temperature* $\eta > 0$. The
 tilted mean becomes

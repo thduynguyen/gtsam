@@ -161,8 +161,8 @@ class Figure:
               start_gap=None, end_gap=None):
         """A directed arrow between two variables (names) or points.
 
-        bend > 0 curves the arrow to its right-hand side on the screen (for
-        an arrow pointing right, downward), by that fraction of its length.
+        bend > 0 curves the arrow to its left-hand side (for an arrow
+        pointing right, upward on the screen), by that fraction of its length.
         gap is the clearance left at both ends (27 clears a variable circle);
         start_gap and end_gap set them separately.
         """

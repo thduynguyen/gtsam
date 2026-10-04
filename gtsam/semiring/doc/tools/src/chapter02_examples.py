@@ -163,6 +163,43 @@ assert np.isclose(Expectation.read(eliminate(Expectation(), terms, order)), 1.4)
 assert np.isclose(MaxSum.read(eliminate(MaxSum(), terms, order)), 9.0)
 
 # %% [markdown]
+# ## Two steps of max-sum elimination, by hand (Section 2)
+#
+# The last move of the track: eliminate the last state $s_2$, then the last
+# action $a_1$. A probability is lifted to 0 where it is positive and to
+# $-\infty$ where it is zero.
+
+# %%
+with np.errstate(divide="ignore"):
+    possible = np.where(dynamics > 0, 0.0, -np.inf)  # lifted p(s2 | s1, a1)
+print("lifted dynamics, rows (s1, a1), columns s2:\n", possible.reshape(6, 3))
+
+# Step 1: multiply (add) with the final reward, then maximize over s2.
+bucket_s2 = possible + final  # axes s1, a1, s2
+phi_sa = bucket_s2.max(axis=2)
+print("bucket of s2:\n", bucket_s2.reshape(6, 3))
+print("new factor on (s1, a1), the best reachable final reward:\n", phi_sa)
+print("the average instead (expectation semiring):\n", dynamics @ final)
+assert np.allclose(phi_sa, [[0, 0], [0, 10], [10, 10]])
+
+# Step 2: multiply (add) with the reward of the move, then maximize over a1.
+bucket_a1 = reward + phi_sa  # axes s1, a1
+phi_s = bucket_a1.max(axis=1)
+print("bucket of a1:\n", bucket_a1)
+print("new factor on s1:", phi_s, " best action:", bucket_a1.argmax(axis=1))
+print("regret of each action:\n", bucket_a1 - phi_s[:, None])
+assert np.allclose(bucket_a1, [[0, -1], [0, 9], [10, 9]])
+assert np.allclose(phi_s, [0, 9, 10])
+assert list(bucket_a1.argmax(axis=1)) == [L, R, L]
+
+# The correct order for a decision: average over s2, then maximize over a1.
+correct = (reward + dynamics @ final)
+print("average over s2, then max over a1:", correct.max(axis=1),
+      " best action:", correct.argmax(axis=1))
+assert np.allclose(correct.max(axis=1), [0, 7, 9])
+assert list(correct.argmax(axis=1)) == [L, R, R]
+
+# %% [markdown]
 # ## The tilted family (Section 3)
 #
 # The tilted mean $\frac{1}{\kappa} \log \mathbb{E}[e^{\kappa R}]$ moves from
