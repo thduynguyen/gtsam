@@ -28,6 +28,9 @@ GitHub's own preview of those files shows the text but not the book's
 formatting. To build the book locally, run `myst build --html` or `myst start`
 in `doc/`.
 
+The scripts that draw the figures, build the notebooks and check the chapters
+are in [`doc/tools/`](doc/tools), with a guide to the conventions of the book.
+
 Each chapter has a companion notebook that runs its examples and checks every
 number quoted in the chapter. The notebooks open in Google Colab from the
 badge at the top of each chapter; those that use this module install a GTSAM
