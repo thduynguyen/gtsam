@@ -32,6 +32,8 @@ from gtsam import (
     SemiringFactorGraph,
     SemiringGaussianConditional,
     SemiringGaussianFactor,
+    SemiringRules,
+    SemiringSum,
     VectorValues,
     noiseModel,
 )
@@ -375,6 +377,88 @@ class TestSemiringTrackExample(GtsamTestCase):
         np.testing.assert_allclose(surprises, [0, 3.5, 0.4, 1.9, 0.8])
         self.assertAlmostEqual(sum(surprises), (-1 - 1 + 10) - 1.4)
 
+    def graph_without_policy(self):
+        """The factor graph of the example with the actions left free."""
+        graph = SemiringFactorGraph()
+        graph.push_back(self.probability([self.state(0)], self.prior))
+        for t in range(2):
+            keys = [self.state(t), self.action(t)]
+            graph.push_back(
+                self.probability(keys + [self.state(t + 1)], self.dynamics))
+            graph.push_back(self.reward(keys, self.moveReward))
+        graph.push_back(self.reward([self.state(2)], self.finalReward))
+        return graph
+
+    @staticmethod
+    def rules(actions, states=SemiringSum.Average()):
+        """One rule for the actions and one for the states."""
+        rules = SemiringRules()
+        rules.setAll([U(0), U(1)], actions)
+        rules.setAll([X(0), X(1), X(2)], states)
+        return rules
+
+    def test_dynamic_programming_by_rules(self):
+        """Average at the states and maximum at the actions (chapter 4)."""
+        backward = make_ordering(X(2), U(1), X(1), U(0), X(0))
+        rules = self.rules(SemiringSum.Maximum())
+        graph = self.graph_without_policy()
+        self.assertAlmostEqual(graph.expectation(backward, rules), 6.1)
+
+        bayesNet = graph.eliminateSequential(backward, rules)
+        # The conditionals of the actions hold the best moves and the regrets.
+        expectedMove = {1: [0, 1, 1], 0: [1, 1, 1]}  # 0 = Left, 1 = Right
+        expectedRegret = {1: [[0, -1], [-7, 0], [-7, 0]],
+                          0: [[-4.6, 0], [-6.2, 0], [-0.6, 0]]}
+        for t, position in [(1, 1), (0, 3)]:
+            conditional = bayesNet.at(position)
+            keys = [self.state(t), self.action(t)]
+            greedy = table(conditional.greedy(), keys)
+            np.testing.assert_array_equal(greedy.argmax(axis=1),
+                                          expectedMove[t])
+            np.testing.assert_allclose(greedy.sum(axis=1), 1.0)
+            np.testing.assert_allclose(table(conditional.surprise(), keys),
+                                       expectedRegret[t], atol=1e-9)
+
+    def test_maximum_everywhere(self):
+        """The maximum at every variable is the best trajectory (chapter 2)."""
+        backward = make_ordering(X(2), U(1), X(1), U(0), X(0))
+        rules = self.rules(SemiringSum.Maximum(), SemiringSum.Maximum())
+        self.assertAlmostEqual(
+            self.graph_without_policy().expectation(backward, rules), 9.0)
+        self.assertAlmostEqual(self.graph().expectation(backward, rules), 9.0)
+
+    def test_tilted_everywhere(self):
+        """One tilt at every variable: the tilted mean of the return."""
+        backward = make_ordering(X(2), U(1), X(1), U(0), X(0))
+        for tilt, expected in [(-2, -0.9265), (-0.5, -0.2768), (0.5, 5.4251),
+                               (2, 7.6490)]:
+            rules = self.rules(SemiringSum.Tilted(tilt),
+                               SemiringSum.Tilted(tilt))
+            self.assertAlmostEqual(self.graph().expectation(backward, rules),
+                                   expected, places=4)
+        # The soft maximum at temperature 2 is the tilt 0.5.
+        soft = SemiringSum.SoftMaximum(2.0)
+        self.assertAlmostEqual(
+            self.graph().expectation(backward, self.rules(soft, soft)),
+            5.4251, places=4)
+
+    def test_soft_maximum_at_actions(self):
+        """Average at the states, soft maximum at the actions (chapter 8)."""
+        backward = make_ordering(X(2), U(1), X(1), U(0), X(0))
+        rules = self.rules(SemiringSum.SoftMaximum(1.0))
+        graph = self.graph()
+        self.assertAlmostEqual(graph.expectation(backward, rules), 4.7536,
+                               places=4)
+        # The tilted conditional of the last action is the soft policy: the
+        # softmax of Q_1 = [[0, -1], [0, 7], [2, 9]] under the coin flip.
+        conditional = graph.eliminateSequential(backward, rules).at(1)
+        keys = [self.state(1), self.action(1)]
+        softPolicy = table(conditional.tilted(1.0), keys)
+        np.testing.assert_allclose(softPolicy.sum(axis=1), 1.0)
+        np.testing.assert_allclose(
+            softPolicy, [[0.7311, 0.2689], [0.0009, 0.9991], [0.0009, 0.9991]],
+            atol=1e-4)
+
 
 class TestSemiringMarkovDecisionProcess(GtsamTestCase):
     """A small tabular MDP, checked against dynamic programming in numpy."""
@@ -660,6 +744,69 @@ class TestSemiringLineExample(GtsamTestCase):
         surprises = [bayesNet.at(i).surprise(trajectory) for i in range(5)]
         np.testing.assert_allclose(surprises, [0.5, 0.2, 0.75, 0.25, 1.625])
         self.assertAlmostEqual(sum(surprises), -6.5 - (-9.825))
+
+    def graph_without_policy(self):
+        """The factor graph of the example with the actions left free."""
+        graph = SemiringFactorGraph()
+        graph.push_back(
+            self.gaussian(X(0), np.eye(1), np.array([2.0]),
+                          noiseModel.Isotropic.Variance(1, 1.0)))
+        for t in range(2):
+            graph.push_back(self.dynamics(t))
+            graph.push_back(self.penalty(X(t)))
+            graph.push_back(self.penalty(U(t)))
+        graph.push_back(self.penalty(X(2)))
+        return graph
+
+    @staticmethod
+    def rules(tilt=0.0):
+        """The maximum at the actions and a tilt at the states."""
+        rules = SemiringRules()
+        rules.setAll([U(0), U(1)], SemiringSum.Maximum())
+        rules.setAll([X(0), X(1), X(2)], SemiringSum.Tilted(tilt))
+        return rules
+
+    @staticmethod
+    def gain(conditional):
+        """The gain K of the conditional u = -K x."""
+        return conditional.conditional().S()[0, 0]
+
+    def test_riccati_by_rules(self):
+        """Average at the states and maximum at the actions (chapter 6)."""
+        backward = make_ordering(X(2), U(1), X(1), U(0), X(0))
+        graph = self.graph_without_policy()
+        self.assertAlmostEqual(graph.expectation(backward, self.rules()),
+                               -9.25)
+        bayesNet = graph.eliminateSequential(backward, self.rules())
+        self.assertAlmostEqual(self.gain(bayesNet.at(1)), 0.5)
+        self.assertAlmostEqual(self.gain(bayesNet.at(3)), 0.6)
+        # The regret is zero at the best action and -H_uu (u + K x)^2 off it.
+        last = bayesNet.at(1)
+        self.assertAlmostEqual(
+            last.surprise(self.values(x=(X(1), 2.0), u=(U(1), -1.0))), 0.0)
+        self.assertAlmostEqual(
+            last.surprise(self.values(x=(X(1), 2.0), u=(U(1), 0.0))), -2.0)
+
+    def test_risk_sensitive_riccati(self):
+        """A tilt at the states is risk-sensitive control (chapter 8)."""
+        backward = make_ordering(X(2), U(1), X(1), U(0), X(0))
+        graph = self.graph_without_policy()
+        # tilt: gains K0, K1 and the tilted value at the root.
+        expected = {-0.25: (0.7213, 0.5714, -54.93),
+                    -0.1: (0.6430, 0.5263, -13.14),
+                    0.5: (0.4516, 0.4, -4.20),
+                    1.0: (0.3636, 0.3333, -2.89),
+                    2.0: (0.2632, 0.25, -1.87)}
+        for tilt, (gain0, gain1, value) in expected.items():
+            rules = self.rules(tilt)
+            self.assertAlmostEqual(graph.expectation(backward, rules), value,
+                                   delta=6e-3)
+            bayesNet = graph.eliminateSequential(backward, rules)
+            self.assertAlmostEqual(self.gain(bayesNet.at(3)), gain0, places=4)
+            self.assertAlmostEqual(self.gain(bayesNet.at(1)), gain1, places=4)
+        # Too strong a negative tilt has no finite tilted mean.
+        self.assertRaises(ValueError, graph.expectation, backward,
+                          self.rules(-0.4))
 
 
 class TestSemiringLinearQuadratic(GtsamTestCase):

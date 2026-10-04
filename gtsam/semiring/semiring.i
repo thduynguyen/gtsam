@@ -41,9 +41,9 @@ virtual class SemiringFactor : gtsam::Factor {
       const gtsam::Ordering& frontalKeys) const;
   pair<gtsam::SemiringConditional*, gtsam::SemiringFactor*> eliminate(
       const gtsam::Ordering& frontalKeys, const gtsam::SemiringSum& sum) const;
-  gtsam::SemiringFactor* sum(const gtsam::Ordering& frontalKeys) const;
-  gtsam::SemiringFactor* sum(const gtsam::Ordering& frontalKeys,
-                             const gtsam::SemiringSum& sum) const;
+  gtsam::SemiringFactor* sum(
+      const gtsam::Ordering& frontalKeys,
+      const gtsam::SemiringSum& sum = gtsam::SemiringSum()) const;
   double expectation() const;
 };
 
