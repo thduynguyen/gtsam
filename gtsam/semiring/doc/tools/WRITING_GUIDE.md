@@ -188,6 +188,15 @@ of `tools/nb.py`) and build it with `tools/nb.py`.
   `https://thduynguyen.github.io/gtsam/chapterNN`. The second cell is the
   imports. Markdown cells in between name the chapter section they belong to.
 - Only numpy, scipy, plotly and gtsam. Plots, if any, with plotly.
+- **Use the module for every exact computation.** Build the problem as a
+  `SemiringFactorGraph` and eliminate it, with a `SemiringRules` object when
+  some variables are summed out by a maximum or a tilted mean (see
+  `appendix_a.md`, and `tools/src/chapter02_examples.py` and
+  `chapter04_examples.py` for the idiom). Read values, advantages, regrets and
+  policies from the factors and conditionals (`value()`, `surprise()`,
+  `greedy()`, `tilted()`, `marginalFactor`). Use numpy only for what the
+  module cannot do: drawing samples, fitting a learned function, array
+  bookkeeping, and independent checks of the module's numbers.
 - Fix every random seed (`np.random.default_rng(0)`). Keep the run time under
   about a minute.
 - Pin every number quoted in the chapter with an `assert` (`np.isclose` /

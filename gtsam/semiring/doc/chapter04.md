@@ -350,36 +350,68 @@ pass. The two columns of this comparison are the first two rows of the
 
 ## 6. Implementation
 
-The module has no elimination function that maximizes over action variables.
-One pass can still be written with the factor interface, using the fact that
-the average under a *deterministic* policy is the substitution of its action:
-read $Q_t$ from the bucket, pick the best action, lift it as a one-hot policy
-factor, and eliminate as usual.
-
-For the track, with the helpers of Chapter 1, Section 10 (`probability` lifts a
-table to $(p, 0)$ and `value` lifts one to $(1, r)$; `table` reads a
-`DecisionTreeFactor` into an array, and `ordering` wraps one key):
+In the module the rule for summing out a variable is an argument of
+elimination. A `SemiringRules` object gives the action variables the maximum;
+the states keep the default, the average. The policy factors are left out of
+the graph, and the order is given explicitly, backward in time:
 
 ```python
-future = value([state(2)], final_reward)          # (1, V*_2)
+rules = SemiringRules()
+rules.setAll([A(0), A(1)], SemiringSum.Maximum())
+backward = ordering(S(2), A(1), S(1), A(0), S(0))
+
+graph.expectation(backward, rules)                    # 6.1, the best J
+bayesNet = graph.eliminateSequential(backward, rules)
+
+lastAction = bayesNet.at(1)       # the conditional on a1 given s1
+lastAction.greedy()               # the best move in each cell
+lastAction.surprise()             # the regret Q*_1 - V*_1 of each move
+```
+
+Here `graph` is the track of Chapter 1 without its policy factors, built with
+the helpers of Chapter 1, Section 10.
+
+One elimination at a time, the same pass reads the tables of Section 3:
+
+```python
+future = value([state(2)], final_reward)              # (1, V*_2)
 for t in [1, 0]:
     keys = [state(t), action(t)]
     # Eliminate the next state by average. There is no policy factor.
     step = probability(keys + [state(t + 1)], dynamics)
     bucket = value(keys, move_reward) * (step * future).sum(ordering(S(t + 1)))
-    Q = table(bucket.value(), keys)               # Q*_t(s, a)
-    # Eliminate the action by max: the best move, as a one-hot policy factor.
-    greedy = probability(keys, np.eye(2)[Q.argmax(axis=1)])
-    future = (greedy * bucket).sum(ordering(A(t)))  # (1, V*_t)
-
-prior_factor = probability([state(0)], prior)
-(prior_factor * future).expectation()             # 6.1
+    # bucket.value() is the table Q*_t(s, a).
+    # Eliminate the action by maximum.
+    conditional, future = bucket.eliminate(ordering(A(t)),
+                                           SemiringSum.Maximum())
+    # future.value() is the table V*_t(s).
 ```
 
-The test `test_best_policy` in
-`python/gtsam/tests/test_SemiringFactorGraph.py` checks these tables. Value
-iteration and policy iteration on the endless track are a few lines of numpy
-each, in the [companion notebook](chapter04_examples.ipynb).
+**Value iteration** on the endless track repeats this step on one set of
+factors, feeding the new value back in as the value of the next state.
+**Policy iteration** alternates two eliminations of the action: with the
+policy factor and the average rule, repeated until the value settles (Stage
+1), and without it and with the maximum rule (Stage 2), whose conditional is
+the new policy. Both are in the
+[companion notebook](chapter04_examples.ipynb).
+
+The tests `test_dynamic_programming_by_rules` in
+`python/gtsam/tests/test_SemiringFactorGraph.py` and
+`SemiringFactorGraph.DynamicProgramming` in
+`gtsam/semiring/tests/testSemiringSum.cpp` check these tables.
+
+:::{dropdown} Why Stage 2 does not read the best move from the conditional of Stage 1
+The conditional that Stage 1 leaves on the action holds the advantage of each
+action, and Section 5 defined the improved policy as the action with the
+largest advantage. That works when the policy gives every action some
+probability, as the coin flip does.
+
+For a deterministic policy it does not. The module stores the value channel
+weighted by the probability, $w = p\, v$ (Chapter 1, Section 5), so an action
+that the policy never takes, with $p = 0$, has no stored advantage. Its action
+value is still in the bucket *before* the policy factor is multiplied in,
+which is what the maximum elimination of Stage 2 uses.
+:::
 
 ## 7. What breaks
 

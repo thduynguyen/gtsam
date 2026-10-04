@@ -12,8 +12,9 @@ store and eliminate their entries, and the tests that check the laws of
 source, extend the module, or check what exactly a method returns.
 
 The short version: the module adds **one abstract factor type with three
-operations**, multiply, eliminate and expectation, and **one elimination
-function** written against that interface. Everything else, the orderings,
+operations**, multiply, eliminate and expectation, **a rule for how a variable
+is summed out**, and **one elimination function** written against that
+interface. Everything else, the orderings,
 sequential and multifrontal elimination, Bayes nets and Bayes trees, is
 GTSAM's existing generic code.
 
@@ -26,7 +27,9 @@ GTSAM's existing generic code.
 | `SemiringDiscreteFactor`, `SemiringDiscreteConditional` | the table-backed family, stored as $(p, w)$ |
 | `SemiringGaussianFactor`, `SemiringGaussianConditional` | the linear-Gaussian family, stored as $(\ell, v)$ |
 | `SemiringFactorGraph` | the factor graph; adds `product` and `expectation` |
-| `EliminateSemiring` | the elimination function: multiply, sum out, divide |
+| `SemiringSum` | the rule by which a variable is summed out: average, maximum or tilted mean |
+| `SemiringRules` | the rule of each variable of a graph |
+| `EliminateSemiring`, `EliminateSemiringWith` | the elimination function: multiply, sum out, divide; the second takes the rules |
 | `SemiringBayesNet`, `SemiringBayesTree`, `SemiringEliminationTree`, `SemiringJunctionTree` | the results and intermediate structures of elimination; thin instantiations of GTSAM's templates |
 
 ## 2. The factor interface
@@ -47,12 +50,17 @@ class GTSAM_EXPORT SemiringFactor : public Factor {
   /// Semiring product: probabilities multiply and values add.
   virtual shared_ptr multiply(const SemiringFactor& other) const = 0;
 
-  /// Eliminate the frontal variables: the conditional, whose value channel is
-  /// the surprise, and the semiring sum, whose value channel is E[v | separator].
-  virtual EliminationResult eliminate(const Ordering& frontalKeys) const = 0;
+  /// Eliminate the frontal variables with the given rule: the conditional,
+  /// and the semiring sum, a new factor on the separator.
+  virtual EliminationResult eliminate(const Ordering& frontalKeys,
+                                      const SemiringSum& sum) const = 0;
+
+  /// Eliminate the frontal variables by averaging, the expectation semiring.
+  EliminationResult eliminate(const Ordering& frontalKeys) const;
 
   /// Semiring sum over the frontal variables, a new factor on the separator.
-  shared_ptr sum(const Ordering& frontalKeys) const;
+  shared_ptr sum(const Ordering& frontalKeys,
+                 const SemiringSum& sum = SemiringSum()) const;
 
   /// Expected value E[v] under the normalized probability channel.
   virtual double expectation() const = 0;
@@ -61,6 +69,21 @@ class GTSAM_EXPORT SemiringFactor : public Factor {
 
 `sum` is `eliminate(...).second`. The operations are virtual, so the
 elimination function does not need to know which family it is working on.
+
+**The rule for the sum.** All the semirings of [Chapter 2](chapter02.md) that
+carry a value share one product, so the product is not a parameter. The sum
+is: a `SemiringSum` says how the values of the outcomes of the eliminated
+variable are merged.
+
+| Rule | Value of the new factor | Value channel of the conditional |
+|---|---|---|
+| `SemiringSum::Average()`, the default | $\mathbb{E}[v \mid S]$ | the surprise: advantage or TD residual |
+| `SemiringSum::Maximum()` | $\max_x v$, over the outcomes with nonzero probability | the regret |
+| `SemiringSum::Tilted(kappa)` | $\frac{1}{\kappa} \log \sum_x p(x \mid S)\, e^{\kappa v}$ | the soft advantage |
+| `SemiringSum::SoftMaximum(eta)` | the same, with $\kappa = 1 / \eta$ | the soft advantage |
+
+In every case the probabilities of the outcomes are added, and the value
+channel of the conditional is $v$ minus the merged value.
 
 ## 3. The conditional
 
@@ -158,10 +181,39 @@ double SemiringFactorGraph::expectation(const Ordering& ordering) const {
 }
 ```
 
-The same mechanism, a custom elimination function passed to
-`eliminateSequential`, is how a different rule for some variables could be
-added, for example the maximum over action variables of
-[Chapter 4](chapter04.md).
+**A rule per variable.** The same mechanism, a custom elimination function
+passed to `eliminateSequential`, gives each variable its own rule. A
+`SemiringRules` object maps keys to rules, and `EliminateSemiringWith(rules)`
+is the elimination function that looks the rule up:
+
+```cpp
+SemiringFactorGraph::Eliminate EliminateSemiringWith(const SemiringRules& rules) {
+  return [rules](const SemiringFactorGraph& factors, const Ordering& frontalKeys) {
+    const SemiringFactor::shared_ptr product = factors.product();
+    return product->eliminate(frontalKeys, rules.common(frontalKeys));
+  };
+}
+```
+
+`SemiringFactorGraph` has overloads of `eliminateSequential`,
+`eliminatePartialSequential` and `expectation` that take the rules directly:
+
+```cpp
+SemiringRules rules;
+rules.setAll({U(0), U(1)}, SemiringSum::Maximum());   // the actions
+graph.expectation(ordering, rules);                   // the best expected return
+graph.eliminateSequential(ordering, rules);
+```
+
+Two consequences of mixing rules, both from [Chapter 4](chapter04.md):
+
+- **The order is no longer free.** The default COLAMD ordering is valid only
+  when all variables share one rule. With different rules the ordering must be
+  given: for a Markov decision process, backward in time.
+- **Variables eliminated together must share a rule.** `rules.common` throws
+  otherwise. Sequential elimination takes one variable at a time and is always
+  fine. Multifrontal elimination, which groups variables into cliques, is not
+  supported with mixed rules.
 
 ## 5. The discrete family
 
@@ -174,14 +226,30 @@ and the weighted value $w = p\, v$.
 | lift a probability table $f$ | $(f,\; 0)$: constructor `SemiringDiscreteFactor(f)` |
 | lift a reward table $r$ | $(1,\; r)$: `SemiringDiscreteFactor::Reward(r)` |
 | product, `operator*` | $(p_1 p_2,\;\; p_1 w_2 + p_2 w_1)$ |
-| sum over a variable | both tables are summed, as in ordinary sum-product |
+| sum over a variable, by average | both tables are summed, as in ordinary sum-product |
+| sum over a variable, by maximum | the probability table is summed; the value is the largest $w / p$ among the entries with $p > 0$ |
+| sum over a variable, by tilted mean | the probability table is summed; the value is the tilted mean of $w / p$, computed relative to its extreme value so that no exponential overflows |
 | division, `operator/` | $\left(\dfrac{p}{p_S},\;\; \dfrac{w\, p_S - p\, w_S}{p_S^2}\right)$, with $0 / 0 = 0$ |
 | read the value | `value()` returns the table $w / p$ |
 
 `eliminate` multiplies nothing itself (the product was formed by
-`EliminateSemiring`); it sums both tables over the frontal variables and
-divides the product by the sum. `evaluate(values)` returns the pair $(p, v)$ of
-one entry, and `probability()` and `weightedValue()` return the stored tables.
+`EliminateSemiring`); it sums out the frontal variables by the given rule and
+divides the product by the result. `evaluate(values)` returns the pair
+$(p, v)$ of one entry, and `probability()` and `weightedValue()` return the
+stored tables.
+
+A discrete conditional has two more methods, for the cases where its frontal
+variable is a choice:
+
+| Method | Returns |
+|---|---|
+| `greedy()` | a `DiscreteConditional` with probability one on the frontal value of largest surprise, shared equally among ties: the greedy policy |
+| `tilted(kappa)` | the conditional reweighted by $e^{\kappa \cdot \text{surprise}}$ and normalized: the soft policy |
+
+Because the value channel is stored weighted by the probability, a frontal
+value with probability zero has no stored surprise, and `greedy()` ranks only
+the values with nonzero probability. To choose among all actions, eliminate
+the action from a bucket without a policy factor, with the maximum rule.
 
 ## 6. The Gaussian family
 
@@ -221,6 +289,33 @@ turn.
 3. *Division.* The value channel of the conditional is the difference of the
    two quadratics, $v(x, S) - \bar v(S)$: the surprise.
 
+**With the tilted rule,** step 2 computes the tilted mean of the quadratic
+value in place of its mean. Along $x = \mu + W e$, with $\mu = K S + k$, the
+value is $v(\mu) + b^\top e + \tfrac{1}{2} e^\top M e$, where $b$ is affine in
+the separator, and its tilted mean is
+
+$$v(\mu) + \frac{\kappa}{2}\, b^\top N^{-1} b - \frac{1}{2 \kappa} \log \det N,
+\qquad N = I - \kappa M,$$
+
+again a quadratic in the separator. It exists only if $N$ is positive
+definite; otherwise the tilt is too strong for the noise, and `eliminate`
+throws `std::invalid_argument` ([Chapter 8](chapter08.md) calls this the
+breakdown). The conditional is not changed by the tilt.
+
+**With the maximum rule,** the variable must have no density: no Gaussian
+factor may involve it, as for an action without a policy factor. The value is
+a quadratic $\tfrac{1}{2} x^\top G_{xx}\, x + x^\top G_{xS}\, S - g_x^\top x + \dots$,
+and its maximizer solves a linear system,
+
+$$G_{xx}\, x + G_{xS}\, S - g_x = 0 \quad\Longrightarrow\quad x = K S + k.$$
+
+$G_{xx}$ must be negative definite, that is, the value strictly concave in
+$x$; otherwise there is no maximum and `eliminate` throws. The conditional is
+the maximizer as a deterministic `GaussianConditional` with a constrained
+noise model, its value channel is the regret, and the new factor is the value
+with the maximizer substituted. For linear dynamics and quadratic rewards
+this is one step of the Riccati recursion ([Chapter 6](chapter06.md)).
+
 A constrained noise model, a hard equality such as deterministic dynamics or a
 deterministic policy $u = -K x$, is the case $W = 0$: the substitution is
 exact and the constant vanishes. A variable that appears only in the value
@@ -249,9 +344,15 @@ elimination against independent computations.
 | expected cost and value functions of a linear-quadratic problem | `SemiringFactorGraph.ExpectedTotalCost`, `.QuadraticValueFunction`, `.QuadraticAdvantage`, against the Lyapunov recursion |
 | sequential and multifrontal elimination agree | `SemiringFactorGraph.EliminateMultifrontal`, `.MultifrontalMarginal`, `.GaussianMultifrontal` |
 | the two families cannot be mixed | `SemiringFactorGraph.MixedFamilies` |
+| the maximum and the tilted mean of one variable, their limits, and outcomes of zero probability | `SemiringDiscreteFactor.Maximum`, `.MaximumSkipsImpossible`, `.Tilted`, `.TiltedLimits` |
+| the invariant $\bigoplus_x c = \mathbf{1}$ for every rule | `SemiringDiscreteConditional.NormalizedForEveryRule` |
+| average at the states, maximum at the actions: dynamic programming | `SemiringFactorGraph.DynamicProgramming` |
+| the maximum and a tilt at every variable; the soft maximum at the actions | `SemiringFactorGraph.MaximumEverywhere`, `.TiltedEverywhere`, `.SoftMaximumAtActions` |
+| the Riccati recursion, and its risk-sensitive version with a tilt at the states | `SemiringFactorGraph.Riccati`, `.RiskSensitiveRiccati`, `.TiltBreakdown` |
 
-The Python tests in `python/gtsam/tests/test_SemiringFactorGraph.py` check
-every number of the worked examples of Chapters 1, 4 and 6. Run the C++ tests
+The tests of the rules are in `tests/testSemiringSum.cpp`. The Python tests
+in `python/gtsam/tests/test_SemiringFactorGraph.py` check the numbers of the
+worked examples of Chapters 1, 2, 4, 6 and 8. Run the C++ tests
 with the target `check.semiring`.
 
 ## 8. The Python wrapper
@@ -272,10 +373,18 @@ bayesNet.at(i).surprise()                  # the value channel
 bayesTree = graph.eliminateMultifrontal()
 bayesTree.marginalFactor(key)              # a factor on one variable
 conditional, newFactor = factor.eliminate(ordering)   # one step, by hand
+
+rules = SemiringRules()                    # a rule per variable
+rules.setAll(actionKeys, SemiringSum.Maximum())
+graph.expectation(ordering, rules)         # the best expected return
+graph.eliminateSequential(ordering, rules)
+conditional, newFactor = factor.eliminate(ordering, SemiringSum.Tilted(0.5))
+conditional.greedy()                       # discrete: the greedy policy
+conditional.tilted(0.5)                    # discrete: the soft policy
 ```
 
-The elimination function itself is available as `gtsam.EliminateSemiring`.
-Passing a custom elimination function is possible in C++ only.
+The elimination functions are available as `gtsam.EliminateSemiring` and
+`gtsam.EliminateSemiringWith(rules)`.
 
 ## 9. Extending the module
 
@@ -285,17 +394,17 @@ continuous variables) derives from `SemiringFactor` and implements `multiply`,
 from `SemiringConditional`. Nothing else changes: `EliminateSemiring` and the
 graph work through the base interface.
 
-**Another semiring of the family.** The other members of
-[Chapter 2](chapter02.md) are not implemented in C++. The companion notebooks
-run them with a generic routine in numpy. In the module they would be:
+**What is not implemented.**
 
-| Semiring | What would be needed |
+| Feature | What would be needed |
 |---|---|
-| tilted, or soft maximum | a discrete family storing $(p, m)$ with $m = p\, e^{\kappa v}$; both tables follow the sum-product rules, so it is two `DecisionTreeFactor`s with independent products and sums |
-| maximum over the actions, average over the states | a custom elimination function that, for an action key, replaces the sum over the frontal variable by a maximum of the value channel and returns the maximizing action as a deterministic conditional |
-| second-order ([Chapter 5](chapter05.md)) | a family storing $(p, w, \dot p, \dot w)$ per parameter; useful for few parameters only |
+| the second-order semiring of [Chapter 5](chapter05.md), for gradients in one pass | a family storing $(p, w, \dot p, \dot w)$ per parameter; useful for few parameters only. The notebook of Chapter 5 runs it in numpy |
+| a log-domain discrete family | tables of $(\ell, v)$, to avoid the underflow of long products of small probabilities |
+| multifrontal elimination with different rules | a check that every clique groups variables of one rule, and an ordering that respects the constraint of Chapter 4 |
+| the maximum of a Gaussian variable that has a density, and the soft maximum of one that has none | a convention for the probability channel in each case |
 
 These are listed as limitations in the module's README.
+
 
 ---
 

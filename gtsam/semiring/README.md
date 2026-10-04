@@ -9,6 +9,11 @@ semiring*. Elimination then produces the quantities that optimal control and
 reinforcement learning (RL) are built on: the expected return of a policy, its
 value functions, and its advantages.
 
+Each variable can also be summed out by a maximum or by a tilted mean in
+place of the average. With the maximum at the action variables, elimination
+is dynamic programming, and for linear-Gaussian problems the Riccati
+recursion; with a tilt it gives soft and risk-sensitive control.
+
 The aim is to express optimal control and RL as operations on factor graphs,
 for readers who know factor graphs from SLAM.
 
@@ -102,6 +107,7 @@ by Duy Ta with the assistance of Claude (Anthropic).
 | `SemiringDiscreteFactor`, `SemiringDiscreteConditional` | The table-backed family, for discrete states and actions. |
 | `SemiringGaussianFactor`, `SemiringGaussianConditional` | The linear-Gaussian family, with quadratic values. |
 | `SemiringFactorGraph` | Factor graph with `eliminateSequential`, `eliminatePartialSequential`, `eliminateMultifrontal` and `expectation`. |
+| `SemiringSum`, `SemiringRules` | How a variable is summed out: by the average (the default), the maximum, or a tilted mean, of which the soft maximum is a case; and the rule of each variable of a graph. |
 | `SemiringBayesNet`, `SemiringBayesTree` | Results of sequential and multifrontal elimination. |
 
 ## Quick start
@@ -128,6 +134,22 @@ graph.expectation()  # 5.6, the expected total reward
 bayesNet = graph.eliminateSequential()
 ```
 
+The best action in place of the average under the policy: sum the action out
+by maximum, and the outcome, which is decided by chance, by the average. With
+different rules the order must be given, the outcome first.
+
+```python
+from gtsam import Ordering, SemiringRules, SemiringSum
+
+rules = SemiringRules()
+rules.set(0, SemiringSum.Maximum())  # key 0 is the action
+
+ordering = Ordering()
+ordering.push_back(1)  # the outcome, by average
+ordering.push_back(0)  # the action, by maximum
+graph.expectation(ordering, rules)  # 8.0, the value of the better action
+```
+
 [Chapter 1](doc/chapter01.md) explains what the conditionals of the Bayes net
 contain, and works through two larger examples in its Sections 7 and 8.
 
@@ -140,11 +162,17 @@ contain, and works through two larger examples in its Sections 7 and 8.
 
 ## Limitations
 
-- **Expectation semiring only.** The built-in elimination evaluates a given
-  policy. The maximum over action variables of Chapter 4, which finds the best
-  policy, is not a built-in elimination function yet; it can be written by
-  hand with the factor interface, as shown there. The other semirings of
-  Chapter 2 are run in the notebooks, in numpy.
+- **One rule per elimination step.** Each variable is summed out by its own
+  rule, but variables eliminated together must share one. With different rules
+  in a graph the ordering must be given explicitly, and multifrontal
+  elimination is not supported.
+- **Gaussian maximum and tilt.** The maximum applies to a variable without a
+  density, such as an action without a policy factor, and needs a value that
+  is concave in it. The tilted mean applies to a variable with a density, and
+  fails when the tilt is too strong for the noise.
+- **No gradients in one pass.** The second-order semiring of Chapter 5 is run
+  in numpy in its notebook; the module gives the gradient through the
+  advantages and the marginals.
 - **One family per graph.** Discrete and Gaussian factors cannot be mixed;
   combining them throws.
 - **Known models.** The dynamics must be given as factors. Sampling-based RL
