@@ -16,3 +16,5 @@ project:
 site:
   template: book-theme
   title: Semiring factor graphs
+  options:
+    style: custom.css
