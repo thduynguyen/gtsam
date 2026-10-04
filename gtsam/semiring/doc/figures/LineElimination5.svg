@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 400" width="860" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">After eliminating x₀</title>
+  <desc id="desc">The graph after eliminating x₂, u₁, x₁, u₀, x₀: each eliminated variable keeps a conditional, drawn as arrows from its parents, and the newest value factor is shown in orange.</desc>
+  <rect x="0.5" y="0.5" width="859" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <path d="M 422 114 Q 550.0 40 675.8 112.0" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="681.0,115.0 669.2,113.4 673.7,105.6" fill="#8c959f"/>
+  <path d="M 566.4 272.5 L 678.8 152.6" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="682.9,148.2 678.7,159.3 672.1,153.2" fill="#8c959f"/>
+  <path d="M 416.4 147.5 L 528.8 267.4" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="532.9,271.8 522.1,266.8 528.7,260.7" fill="#8c959f"/>
+  <path d="M 122 114 Q 250.0 40 375.8 112.0" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="381.0,115.0 369.2,113.4 373.7,105.6" fill="#8c959f"/>
+  <path d="M 266.4 272.5 L 378.8 152.6" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="382.9,148.2 378.7,159.3 372.1,153.2" fill="#8c959f"/>
+  <path d="M 116.4 147.5 L 228.8 267.4" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="232.9,271.8 222.1,266.8 228.7,260.7" fill="#8c959f"/>
+  <rect x="92.0" y="282.0" width="16" height="16" fill="#d9730d"/>
+  <circle cx="100" cy="130" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="100" y="136" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">x₀</text>
+  <circle cx="400" cy="130" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="400" y="136" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">x₁</text>
+  <circle cx="700" cy="130" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="700" y="136" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">x₂</text>
+  <circle cx="250" cy="290" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="250" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">u₀</text>
+  <circle cx="550" cy="290" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="550" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">u₁</text>
+  <text x="100" y="322" font-size="13" text-anchor="middle" fill="#a85a08">(1, J): the expected return</text>
+  <text x="700" y="82" font-size="13" text-anchor="middle" fill="#57606a">c(x₂ | x₁, u₁)</text>
+  <text x="550" y="337" font-size="13" text-anchor="middle" fill="#57606a">c(u₁ | x₁)</text>
+  <text x="400" y="82" font-size="13" text-anchor="middle" fill="#57606a">c(x₁ | x₀, u₀)</text>
+  <text x="250" y="337" font-size="13" text-anchor="middle" fill="#57606a">c(u₀ | x₀)</text>
+  <text x="100" y="82" font-size="13" text-anchor="middle" fill="#57606a">c(x₀)</text>
+  <line x1="16" y1="350" x2="844" y2="350" stroke="#d0d7de"/>
+  <g font-size="12" fill="#57606a">
+    <rect x="24" y="365" width="12" height="12" fill="#24292f"/>
+    <text x="42" y="375">(p, 0): probability factor</text>
+    <rect x="206" y="365" width="12" height="12" fill="#d9730d"/>
+    <text x="224" y="375">(1, v): value factor</text>
+    <circle cx="362" cy="371" r="8" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="377" y="375">eliminated next</text>
+    <circle cx="492" cy="371" r="8" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="3 2"/>
+    <text x="507" y="375">eliminated; arrows come from the parents of its conditional</text>
+  </g>
+</svg>

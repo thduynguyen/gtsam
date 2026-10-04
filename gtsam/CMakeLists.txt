@@ -45,6 +45,7 @@ set (gtsam_subdirs
     discrete
     hybrid
     linear
+    semiring
     nonlinear
     sam
     sfm

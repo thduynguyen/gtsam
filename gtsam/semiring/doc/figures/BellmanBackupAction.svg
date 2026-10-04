@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 316" width="780" height="316" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">After eliminating the action</title>
+  <desc id="desc">The action is eliminated and keeps a conditional given s, the policy with the advantage. The policy, reward and expected future value factors are replaced by one new value factor on s, holding the state value.</desc>
+  <rect x="0.5" y="0.5" width="779" height="315" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <g stroke="#57606a" stroke-width="2" fill="none">
+    <line x1="110" y1="100" x2="110" y2="220"/>
+  </g>
+  <rect x="102.0" y="212.0" width="16" height="16" fill="#d9730d"/>
+  <path d="M 128 116 L 236 200" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="242.0,205.0 230.6,201.8 236.1,194.7" fill="#8c959f"/>
+  <path d="M 128 84 Q 260 14 384 82" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="391.0,86.0 379.2,84.6 383.5,76.8" fill="#8c959f"/>
+  <path d="M 279 205 L 386 120" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="392.0,115.0 386.2,125.4 380.6,118.3" fill="#8c959f"/>
+  <circle cx="410" cy="100" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="410" y="106" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">s′</text>
+  <text x="448" y="105" font-size="13" text-anchor="start" fill="#57606a">c(s′ | s, a) = (p(s′ | s, a), δₜ(s, a, s′))</text>
+  <circle cx="260" cy="220" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="260" y="226" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">a</text>
+  <circle cx="110" cy="100" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="110" y="106" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s</text>
+  <text x="300" y="225" font-size="13" text-anchor="start" fill="#57606a">c(a | s) = (π(a | s), Aₜ(s, a))</text>
+  <text x="110" y="250" font-size="13" text-anchor="middle" fill="#a85a08">φ(s) = (1, Vₜ(s))</text>
+  <line x1="16" y1="266" x2="764" y2="266" stroke="#d0d7de"/>
+  <g font-size="12" fill="#57606a">
+    <rect x="24" y="281" width="12" height="12" fill="#24292f"/>
+    <text x="42" y="291">(p, 0): probability</text>
+    <rect x="166" y="281" width="12" height="12" fill="#d9730d"/>
+    <text x="184" y="291">(1, v): value</text>
+    <circle cx="282" cy="287" r="8" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="297" y="291">being eliminated</text>
+    <circle cx="418" cy="287" r="8" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="3 2"/>
+    <text x="433" y="291">eliminated; arrows: its conditional</text>
+  </g>
+</svg>

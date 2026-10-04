@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 316" width="780" height="316" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">After eliminating the next state by expectation</title>
+  <desc id="desc">The next state keeps the dynamics as its conditional. A new value factor joins x and u, holding the expected future value. The action is eliminated next, by maximization.</desc>
+  <rect x="0.5" y="0.5" width="779" height="315" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <g stroke="#57606a" stroke-width="2" fill="none">
+    <line x1="110" y1="100" x2="110" y2="220"/> <line x1="110" y1="220" x2="260" y2="220"/> <line x1="110" y1="100" x2="260" y2="100"/> <line x1="260" y1="100" x2="260" y2="220"/>
+  </g>
+  <rect x="252.0" y="92.0" width="16" height="16" fill="#d9730d"/>
+  <rect x="102.0" y="212.0" width="16" height="16" fill="#d9730d"/>
+  <text x="110" y="250" font-size="13" text-anchor="middle" fill="#a85a08">(1, r(x, u))</text>
+  <path d="M 128 84 Q 260 14 384 82" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="391.0,86.0 379.2,84.6 383.5,76.8" fill="#8c959f"/>
+  <path d="M 279 205 L 386 120" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="392.0,115.0 386.2,125.4 380.6,118.3" fill="#8c959f"/>
+  <circle cx="410" cy="100" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="410" y="106" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">x′</text>
+  <text x="448" y="105" font-size="13" text-anchor="start" fill="#57606a">c(x′ | x, u): the dynamics, with its surprise</text>
+  <circle cx="260" cy="220" r="33" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="6 4"/>
+  <circle cx="110" cy="100" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="110" y="106" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x</text>
+  <circle cx="260" cy="220" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="260" y="226" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u</text>
+  <text x="260" y="78" font-size="13" text-anchor="middle" fill="#a85a08">φ(x, u) = (1, E[Vₜ₊₁(x′) | x, u])</text>
+  <text x="304" y="226" font-size="13" text-anchor="start" fill="#cf222e">eliminate by max</text>
+  <line x1="16" y1="266" x2="764" y2="266" stroke="#d0d7de"/>
+  <g font-size="12" fill="#57606a">
+    <rect x="24" y="281" width="12" height="12" fill="#24292f"/>
+    <text x="42" y="291">(p, 0): probability</text>
+    <rect x="166" y="281" width="12" height="12" fill="#d9730d"/>
+    <text x="184" y="291">(1, v): value</text>
+    <circle cx="282" cy="287" r="8" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="297" y="291">being eliminated</text>
+    <circle cx="418" cy="287" r="8" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="3 2"/>
+    <text x="433" y="291">eliminated; arrows: its conditional</text>
+  </g>
+</svg>

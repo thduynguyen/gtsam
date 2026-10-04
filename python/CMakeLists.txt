@@ -129,6 +129,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation_geometric.i
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
     ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
+    ${PROJECT_SOURCE_DIR}/gtsam/semiring/semiring.i
 )
 
 if(GTSAM_USE_MOSEK)

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 285" width="860" height="285" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">A robot on a three-cell track</title>
+  <desc id="desc">Three cells in a row between two walls. The robot starts in cell 0 or cell 1 with equal probability and makes two moves, left or right. Moving right costs 1. A move succeeds with probability 0.8. Ending in cell 2, the charger, pays 10.</desc>
+  <rect x="0.5" y="0.5" width="859" height="284" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <rect x="170" y="90" width="170" height="110" fill="#f6f8fa" stroke="#24292f" stroke-width="2"/><text x="255" y="222" font-size="13" text-anchor="middle" fill="#57606a">cell 0</text><text x="255" y="135" font-size="13" text-anchor="middle" fill="#24292f">start here</text><text x="255" y="155" font-size="13" text-anchor="middle" fill="#57606a">with probability 0.5</text>
+  <rect x="340" y="90" width="170" height="110" fill="#f6f8fa" stroke="#24292f" stroke-width="2"/><text x="425" y="222" font-size="13" text-anchor="middle" fill="#57606a">cell 1</text><text x="425" y="135" font-size="13" text-anchor="middle" fill="#24292f">start here</text><text x="425" y="155" font-size="13" text-anchor="middle" fill="#57606a">with probability 0.5</text>
+  <rect x="510" y="90" width="170" height="110" fill="#f6f8fa" stroke="#24292f" stroke-width="2"/><text x="595" y="222" font-size="13" text-anchor="middle" fill="#57606a">cell 2</text><text x="595" y="135" font-size="13" text-anchor="middle" fill="#a85a08">charger</text><text x="595" y="155" font-size="13" text-anchor="middle" fill="#a85a08">+10 if here at the end</text>
+  <line x1="170" y1="80" x2="170" y2="210" stroke="#24292f" stroke-width="6"/>
+  <line x1="680" y1="80" x2="680" y2="210" stroke="#24292f" stroke-width="6"/>
+  <path d="M 340 55 L 250 55" stroke="#24292f" stroke-width="2" fill="none"/>
+  <polygon points="238,55 252,49 252,61" fill="#24292f"/>
+  <text x="230" y="60" font-size="13" text-anchor="end" fill="#24292f">Left: reward 0</text>
+  <path d="M 510 55 L 600 55" stroke="#24292f" stroke-width="2" fill="none"/>
+  <polygon points="612,55 598,49 598,61" fill="#24292f"/>
+  <text x="620" y="60" font-size="13" text-anchor="start" fill="#24292f">Right: reward −1</text>
+  <text x="425" y="60" font-size="13" text-anchor="middle" fill="#57606a">two moves</text>
+  <text x="425" y="258" font-size="13" text-anchor="middle" fill="#24292f">A move succeeds with probability 0.8. Otherwise, or against a wall, the robot stays where it is.</text>
+</svg>

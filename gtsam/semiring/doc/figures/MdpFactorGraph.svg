@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 380" width="860" height="380" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">A two-step Markov decision process as a factor graph</title>
+  <desc id="desc">States s0, s1, s2 and actions a0, a1 are variable nodes. A prior factor attaches to s0. Each step has a dynamics factor joining a state, its action and the next state, a policy factor joining the state and its action, and a reward factor joining the state and its action. A final reward factor attaches to s2.</desc>
+
+  <rect x="0.5" y="0.5" width="859" height="379" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+
+  <!-- edges -->
+  <g stroke="#57606a" stroke-width="2" fill="none">
+    <line x1="100" y1="40" x2="100" y2="120"/>
+    <line x1="100" y1="120" x2="700" y2="120"/>
+    <line x1="250" y1="120" x2="250" y2="280"/>
+    <line x1="550" y1="120" x2="550" y2="280"/>
+    <line x1="100" y1="120" x2="250" y2="280"/>
+    <line x1="400" y1="120" x2="550" y2="280"/>
+    <line x1="100" y1="120" x2="100" y2="280"/>
+    <line x1="100" y1="280" x2="250" y2="280"/>
+    <line x1="400" y1="120" x2="400" y2="280"/>
+    <line x1="400" y1="280" x2="550" y2="280"/>
+    <line x1="700" y1="120" x2="790" y2="120"/>
+  </g>
+
+  <!-- probability factors: prior, dynamics, policy -->
+  <g fill="#24292f">
+    <rect x="92" y="32" width="16" height="16"/>
+    <rect x="242" y="112" width="16" height="16"/>
+    <rect x="542" y="112" width="16" height="16"/>
+    <rect x="167" y="192" width="16" height="16"/>
+    <rect x="467" y="192" width="16" height="16"/>
+  </g>
+
+  <!-- reward factors -->
+  <g fill="#d9730d">
+    <rect x="92" y="272" width="16" height="16"/>
+    <rect x="392" y="272" width="16" height="16"/>
+    <rect x="782" y="112" width="16" height="16"/>
+  </g>
+
+  <!-- state variables -->
+  <g fill="#ddebff" stroke="#1a4fa0" stroke-width="2">
+    <circle cx="100" cy="120" r="24"/>
+    <circle cx="400" cy="120" r="24"/>
+    <circle cx="700" cy="120" r="24"/>
+  </g>
+
+  <!-- action variables -->
+  <g fill="#dff3e4" stroke="#1e7b34" stroke-width="2">
+    <circle cx="250" cy="280" r="24"/>
+    <circle cx="550" cy="280" r="24"/>
+  </g>
+
+  <!-- variable labels -->
+  <g font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">
+    <text x="100" y="126">s₀</text>
+    <text x="400" y="126">s₁</text>
+    <text x="700" y="126">s₂</text>
+    <text x="250" y="286">a₀</text>
+    <text x="550" y="286">a₁</text>
+  </g>
+
+  <!-- factor labels -->
+  <g font-size="14" fill="#24292f">
+    <text x="116" y="45">p(s₀)</text>
+    <text x="250" y="98" text-anchor="middle">p(s₁ | s₀, a₀)</text>
+    <text x="550" y="98" text-anchor="middle">p(s₂ | s₁, a₁)</text>
+    <text x="186" y="234" text-anchor="end">π(a₀ | s₀)</text>
+    <text x="486" y="234" text-anchor="end">π(a₁ | s₁)</text>
+  </g>
+  <g font-size="14" fill="#a85a08">
+    <text x="100" y="310" text-anchor="middle">r(s₀, a₀)</text>
+    <text x="400" y="310" text-anchor="middle">r(s₁, a₁)</text>
+    <text x="790" y="98" text-anchor="middle">r(s₂)</text>
+  </g>
+
+  <!-- legend -->
+  <g font-size="13" fill="#57606a">
+    <circle cx="50" cy="352" r="9" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+    <text x="66" y="357">state</text>
+    <circle cx="130" cy="352" r="9" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+    <text x="146" y="357">action</text>
+    <rect x="212" y="345" width="14" height="14" fill="#24292f"/>
+    <text x="234" y="357">probability factor: prior, dynamics, policy</text>
+    <rect x="512" y="345" width="14" height="14" fill="#d9730d"/>
+    <text x="534" y="357">reward factor: a score, not a probability</text>
+  </g>
+</svg>
