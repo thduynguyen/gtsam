@@ -226,7 +226,7 @@ class TestSemiringTwoActions(GtsamTestCase):
 
 
 class TestSemiringTrackExample(GtsamTestCase):
-    """The discrete worked example of gtsam/semiring/doc/chapter01.ipynb.
+    """The discrete worked example of gtsam/semiring/doc/chapter01.md.
 
     A robot on a track of three cells makes two moves, Left or Right, each
     with probability 0.5. A move succeeds with probability 0.8, else the robot
@@ -507,7 +507,7 @@ class TestSemiringMarkovDecisionProcess(GtsamTestCase):
 
 
 class TestSemiringLineExample(GtsamTestCase):
-    """The continuous worked example of gtsam/semiring/doc/chapter01.ipynb.
+    """The continuous worked example of gtsam/semiring/doc/chapter01.md.
 
     A robot on a line makes two moves: x' = x + u + w with w ~ N(0, 0.5),
     under the policy u = -0.5 x + e with e ~ N(0, 0.1). It pays x^2 + u^2 at
