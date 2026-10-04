@@ -1,0 +1,115 @@
+# Builds Linux wheels of GTSAM that include the semiring module and attaches
+# them to the "semiring-wheels" pre-release, so that the notebooks in
+# gtsam/semiring/doc can be run on Google Colab. This workflow lives only on the
+# semiring-wheels branch; it is not part of the feature branch.
+
+name: Semiring Wheels
+
+on:
+  push:
+    branches:
+      - semiring-wheels
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Build wheel (cp${{ matrix.cibw_python_version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.11"
+            cibw_python_version: 311
+            manylinux_image: manylinux2014
+          - python_version: "3.12"
+            cibw_python_version: 312
+            manylinux_image: manylinux_2_28
+          - python_version: "3.13"
+            cibw_python_version: 313
+            manylinux_image: manylinux_2_28
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      # Version the wheels by commit time, so all jobs agree on one version.
+      - name: Set Develop Flag
+        run: |
+          echo "DEVELOP=1" >> $GITHUB_ENV
+          echo "TIMESTAMP=$(git show -s --format=%cd --date=format:%Y%m%d%H%M HEAD)" >> $GITHUB_ENV
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install -r python/dev_requirements.txt
+          sudo apt update
+          sudo apt-get install -y libicu-dev python3-pip python3-setuptools libboost-all-dev
+
+      # This is an experimental build of a feature branch: do not fail on
+      # compiler warnings.
+      - name: Relax warnings-as-errors
+        run: sed -i 's/-DGTSAM_BUILD_WITH_WERROR=ON/-DGTSAM_BUILD_WITH_WERROR=OFF/' .github/scripts/python_wheels/cibw_before_all.sh
+
+      - name: Run CMake
+        run: |
+          cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
+            -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+
+      - name: Build wheel
+        env:
+          CIBW_BUILD: cp${{ matrix.cibw_python_version }}-manylinux_x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
+          CIBW_ARCHS: all
+          CIBW_ENVIRONMENT_PASS_LINUX: DEVELOP TIMESTAMP
+          CIBW_BUILD_FRONTEND: "build"
+          CIBW_BEFORE_ALL: bash .github/scripts/python_wheels/cibw_before_all.sh ${{ matrix.python_version }} {project}
+          CIBW_BUILD_VERBOSITY: 1
+        run: bash .github/scripts/python_wheels/build_wheels.sh
+
+      - name: Test wheel
+        run: |
+          python3 -m pip install wheelhouse/*.whl
+          python3 -c "import gtsam; print(gtsam.__version__); print(gtsam.SemiringFactorGraph().size())"
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: semiring-wheel-cp${{ matrix.cibw_python_version }}
+          path: wheelhouse/*.whl
+
+  release:
+    name: Attach wheels to the pre-release
+    needs: build_wheels
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Publish wheels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist/
+          if ! gh release view semiring-wheels -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create semiring-wheels -R "$GITHUB_REPOSITORY" \
+              --prerelease --target "$GITHUB_SHA" \
+              --title "Semiring wheels" \
+              --notes "Linux x86_64 wheels of GTSAM that include the semiring module, for running the notebooks in gtsam/semiring/doc on Google Colab. Rebuilt from the semiring-wheels branch."
+          fi
+          # Replace the wheels of an earlier build.
+          for asset in $(gh release view semiring-wheels -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name'); do
+            gh release delete-asset semiring-wheels "$asset" -R "$GITHUB_REPOSITORY" -y
+          done
+          gh release upload semiring-wheels dist/*.whl -R "$GITHUB_REPOSITORY"
