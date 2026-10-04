@@ -72,10 +72,14 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
         run: bash .github/scripts/python_wheels/build_wheels.sh
 
+      # Run the module's Python tests against the installed wheel, from a
+      # directory outside the checkout so that the wheel is what gets imported.
       - name: Test wheel
         run: |
           python3 -m pip install wheelhouse/*.whl
-          python3 -c "import gtsam; print(gtsam.__version__); print(gtsam.SemiringFactorGraph().size())"
+          cp python/gtsam/tests/test_SemiringFactorGraph.py "$RUNNER_TEMP/"
+          cd "$RUNNER_TEMP"
+          python3 -m pytest -q test_SemiringFactorGraph.py
 
       - name: Store artifacts
         uses: actions/upload-artifact@v6
