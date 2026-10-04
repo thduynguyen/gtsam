@@ -167,11 +167,14 @@ Section 3:
 
 | Piece | From | In the module |
 |---|---|---|
-| $J$ | the constant left at the root | `graph.expectation()` |
+| $J$ | the constant left at the root | `graph.expectation(ordering)` |
 | $H_{uu}$, $H_{ux}$ | the advantage, the surprise of the conditional on $u_t$ | `bayesNet.at(i).surprise()`, a `HessianFactor` |
+| $P_t$, $\beta_t$ | the value of the new factor that elimination leaves on $x_t$ | `factor.sum(ordering).value()`, a `HessianFactor` |
 | $\mu_t$, $\Sigma_t$ | the marginal of $x_t$ | `bayesTree.marginalFactor(key).conditional()` |
 
-The notebook reads the table above from these three calls.
+The notebook reads the table above from these four calls, with an elimination
+order that is backward in time. It then repeats the Lyapunov recursion in
+plain arithmetic, as an independent check.
 
 ## 3. The gradient
 
@@ -239,7 +242,7 @@ $$\frac{\partial J}{\partial K_0} = 2 \cdot 2.5 \cdot (0.6 - 0.5) \cdot 5 = 2.5,
 
 The last gain is already the best one. The first should be raised. The
 notebook confirms both numbers by finite differences of
-`graph.expectation()`, and at two other gains.
+`graph.expectation(ordering)`, and at two other gains.
 
 ## 4. Stage 2: four updates
 
@@ -415,7 +418,8 @@ Natural-gradient steps with $\alpha = 1$, from $K = 0$:
 | $J$ | $-17.000$ | $-11.129$ | $-10.095$ | $-9.734$ | $-9.7239$ | $-9.7239$ |
 
 The limit agrees with an independent computation: a scalar search for the
-maximum of the closed-form $J(K, K)$ gives $K = 0.5828$ and $J = -9.7239$.
+maximum of $J(K, K)$, each value computed by one elimination, gives
+$K = 0.5828$ and $J = -9.7239$.
 Sharing the gain costs $0.024$ compared with a gain per move. The shared gain
 lies between the two Riccati gains $0.5$ and $0.6$, closer to the gain of the
 first move, where the state is larger.
@@ -426,23 +430,26 @@ first move, where the state is larger.
 |---|---|---|
 | $J = -9.825$ at $K = (0.5, 0.5)$ | elimination with the module | the Lyapunov formulas; Chapter 1 |
 | $H_{uu}$, $H_{ux}$, $\mathbb{E}[x_t^2]$ | conditionals and marginals of the module | the Lyapunov formulas |
-| the gradient, at three gains | the closed form of Section 3 | finite differences of `graph.expectation()` |
+| $P_t$, $\beta_t$ | one elimination at a time with the module | the Lyapunov formulas |
+| the gradient, at three gains | the closed form of Section 3 | finite differences of `graph.expectation(ordering)` |
 | the gradient and $\mathcal{I} = \operatorname{diag}(50, 18.5)$ | the closed forms | $\mathbb{E}[g\, R]$ and $\mathbb{E}[g\, g^\top]$ over a million simulated episodes |
 | the gains $(0.6, 0.5)$ and $J = -9.25$ without noise | Stage 2, four updates | the Riccati recursion of Chapter 6 |
-| the shared gain $0.5828$ | natural-gradient steps | a scalar search on the closed-form $J$ |
+| the shared gain $0.5828$ | natural-gradient steps | a scalar search on $J$, evaluated by elimination |
 
 ## 6. Implementation
 
 **Stage 1 with the module.** The graph is that of Chapter 1, Section 10, with
 the gains as arguments. The backward message is read from the conditionals,
-the forward message from the marginals:
+the forward message from the marginals. The elimination order is backward in
+time, and it is passed to every call:
 
 ```python
+backward = ordering(X(2), U(1), X(1), U(0), X(0))
+
 def stage1(K):
     """J, the blocks (H_uu, H_ux) of each advantage, and E[x_t^2]."""
     graph = build(K)
-    bayes_net = graph.eliminateSequential(
-        ordering(X(2), U(1), X(1), U(0), X(0)))
+    bayes_net = graph.eliminateSequential(backward)
     blocks = {}
     for t, position in [(1, 1), (0, 3)]:   # the conditionals of u_1 and u_0
         surprise = bayes_net.at(position).surprise()   # A_t, on (u_t, x_t)
@@ -455,10 +462,21 @@ def stage1(K):
         mean = (marginal.d() / marginal.R()).item()
         var = (1 / marginal.R() ** 2).item()
         second_moment[t] = mean ** 2 + var
-    return graph.expectation(), blocks, second_moment
+    return graph.expectation(backward), blocks, second_moment
 ```
 
-**Stage 2 in numpy.** The gradient and the four updates are one line each:
+The value functions come from the same eliminations, one at a time: the next
+state, then the action, both by the average. The new factor on $x_t$ holds
+$V_t$, so its value is $-(P_t x_t^2 + \beta_t)$:
+
+```python
+phi = step.multiply(value).sum(ordering(X(t + 1)))    # the next state
+bucket = policy.multiply(penalty(X(t))).multiply(penalty(U(t))).multiply(phi)
+value = bucket.sum(ordering(U(t)))                    # the action: (1, V_t)
+```
+
+**Stage 2 on the messages.** Stage 2 is arithmetic on the numbers that
+Stage 1 returns. The gradient and the four updates are one line each:
 
 ```python
 def gradient(K, blocks, second_moment):

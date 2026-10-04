@@ -447,30 +447,57 @@ def dynamics_factor(t, F, B, variance):
     return gaussian(X(t + 1), I, X(t), -F * I, U(t), -B * I, zero,
                     noiseModel.Isotropic.Variance(1, variance))
 
-def best_gains(F, B, variance):
-    """One backward pass, max over the actions, on the given dynamics."""
-    gains = {}
-    value = penalty(X(2))                                   # (1, V_2)
-    for t in [1, 0]:
-        # Eliminate the next state by average.
-        phi = dynamics_factor(t, F, B, variance).multiply(value).sum(
-            ordering(X(t + 1)))
-        bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
-        # Eliminate the action by max: solve H_uu u = -H_ux x for the gain.
-        Q = bucket.value()
-        keys, H = list(Q.keys()), Q.information()
-        iu, ix = keys.index(U(t)), keys.index(X(t))
-        gains[t] = H[iu, ix] / H[iu, iu]
-        value = policy_factor(t, gains[t]).multiply(bucket).sum(ordering(U(t)))
-    return gains
+def line(F, B, variance, gains=None):
+    """The two-move line. With gains=None the actions are free."""
+    graph = SemiringFactorGraph()
+    graph.push_back(start_factor())                    # x0 ~ N(2, 1)
+    for t in range(2):
+        if gains is not None:
+            graph.push_back(policy_factor(t, gains[t]))
+        graph.push_back(dynamics_factor(t, F, B, variance))
+        graph.push_back(penalty(X(t)))
+        graph.push_back(penalty(U(t)))
+    graph.push_back(penalty(X(2)))
+    return graph
+```
 
-gains = best_gains(theta_p[0], theta_p[1], variance)   # the learned factor
-evaluate(gains)                                        # on the true factor
+The backward pass is one elimination of the graph without policy factors,
+with the maximum at the action variables and the average at the states. The
+conditional it leaves on each action is the control law $u_t + K_t\, x_t = 0$,
+and the gain is read from it:
+
+```python
+BACKWARD = ordering(X(2), U(1), X(1), U(0), X(0))
+MAXIMUM_AT_ACTIONS = SemiringRules()
+MAXIMUM_AT_ACTIONS.setAll([U(0), U(1)], SemiringSum.Maximum())
+
+def best_gains(F, B, variance):
+    """The best gains for the given dynamics, and the return they promise."""
+    graph = line(F, B, variance)
+    bayes_net = graph.eliminateSequential(BACKWARD, MAXIMUM_AT_ACTIONS)
+    gains = {1: bayes_net.at(1).conditional().S()[0, 0],
+             0: bayes_net.at(3).conditional().S()[0, 0]}
+    return gains, graph.expectation(BACKWARD, MAXIMUM_AT_ACTIONS)
+
+def evaluate(gains, F=F_TRUE, B=B_TRUE, variance=SIGMA_W):
+    """Expected return of u_t = -gains[t] x_t, by elimination."""
+    return line(F, B, variance, gains).expectation(BACKWARD)
+
+gains, predicted = best_gains(theta_p[0], theta_p[1], variance)  # learned
+evaluate(gains)                                                  # true
 ```
 
 `policy_factor` lifts the deterministic policy $u_t = -K_t\, x_t$, a hard
-constraint. `evaluate` builds the `SemiringFactorGraph` of Chapter 1 with the
-**true** dynamics factor and that policy, and returns `graph.expectation()`.
+constraint. The second number returned by `best_gains` is the predicted
+return, the value left at the root. `evaluate` puts the same policy in the
+graph of the **true** dynamics factor and eliminates by the average.
+
+**The exact forward message** of Section 3, for one linear model, is read
+from the same graph: the mean and the second moment of $x_2$ are the
+expectations of the "rewards" $x_2$ and $x_2^2$, each a `HessianFactor`
+lifted with `SemiringGaussianFactor.Reward`. The 100000 members of the
+ensemble are evaluated with the closed form of the same two numbers, which
+the notebook checks against the elimination.
 
 ## 8. What breaks
 

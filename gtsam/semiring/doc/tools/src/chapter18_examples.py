@@ -12,6 +12,7 @@ import gtsam
 import numpy as np
 from gtsam import HessianFactor, JacobianFactor, Ordering, noiseModel
 from gtsam import SemiringFactorGraph, SemiringGaussianFactor
+from gtsam import SemiringRules, SemiringSum
 from gtsam.symbol_shorthand import U, X
 
 np.set_printoptions(precision=4, suppress=True)
@@ -149,27 +150,121 @@ assert np.sqrt(covariance_pol[1, 1]) > 5 * np.sqrt(covariance_rand[1, 1])
 assert np.sqrt(closed_loop @ covariance_pol @ closed_loop) < 0.1
 
 # %% [markdown]
+# ## The line as a semiring factor graph
+#
+# Every exact computation below is an elimination of this graph: with the
+# learned or the true dynamics factor, and with a policy factor or with the
+# actions left free.
+
+# %%
+I = np.eye(1)
+zero = np.zeros(1)
+
+
+def gaussian(*args):
+    """Lift a Gaussian factor to (p, 0)."""
+    return SemiringGaussianFactor(JacobianFactor(*args))
+
+
+def penalty(key):
+    """Lift the penalty z^2 on one variable to the reward (1, -z^2)."""
+    return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def dynamics_factor(t, F, B, variance):
+    """x' - F x - B u = w, with w of the given variance."""
+    return gaussian(X(t + 1), I, X(t), -F * I, U(t), -B * I, zero,
+                    noiseModel.Isotropic.Variance(1, variance))
+
+
+def policy_factor(t, gain):
+    """The deterministic policy u = -gain * x, as a hard constraint."""
+    return gaussian(U(t), I, X(t), gain * I, zero,
+                    noiseModel.Constrained.All(1))
+
+
+def start_factor(mean=2.0, variance=1.0):
+    """The first state: x0 ~ N(mean, variance), or x0 = mean if variance is 0."""
+    model = (noiseModel.Constrained.All(1) if variance == 0 else
+             noiseModel.Isotropic.Variance(1, variance))
+    return gaussian(X(0), I, np.array([mean]), model)
+
+
+def line(F, B, variance, gains=None, start=None, rewards=True):
+    """The two-move line as a semiring factor graph.
+
+    With gains=None there is no policy factor and the actions are free.
+    """
+    graph = SemiringFactorGraph()
+    graph.push_back(start if start is not None else start_factor())
+    for t in range(2):
+        if gains is not None:
+            graph.push_back(policy_factor(t, gains[t]))
+        graph.push_back(dynamics_factor(t, F, B, variance))
+        if rewards:
+            graph.push_back(penalty(X(t)))
+            graph.push_back(penalty(U(t)))
+    if rewards:
+        graph.push_back(penalty(X(2)))
+    return graph
+
+
+BACKWARD = ordering(X(2), U(1), X(1), U(0), X(0))
+
+# %% [markdown]
 # ## Two kinds of uncertainty in a prediction (Section 3)
 #
 # Predict the position $x_2$ after two moves of the policy $u = -0.5 x$ from
-# $x_0 = 2$. Draw many models $(F, B)$ from the estimate and its covariance,
-# an *ensemble*. Each member predicts a mean and a variance for $x_2$. The
-# average of the members' variances is the noise of the dynamics; the spread
-# of the members' means is the uncertainty about the dynamics.
+# $x_0 = 2$. For one linear model the prediction is exact: the forward message
+# on $x_2$ is a Gaussian, and its mean and second moment are the expectations
+# of the "rewards" $x_2$ and $x_2^2$ on the graph of that model.
 
 # %%
 GAIN, START = 0.5, 2.0
 
 
+def forward_message(F, B, noise_variance):
+    """Mean and variance of x2 under one linear model, by elimination."""
+    moments = []
+    for G, g in [(np.zeros((1, 1)), np.array([-1.0])),  # the value x2
+                 (2 * I, zero)]:  # the value x2^2
+        graph = line(F, B, noise_variance, gains={0: GAIN, 1: GAIN},
+                     start=start_factor(START, 0.0), rewards=False)
+        graph.push_back(
+            SemiringGaussianFactor.Reward(HessianFactor(X(2), G, g, 0.0)))
+        moments.append(graph.expectation(BACKWARD))
+    return moments[0], moments[1] - moments[0] ** 2
+
+
 def member_predictions(F, B, noise_variance):
-    """Mean and variance of x2 under the linear model x' = F x + B u + w."""
+    """The same two numbers in closed form, for arrays of models F, B."""
     a = F - B * GAIN  # the closed loop: x' = a x + w
     return a ** 2 * START, (a ** 2 + 1) * noise_variance
 
 
-true_mean, true_variance = member_predictions(F_TRUE, B_TRUE, SIGMA_W)
+true_mean, true_variance = forward_message(F_TRUE, B_TRUE, SIGMA_W)
 print(f"true system: mean {true_mean:.3f}, variance {true_variance:.3f}")
+assert np.allclose([true_mean, true_variance],
+                   member_predictions(F_TRUE, B_TRUE, SIGMA_W))
+assert np.isclose(true_variance, 0.625)
 
+# %% [markdown]
+# Now draw many models $(F, B)$ from the estimate and its covariance, an
+# *ensemble*. Each member predicts a mean and a variance for $x_2$. The
+# average of the members' variances is the noise of the dynamics; the spread
+# of the members' means is the uncertainty about the dynamics. The members are
+# evaluated with the closed form, which the cell above checked against the
+# elimination.
+
+# %%
 rng = np.random.default_rng(1)
 decomposition = {}
 for count in [20, 1000]:
@@ -178,7 +273,9 @@ for count in [20, 1000]:
     members = rng.multivariate_normal(theta_p, covariance, size=100000)
     means, variances = member_predictions(
         members[:, 0], members[:, 1], variance)
-    point_mean, point_variance = member_predictions(*theta_p, variance)
+    point_mean, point_variance = forward_message(*theta_p, variance)
+    assert np.allclose([point_mean, point_variance],
+                       member_predictions(*theta_p, variance))
     decomposition[count] = (variances.mean(), means.var())
     print(f"M = {count:4d}: point estimate predicts mean {point_mean:.3f}, "
           f"variance {point_variance:.3f}")
@@ -226,73 +323,30 @@ assert shared.var() > independent.var()
 # %% [markdown]
 # ## Stage 1 on the learned factor: certainty-equivalent control (Section 4)
 #
-# The backward pass of Chapter 6 is run with the module on the *learned*
-# dynamics factor. The gains it returns are then evaluated on the *true*
-# system, also with the module.
+# The backward pass of Chapter 6 is one elimination of the graph with the
+# *learned* dynamics factor and no policy factor: the average at the states
+# and the maximum at the actions. The conditionals it leaves on the actions
+# hold the gains. The gains are then evaluated on the *true* system, by one
+# more elimination, with the policy as a factor.
 
 # %%
-I = np.eye(1)
-zero = np.zeros(1)
-
-
-def gaussian(*args):
-    """Lift a Gaussian factor to (p, 0)."""
-    return SemiringGaussianFactor(JacobianFactor(*args))
-
-
-def penalty(key):
-    """Lift the penalty z^2 on one variable to the reward (1, -z^2)."""
-    return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
-
-
-def ordering(key):
-    result = Ordering()
-    result.push_back(key)
-    return result
-
-
-def dynamics_factor(t, F, B, variance):
-    """x' - F x - B u = w, with w of the given variance."""
-    return gaussian(X(t + 1), I, X(t), -F * I, U(t), -B * I, zero,
-                    noiseModel.Isotropic.Variance(1, variance))
-
-
-def policy_factor(t, gain):
-    """The deterministic policy u = -gain * x, as a hard constraint."""
-    return gaussian(U(t), I, X(t), gain * I, zero,
-                    noiseModel.Constrained.All(1))
+MAXIMUM_AT_ACTIONS = SemiringRules()
+MAXIMUM_AT_ACTIONS.setAll([U(0), U(1)], SemiringSum.Maximum())
 
 
 def best_gains(F, B, variance):
-    """One backward pass, max over the actions, on the given dynamics."""
-    gains = {}
-    value = penalty(X(2))
-    for t in [1, 0]:
-        phi = dynamics_factor(t, F, B, variance).multiply(value).sum(
-            ordering(X(t + 1)))
-        bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
-        Q = bucket.value()
-        keys, H = list(Q.keys()), Q.information()
-        iu, ix = keys.index(U(t)), keys.index(X(t))
-        gains[t] = H[iu, ix] / H[iu, iu]
-        value = policy_factor(t, gains[t]).multiply(bucket).sum(ordering(U(t)))
-    prior = gaussian(X(0), I, np.array([2.0]),
-                     noiseModel.Isotropic.Variance(1, 1.0))
-    return gains, prior.multiply(value).expectation()
+    """The best gains for the given dynamics, and the return they promise."""
+    graph = line(F, B, variance)
+    bayes_net = graph.eliminateSequential(BACKWARD, MAXIMUM_AT_ACTIONS)
+    # The conditional on u_t is u + K_t x = 0; K_t is the block on its parent.
+    gains = {1: float(bayes_net.at(1).conditional().S()[0, 0]),
+             0: float(bayes_net.at(3).conditional().S()[0, 0])}
+    return gains, graph.expectation(BACKWARD, MAXIMUM_AT_ACTIONS)
 
 
 def evaluate(gains, F=F_TRUE, B=B_TRUE, variance=SIGMA_W):
     """Expected return of u_t = -gains[t] x_t, by elimination."""
-    graph = SemiringFactorGraph()
-    graph.push_back(gaussian(X(0), I, np.array([2.0]),
-                             noiseModel.Isotropic.Variance(1, 1.0)))
-    for t in range(2):
-        graph.push_back(policy_factor(t, gains[t]))
-        graph.push_back(dynamics_factor(t, F, B, variance))
-        graph.push_back(penalty(X(t)))
-        graph.push_back(penalty(U(t)))
-    graph.push_back(penalty(X(2)))
-    return graph.expectation()
+    return line(F, B, variance, gains).expectation(BACKWARD)
 
 
 gains, J_star = best_gains(F_TRUE, B_TRUE, SIGMA_W)
@@ -324,27 +378,6 @@ assert abs(evaluate(gains) + 9.25) < 1e-3
 
 
 # %%
-def riccati(F, B):
-    """The gains of the two-move problem in closed form."""
-    P, gains = 1.0, {}
-    for t in [1, 0]:
-        gains[t] = B * P * F / (1 + B * P * B)
-        P = 1 + F * P * F - (F * P * B) ** 2 / (1 + B * P * B)
-    return gains
-
-
-def true_return(gains):
-    """J of u_t = -K_t x_t on the true line, in closed form."""
-    second = 5.0  # E[x0^2] = 2^2 + 1
-    total = 0.0
-    for t in range(2):
-        total += (1 + gains[t] ** 2) * second
-        second = (1 - gains[t]) ** 2 * second + SIGMA_W
-    return -(total + second)
-
-
-assert np.isclose(true_return(riccati(1.0, 1.0)), -9.25)
-
 rng = np.random.default_rng(3)
 losses = {}
 for count in [6, 20, 100, 1000]:
@@ -353,9 +386,13 @@ for count in [6, 20, 100, 1000]:
         xs, us, ns = sample_transitions(rng, count)
         Z = np.stack([xs, us], axis=1)
         F_hat, B_hat = np.linalg.solve(Z.T @ Z, Z.T @ ns)
-        loss.append(-9.25 - true_return(riccati(F_hat, B_hat)))
+        # The gains do not depend on the noise variance of the model.
+        learned_gains, _ = best_gains(F_hat, B_hat, SIGMA_W)
+        loss.append(-9.25 - evaluate(learned_gains))
     losses[count] = np.mean(loss)
     print(f"M = {count:5d}:  mean loss J* - J = {losses[count]:.5f}   "
           f"M * loss = {count * losses[count]:.3f}")
 assert losses[1000] < losses[100] < losses[20] < losses[6]
 assert 0.5 < (100 * losses[100]) / (1000 * losses[1000]) < 2.0
+assert np.allclose([losses[6], losses[20], losses[100], losses[1000]],
+                   [0.870, 0.055, 0.0106, 0.00086], rtol=0.02)

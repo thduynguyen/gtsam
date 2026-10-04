@@ -6,12 +6,15 @@
 # the track are hidden inside a simulator. The forward message becomes a set
 # of sampled states, the backward message a set of sampled returns, and the
 # gradient of Chapter 5 is estimated from them and compared with its exact
-# value.
+# value, which the `gtsam/semiring` module computes by elimination.
 
 # %%
 import itertools
 
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor, SemiringFactorGraph
+from gtsam.symbol_shorthand import U, X
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -20,8 +23,8 @@ np.set_printoptions(precision=4, suppress=True)
 #
 # The tables are those of Chapter 1. The algorithm of this chapter never reads
 # `dynamics`: it only calls `rollouts`, which samples from it. The tables are
-# used again at the end of each section, to compute the exact answer that the
-# samples are compared with.
+# used again as the factors of a semiring factor graph, whose elimination
+# gives the exact answer that the samples are compared with.
 
 # %%
 L, R = 0, 1
@@ -72,24 +75,93 @@ for i in range(5):
 # %% [markdown]
 # ## The exact messages, for comparison
 #
-# Stage 1 of Chapter 5, by the Bellman backup on the tables.
-
+# Stage 1 of Chapter 5, with the module: the track as a semiring factor graph,
+# eliminated backward in time. The buckets hold $Q_t$, the new factors $V_t$,
+# the conditionals of the actions $A_t$, and the marginals of the states are
+# the forward messages $d_t$.
 
 # %%
-def exact_messages(theta):
-    """J, Q_t, V_t, A_t and d_t for the logistic policy, from the tables."""
+state = lambda t: (X(t), 3)  # (key, cardinality)
+action = lambda t: (U(t), 2)
+
+
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+def policy_table(theta):
+    """pi_theta(a | s), with pi_theta(R | s) = sigmoid(theta_s)."""
     right = sigmoid(theta)
-    policy = np.stack([1 - right, right], axis=1)
-    V = {2: final_reward}
-    Q, A = {}, {}
+    return np.stack([1 - right, right], axis=1)
+
+
+def track(theta):
+    """The factor graph of the track under the logistic policy."""
+    graph = SemiringFactorGraph()
+    graph.push_back(probability([state(0)], prior))
+    for t in range(2):
+        keys = [state(t), action(t)]
+        graph.push_back(probability(keys, policy_table(theta)))
+        graph.push_back(probability(keys + [state(t + 1)], dynamics))
+        graph.push_back(value(keys, move_reward))
+    graph.push_back(value([state(2)], final_reward))
+    return graph
+
+
+def expected_return(theta):
+    """J of the logistic policy: one elimination."""
+    return track(theta).expectation()
+
+
+def exact_messages(theta):
+    """J, Q_t, V_t, A_t and d_t for the logistic policy, by elimination."""
+    policy = policy_table(theta)
+    # Backward: one elimination at a time, to read the tables.
+    future = value([state(2)], final_reward)  # (1, V_2)
+    Q, V, A = {}, {2: final_reward}, {}
     for t in [1, 0]:
-        Q[t] = move_reward + dynamics @ V[t + 1]
-        V[t] = (policy * Q[t]).sum(axis=1)
-        A[t] = Q[t] - V[t][:, None]
-    d = {0: prior}
-    d[1] = np.einsum("s,sa,sat->t", d[0], policy, dynamics)
-    d[2] = np.einsum("s,sa,sat->t", d[1], policy, dynamics)
-    return prior @ V[0], Q, V, A, d
+        keys = [state(t), action(t)]
+        step = probability(keys + [state(t + 1)], dynamics)
+        bucket = value(keys, move_reward) * (step * future).sum(
+            ordering(X(t + 1)))
+        Q[t] = table(bucket.value(), keys)
+        conditional, future = (probability(keys, policy) * bucket).eliminate(
+            ordering(U(t)))
+        V[t] = table(future.value(), [state(t)])
+        A[t] = table(conditional.surprise(), keys)
+    # Forward: the marginals of the states.
+    graph = track(theta)
+    bayes_tree = graph.eliminateMultifrontal()
+    d = {t: table(bayes_tree.marginalFactor(X(t)).probability(), [state(t)])
+         for t in range(3)}
+    return graph.expectation(), Q, V, A, d
 
 
 def exact_gradient(theta):
@@ -104,6 +176,8 @@ print("J =", J)
 print("exact gradient =", exact_gradient(theta))
 assert np.isclose(J, 1.4)
 assert np.allclose(exact_gradient(theta), [0.15, 1.0, 0.35])
+assert np.allclose(Q[1], [[0, -1], [0, 7], [2, 9]])
+assert np.allclose(d[1], [0.5, 0.3, 0.2])
 
 # %% [markdown]
 # ## Forward message: particles (Section 2)
@@ -155,7 +229,7 @@ print("returns after (s_0, a_0) = (1, R): mean",
 
 
 # %%
-def gradient_samples(theta, s, a, r, value):
+def gradient_samples(theta, s, a, r, kind):
     """One gradient sample per rollout, for one choice of the value."""
     M = len(s)
     samples = np.zeros((M, 3))
@@ -164,9 +238,9 @@ def gradient_samples(theta, s, a, r, value):
     for t in range(2):
         # The score term of step t: d log pi(a_t | s_t) / d theta_{s_t}.
         g = a[:, t] - sigmoid(theta[s[:, t]])
-        if value == "whole return":
+        if kind == "whole return":
             weight = whole
-        elif value == "return from t":
+        elif kind == "return from t":
             weight = to_go[:, t]
         else:  # return from t minus the baseline V_t(s_t)
             weight = to_go[:, t] - V[t][s[:, t]]
@@ -174,40 +248,43 @@ def gradient_samples(theta, s, a, r, value):
     return samples
 
 
-values = ["whole return", "return from t", "return from t minus baseline"]
+kinds = ["whole return", "return from t", "return from t minus baseline"]
 rng = np.random.default_rng(0)
 s, a, r = rollouts(theta, 200000, rng)
-for value in values:
-    samples = gradient_samples(theta, s, a, r, value)
-    print(f"{value:30s} mean {samples.mean(axis=0)}  "
+for kind in kinds:
+    samples = gradient_samples(theta, s, a, r, kind)
+    print(f"{kind:30s} mean {samples.mean(axis=0)}  "
           f"std per rollout {samples.std(axis=0)}")
     assert np.allclose(samples.mean(axis=0), [0.15, 1.0, 0.35], atol=0.03)
 
 # %% [markdown]
 # The means agree with the exact gradient $(0.15, 1.0, 0.35)$; the spreads
 # differ. Since the track is small, the spread of one rollout can also be
-# computed exactly, by enumerating all trajectories.
+# computed exactly, by enumerating all trajectories. Their probabilities are
+# the probability channel of the product of all factors of the graph.
 
 # %%
-right = sigmoid(theta)
-policy = np.stack([1 - right, right], axis=1)
+trajectory_keys = [state(0), action(0), state(1), action(1), state(2)]
+trajectory_probability = table(track(theta).product().probability(),
+                               trajectory_keys)
+assert np.isclose(trajectory_probability.sum(), 1.0)
+assert (trajectory_probability > 0).sum() == 24
 exact_std = {}
-for value in values:
+for kind in kinds:
     mean, second = np.zeros(3), np.zeros(3)
     for s0, a0, s1, a1, s2 in itertools.product(
             range(3), range(2), range(3), range(2), range(3)):
-        p = (prior[s0] * policy[s0, a0] * dynamics[s0, a0, s1] *
-             policy[s1, a1] * dynamics[s1, a1, s2])
+        p = trajectory_probability[s0, a0, s1, a1, s2]
         if p == 0:
             continue
         one = gradient_samples(
             theta, np.array([[s0, s1, s2]]), np.array([[a0, a1]]),
             np.array([[move_reward[s0, a0], move_reward[s1, a1],
-                       final_reward[s2]]]), value)[0]
+                       final_reward[s2]]]), kind)[0]
         mean += p * one
         second += p * one ** 2
-    exact_std[value] = np.sqrt(second - mean ** 2)
-    print(f"{value:30s} exact mean {mean}  exact std {exact_std[value]}")
+    exact_std[kind] = np.sqrt(second - mean ** 2)
+    print(f"{kind:30s} exact mean {mean}  exact std {exact_std[kind]}")
     assert np.allclose(mean, [0.15, 1.0, 0.35])
 assert np.all(exact_std["return from t minus baseline"]
               < exact_std["return from t"])
@@ -225,15 +302,15 @@ assert np.allclose(exact_std["return from t minus baseline"],
 rng = np.random.default_rng(1)
 exact = np.array([0.15, 1.0, 0.35])
 for M in [10, 100, 1000, 10000, 100000]:
-    errors = {value: [] for value in values}
+    errors = {kind: [] for kind in kinds}
     for repeat in range(20):
         s, a, r = rollouts(theta, M, rng)
-        for value in values:
-            estimate = gradient_samples(theta, s, a, r, value).mean(axis=0)
-            errors[value].append(np.linalg.norm(estimate - exact))
+        for kind in kinds:
+            estimate = gradient_samples(theta, s, a, r, kind).mean(axis=0)
+            errors[kind].append(np.linalg.norm(estimate - exact))
     print(f"M = {M:6d}: average error  " + "  ".join(
-        f"{value}: {np.mean(errors[value]):.4f}" for value in values))
-    last = {value: np.mean(errors[value]) for value in values}
+        f"{kind}: {np.mean(errors[kind]):.4f}" for kind in kinds))
+    last = {kind: np.mean(errors[kind]) for kind in kinds}
 assert last["return from t minus baseline"] < 0.02
 
 # %% [markdown]
@@ -262,8 +339,8 @@ for name, baseline in [("b = 0", np.zeros(3)), ("b = V_t (exact)", None),
 #
 # Stage 1 runs $M$ rollouts. Stage 2 takes a gradient step. The baseline is
 # estimated from the same rollouts, as the average return from each cell at
-# each step. The expected return of each iterate is evaluated exactly, for
-# reporting only.
+# each step. The expected return of each iterate is evaluated exactly, by one
+# elimination of the factor graph, for reporting only.
 
 
 # %%
@@ -285,7 +362,7 @@ rng = np.random.default_rng(0)
 theta_k = np.zeros(3)
 history = []
 for k in range(201):
-    history.append(exact_messages(theta_k)[0])
+    history.append(expected_return(theta_k))
     theta_k = theta_k + 0.5 * reinforce_step(theta_k, 100, rng)
 for k in [0, 1, 2, 5, 10, 20, 50, 100, 200]:
     print(f"iteration {k:3d}: J = {history[k]:.4f}")
@@ -296,7 +373,7 @@ assert history[-1] > 5.8
 theta_e = np.zeros(3)
 exact_history = []
 for k in range(201):
-    exact_history.append(exact_messages(theta_e)[0])
+    exact_history.append(expected_return(theta_e))
     theta_e = theta_e + 0.5 * exact_gradient(theta_e)
 for k in [0, 1, 2, 5, 10, 20, 50, 100, 200]:
     print(f"iteration {k:3d}: exact messages J = {exact_history[k]:.4f}")

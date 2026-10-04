@@ -5,11 +5,15 @@
 # [Chapter 20](https://thduynguyen.github.io/gtsam/chapter20). Several local
 # trajectory problems on the line, one per start position, are made to agree
 # with one global policy. The agreement is a factor with a dual variable, and
-# each local problem is an ordinary Gaussian factor graph in GTSAM.
+# each local problem is a semiring factor graph, eliminated with the
+# `gtsam/semiring` module: the maximum at the actions, the average at the
+# states.
 
 # %%
 import numpy as np
-from gtsam import GaussianFactorGraph, JacobianFactor, noiseModel
+from gtsam import GaussianBayesNet, GaussianFactorGraph, JacobianFactor
+from gtsam import Ordering, SemiringFactorGraph, SemiringGaussianFactor
+from gtsam import SemiringRules, SemiringSum, noiseModel
 from gtsam.symbol_shorthand import U, X
 from scipy.optimize import minimize_scalar
 
@@ -32,30 +36,68 @@ MOVES = 2
 hard = noiseModel.Constrained.All(1)
 penalty = noiseModel.Isotropic.Sigma(1, 1 / np.sqrt(2))  # error z^2
 
+BACKWARD = Ordering()
+for key in [X(2), U(1), X(1), U(0), X(0)]:
+    BACKWARD.push_back(key)
+MAXIMUM_AT_ACTIONS = SemiringRules()
+MAXIMUM_AT_ACTIONS.setAll([U(0), U(1)], SemiringSum.Maximum())
+
+
+def constraint(*args):
+    """Lift a Gaussian factor, here a hard constraint, to (p, 0)."""
+    return SemiringGaussianFactor(JacobianFactor(*args))
+
+
+def cost(*args):
+    """Lift a quadratic, given as a JacobianFactor, to the reward (1, -error)."""
+    return SemiringGaussianFactor.Cost(JacobianFactor(*args))
+
+
+def local_factors(start, gains, duals, weight, F=1.0, B=1.0):
+    """The factors of one local problem: constraints, then quadratics."""
+    constraints = [(X(0), I, np.array([start]), hard)]
+    quadratics = []
+    for t in range(MOVES):
+        # Dynamics of the mean trajectory: x' - F x - B u = 0.
+        constraints.append(
+            (X(t + 1), I, X(t), -F * I, U(t), -B * I, zero, hard))
+        quadratics.append((X(t), I, zero, penalty))  # reward -x^2
+        quadratics.append((U(t), I, zero, penalty))  # reward -u^2
+        if weight > 0:
+            # Agreement: (weight / 2) (u + K x + nu / weight)^2.
+            quadratics.append(
+                (U(t), I, X(t), gains[t] * I, np.array([-duals[t] / weight]),
+                 noiseModel.Isotropic.Sigma(1, 1 / np.sqrt(weight))))
+    quadratics.append((X(MOVES), I, zero, penalty))  # reward -x_2^2
+    return constraints, quadratics
+
+
+def local_graph(start, gains, duals, weight, F=1.0, B=1.0):
+    """One local problem as a semiring factor graph, without a policy."""
+    constraints, quadratics = local_factors(start, gains, duals, weight, F, B)
+    graph = SemiringFactorGraph()
+    for factor in constraints:
+        graph.push_back(constraint(*factor))
+    for factor in quadratics:
+        graph.push_back(cost(*factor))
+    return graph
+
 
 def local_step(start, gains, duals, weight, F=1.0, B=1.0):
     """Best trajectory from one start, given the policy and the duals.
 
     Maximizes  R(tau) - sum_t [nu_t h_t + (weight / 2) h_t^2],
-    with h_t = u_t + K_t x_t, by eliminating a Gaussian factor graph.
+    with h_t = u_t + K_t x_t. The backward pass eliminates the states by
+    average and the actions by maximum; the forward pass is the
+    back-substitution of the conditionals it leaves.
     Returns the positions x_0, x_1 and the actions u_0, u_1.
     """
-    graph = GaussianFactorGraph()
-    graph.add(JacobianFactor(X(0), I, np.array([start]), hard))
-    for t in range(MOVES):
-        # Dynamics of the mean trajectory: x' - F x - B u = 0.
-        graph.add(JacobianFactor(X(t + 1), I, X(t), -F * I, U(t), -B * I,
-                                 zero, hard))
-        graph.add(JacobianFactor(X(t), I, zero, penalty))  # reward -x^2
-        graph.add(JacobianFactor(U(t), I, zero, penalty))  # reward -u^2
-        if weight > 0:
-            # Agreement: (weight / 2) (u + K x + nu / weight)^2.
-            graph.add(JacobianFactor(
-                U(t), I, X(t), gains[t] * I,
-                np.array([-duals[t] / weight]),
-                noiseModel.Isotropic.Sigma(1, 1 / np.sqrt(weight))))
-    graph.add(JacobianFactor(X(MOVES), I, zero, penalty))  # reward -x_2^2
-    solution = graph.optimize()
+    graph = local_graph(start, gains, duals, weight, F, B)
+    bayes_net = graph.eliminateSequential(BACKWARD, MAXIMUM_AT_ACTIONS)
+    conditionals = GaussianBayesNet()
+    for i in range(bayes_net.size()):
+        conditionals.push_back(bayes_net.at(i).conditional())
+    solution = conditionals.optimize()
     positions = np.array([solution.at(X(t))[0] for t in range(MOVES)])
     actions = np.array([solution.at(U(t))[0] for t in range(MOVES)])
     return positions, actions
@@ -68,6 +110,25 @@ for start in STARTS:
     print(f"start {start}: positions {positions}, actions {actions}, "
           f"-u/x = {-actions / positions}")
     assert np.allclose(-actions / positions, [0.6, 0.5])
+
+# %% [markdown]
+# The dynamics are hard constraints, so there is no luck to average over, and
+# eliminating the states by maximum gives the same trajectory. The local
+# problem is then an ordinary `GaussianFactorGraph`, a linear least-squares
+# problem.
+
+# %%
+gains, duals = [0.3, 0.7], [0.4, -0.2]
+constraints, quadratics = local_factors(2.0, gains, duals, weight=2.0)
+least_squares = GaussianFactorGraph()
+for factor in constraints + quadratics:
+    least_squares.add(JacobianFactor(*factor))
+solution = least_squares.optimize()
+positions, actions = local_step(2.0, gains, duals, weight=2.0)
+assert np.allclose(positions, [solution.at(X(t))[0] for t in range(MOVES)])
+assert np.allclose(actions, [solution.at(U(t))[0] for t in range(MOVES)])
+print("local solution, by the module:      ", positions, actions)
+print("the same by joint least squares: OK")
 
 # %% [markdown]
 # ## The alternation (Section 3)
@@ -128,14 +189,23 @@ assert np.allclose(history[-1][0], [0.6, 0.5], atol=1e-6)
 
 
 # %%
+def policy_factor(t, gain):
+    """The deterministic policy u = -gain * x, as a hard constraint."""
+    return constraint(U(t), I, X(t), gain * I, zero, hard)
+
+
 def stationary_cost(gain):
-    """Total cost of u = -gain * x from the three starts, without noise."""
+    """Total cost of u = -gain * x from the three starts, without noise.
+
+    For each start, the local graph with the policy as a factor is eliminated
+    by average; its expectation is minus the cost.
+    """
     total = 0.0
-    for x in STARTS:
+    for start in STARTS:
+        graph = local_graph(start, [0, 0], [0, 0], weight=0)
         for t in range(MOVES):
-            total += (1 + gain ** 2) * x ** 2
-            x = (1 - gain) * x
-        total += x ** 2
+            graph.push_back(policy_factor(t, gain))
+        total -= graph.expectation(BACKWARD)
     return total
 
 
@@ -155,9 +225,10 @@ print("dual variables at the end (rows: starts 1, 2, 3; columns: moves):")
 print(history[-1][2])
 print("local trajectories at the end: positions\n", history[-1][3],
       "\nactions\n", history[-1][4])
-unconstrained = sum(
-    (lambda x, u: (x ** 2).sum() + (u ** 2).sum() + (x[1] + u[1]) ** 2)(
-        *local_step(start, [0, 0], [0, 0], weight=0)) for start in STARTS)
+# The value left at the root of a free local problem is minus its cost.
+unconstrained = -sum(
+    local_graph(start, [0, 0], [0, 0], weight=0).expectation(
+        BACKWARD, MAXIMUM_AT_ACTIONS) for start in STARTS)
 print(f"cost of the three free local solutions: {unconstrained:.4f}")
 print(f"cost with one shared gain:              {best.fun:.4f}")
 
@@ -169,12 +240,18 @@ print(f"cost with one shared gain:              {best.fun:.4f}")
 
 # %%
 def true_return(gains):
-    """J of u_t = -K_t x_t on the true line, in closed form."""
-    second, total = 5.0, 0.0  # E[x0^2] = 2^2 + 1
+    """J of u_t = -K_t x_t on the true line, by elimination."""
+    graph = SemiringFactorGraph()
+    graph.push_back(constraint(X(0), I, np.array([2.0]),
+                               noiseModel.Isotropic.Variance(1, 1.0)))
     for t in range(MOVES):
-        total += (1 + gains[t] ** 2) * second
-        second = (1 - gains[t]) ** 2 * second + 0.5
-    return -(total + second)
+        graph.push_back(policy_factor(t, gains[t]))
+        graph.push_back(constraint(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                                   noiseModel.Isotropic.Variance(1, 0.5)))
+        graph.push_back(cost(X(t), I, zero, penalty))
+        graph.push_back(cost(U(t), I, zero, penalty))
+    graph.push_back(cost(X(MOVES), I, zero, penalty))
+    return graph.expectation(BACKWARD)
 
 
 print("a gain per move, K = (0.6, 0.5):  J =", true_return([0.6, 0.5]))

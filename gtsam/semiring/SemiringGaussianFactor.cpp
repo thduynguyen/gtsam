@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/semiring/SemiringGaussianConditional.h>
@@ -24,6 +25,7 @@
 #include <Eigen/Cholesky>
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -48,10 +50,24 @@ const SemiringGaussianFactor& asGaussian(const SemiringFactor& factor) {
       "SemiringGaussianFactor: cannot combine with a non-Gaussian factor");
 }
 
-/// The largest absolute entry of the information matrix of a factor.
-double informationScale(const GaussianFactor& factor) {
+/**
+ * The largest finite absolute entry of the information matrix of a factor.
+ * A hard constraint has infinite entries, which are skipped here and reported
+ * through `constrained`.
+ */
+double informationScale(const GaussianFactor& factor,
+                        bool* constrained = nullptr) {
   const Matrix information = factor.information();
-  return information.size() == 0 ? 0.0 : information.cwiseAbs().maxCoeff();
+  double scale = 0.0;
+  for (Eigen::Index i = 0; i < information.size(); i++) {
+    const double entry = std::abs(information.data()[i]);
+    if (std::isfinite(entry)) {
+      scale = std::max(scale, entry);
+    } else if (constrained) {
+      *constrained = true;
+    }
+  }
+  return scale;
 }
 
 /// Record the dimension of every variable in a Gaussian factor.
@@ -271,15 +287,6 @@ SemiringFactor::shared_ptr SemiringGaussianFactor::multiply(
 /* ************************************************************************* */
 SemiringFactor::EliminationResult SemiringGaussianFactor::eliminateByMaximum(
     const Ordering& frontalKeys) const {
-  const KeySet gaussianKeys = gaussian_.keys();
-  for (Key key : frontalKeys) {
-    if (gaussianKeys.count(key)) {
-      throw std::invalid_argument(
-          "SemiringGaussianFactor::eliminate: " + DefaultKeyFormatter(key) +
-          " has a Gaussian factor, so it cannot be eliminated by maximum; "
-          "remove its density, e.g., the policy factor");
-    }
-  }
   if (!value_) {
     throw std::invalid_argument(
         "SemiringGaussianFactor::eliminate: there is no value to maximize");
@@ -317,6 +324,31 @@ SemiringFactor::EliminationResult SemiringGaussianFactor::eliminateByMaximum(
         "SemiringGaussianFactor::eliminate: the value is not strictly concave "
         "in the variables to maximize over, so it has no maximum");
   }
+  // No Gaussian factor may carry information on the variables to maximize
+  // over. Eliminating a normalized conditional, such as the dynamics, leaves a
+  // factor on them that is flat up to rounding; such factors are dropped.
+  const double negligible =
+      1e-9 *
+      value.topLeftCorner(frontalDim, frontalDim).cwiseAbs().maxCoeff();
+  GaussianFactorGraph separatorGaussian;
+  for (const auto& factor : gaussian_) {
+    bool involvesFrontal = false;
+    for (Key key : *factor) {
+      if (frontalKeys.contains(key)) involvesFrontal = true;
+    }
+    if (!involvesFrontal) {
+      separatorGaussian.push_back(factor);
+      continue;
+    }
+    bool constrained = false;
+    if (informationScale(*factor, &constrained) > negligible || constrained) {
+      throw std::invalid_argument(
+          "SemiringGaussianFactor::eliminate: a variable with a Gaussian "
+          "density cannot be eliminated by maximum; remove its density, "
+          "e.g., the policy factor");
+    }
+  }
+
   const Matrix K = cholesky.solve(
       Matrix(value.block(0, frontalDim, frontalDim, separatorDim)));
   const Vector k = -cholesky.solve(
@@ -347,7 +379,7 @@ SemiringFactor::EliminationResult SemiringGaussianFactor::eliminateByMaximum(
 
   return {std::make_shared<SemiringGaussianConditional>(
               conditional, makeQuadratic(stacked, dimensions, regret)),
-          std::make_shared<This>(gaussian_,
+          std::make_shared<This>(separatorGaussian,
                                  makeQuadratic(separator, dimensions, best))};
 }
 
@@ -365,19 +397,15 @@ SemiringFactor::EliminationResult SemiringGaussianFactor::eliminate(
     }
   }
 
-  // Probability channel: ordinary Gaussian elimination.
-  const auto [conditional, remaining] =
-      EliminatePreferCholesky(gaussian_, frontalKeys);
-  // Keep what is left on the separator, unless it carries no information, as
-  // when a normalized conditional such as the dynamics is eliminated: its
-  // marginal on the separator is flat, up to rounding.
-  double scale = 0.0;
-  for (const auto& factor : gaussian_) {
-    scale = std::max(scale, informationScale(*factor));
-  }
+  // Probability channel: ordinary Gaussian elimination. QR keeps the rows of
+  // the factors, so that a flat remainder is recognized exactly, by having no
+  // rows, and not through a tolerance on rounding errors.
+  const auto [conditional, remaining] = EliminateQR(gaussian_, frontalKeys);
+  // Keep what is left on the separator, unless it is flat. Eliminating a
+  // normalized conditional, such as the dynamics, uses up all its rows and
+  // leaves a factor with none, which carries no information.
   GaussianFactorGraph separatorGaussian;
-  if (remaining && !remaining->empty() &&
-      informationScale(*remaining) > 1e-9 * scale) {
+  if (remaining && !remaining->empty() && remaining->rows() > 0) {
     separatorGaussian.push_back(remaining);
   }
   if (!value_) {

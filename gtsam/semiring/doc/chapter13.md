@@ -247,8 +247,8 @@ component right is enough, whatever it does elsewhere.
 The test of this chapter is the loop as a whole. Run both from the coin flip,
 with the same actor step size $\alpha_\theta = 0.2$:
 
-- **exact messages**: Stage 1 solves the two linear systems of Chapter 3;
-  Stage 2 steps along the exact gradient;
+- **exact messages**: Stage 1 is the exact elimination of Chapter 3, done
+  with the module; Stage 2 steps along the exact gradient;
 - **actor-critic**: Stage 1 runs $M = 20$ episodes and updates a tabular
   critic by TD(0) with $\alpha_V = 0.05$, starting from $\hat V = 0$; Stage 2
   steps along the sampled gradient.
@@ -321,9 +321,33 @@ The last four lines are the gradient formula of Section 3: the sum over
 visited transitions is `np.bincount`, which adds each term to the parameter
 of the cell it was visited in.
 
-The exact loop, used as the reference, is the code of
-[Chapter 3](chapter03.md) for the two linear systems and one line for the
-gradient. The module is not used: its factors need the dynamics as a table.
+**The exact loop, with the module.** The sampled loop cannot use the module,
+whose factors need the dynamics as a table. The exact loop that it is compared
+with is built on it. The endless track is a set of semiring factors with the
+termination outcome of [Chapter 3](chapter03.md), and Stage 1 is three
+eliminations:
+
+```python
+policy = policy_table(theta)
+V = evaluate(policy)               # the backward message: the value of the chain
+Q = action_values(V)               # the bucket of the action, without a policy
+A = Q - V[:, None]                 # the advantage
+d = visitation(policy)             # the forward message
+gradient = d * slope * (A[:, R] - A[:, L])     # the formula of Chapter 5
+```
+
+- `evaluate` composes the factor of one move with itself, summing out the
+  state in between, until the chain has 1024 moves: the unrolled chain of
+  Chapter 3, built by doubling.
+- `action_values` multiplies the reward factor with the dynamics factor and
+  the value of the next state, and sums out the next state.
+- `visitation` uses the identity of Chapter 3, Section 5, read backward: the
+  expected number of visits to a cell is the expected return of a reward that
+  pays 1 for every step spent in that cell. It is `evaluate` with that reward,
+  once per cell.
+
+The expected return of every iterate in the table of Section 4, for both
+loops, is `prior @ evaluate(policy)`.
 
 ## 6. What breaks
 

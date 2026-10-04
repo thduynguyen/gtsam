@@ -182,8 +182,8 @@ $\kappa = 1 / \eta$.
 Chapter 2, Section 3, showed what one sum buys: the three axioms of
 elimination hold, so **any elimination order is valid**. And in the stored
 form $(p, m)$ with $m = p\, e^{v / \eta}$, the tilted semiring is plain
-sum-product on each channel. Elimination with it is the generic routine of
-Chapter 2.
+sum-product on each channel. In the module it is the rule
+`SemiringSum.Tilted(1 / eta)` given to every variable.
 
 **The backup is linear** in the tilted value $e^{V / \eta}$. Writing out the
 two tilted sums of one step,
@@ -431,8 +431,9 @@ fail.
 On the line this first happens at the first state, whose variance
 $\Sigma_0 = 1$ is the largest in the problem. The recursion exists down to
 $\kappa \approx -0.287$, where the tilted value has fallen below $-30\,000$.
-Beyond it the recursion has no solution, and at $\kappa = -0.4$ the notebook
-evaluates the LQR gains exactly and gets $-\infty$. Whittle named this a
+Beyond it the recursion has no solution: the module raises an exception, "the
+tilt is too strong for the noise". At $\kappa = -0.4$ even the LQR gains,
+evaluated as a fixed policy, have the tilted value $-\infty$. Whittle named this a
 *neurotic breakdown*: the pessimist is so sure of disaster that no action is
 worth choosing.
 
@@ -523,42 +524,75 @@ family of algorithms of [Chapter 17](chapter17.md).
 
 | Quantity | Computed by | Checked against |
 |---|---|---|
-| soft value on the track | the backup of Section 2 | plain return minus $\eta$ times the KL divergence of the soft policy |
+| soft value on the track | elimination with the soft maximum at the actions | plain return minus $\eta$ times the KL divergence of the soft policy |
 | soft policy as $\eta \to 0$ | the same, at $\eta = 0.05$ | its return is $J^* = 6.1$ of Chapter 4 |
-| value claimed by inference, $5.425$ and $7.649$ | the tilted semiring and elimination routine of Chapter 2 | the numbers of Chapter 2 for $\kappa = 0.5$ and $2$; a second elimination order; the matrix product of Section 3 |
-| LEQG at $\kappa = 0$ | the recursion of Section 4 | $K = (0.6, 0.5)$, $J^* = -9.25$ of Chapter 6 |
-| LEQG tilted value, 7 tilts | the recursion | a closed-form Gaussian integral of $e^{\kappa R}$ over $(x_0, w_0, w_1)$ |
+| value claimed by inference, $5.425$ and $7.649$ | elimination with one tilt at every variable | the numbers of Chapter 2 for $\kappa = 0.5$ and $2$; a second elimination order; the matrix product of Section 3 |
+| LEQG at $\kappa = 0$ | elimination with the maximum at the actions and the tilted mean at the states | $K = (0.6, 0.5)$, $J^* = -9.25$ of Chapter 6 |
+| LEQG gains and tilted value, 7 tilts | the same | the recursion of Section 4; a closed-form Gaussian integral of $e^{\kappa R}$ over $(x_0, w_0, w_1)$ |
 | LEQG gains are the best | perturbing each gain by $\pm 0.02$ | the tilted value drops, for every tilt |
 | gains of Gaussian inference | elimination of a `GaussianFactorGraph` | LEQG gains for $\kappa = 1 / \eta$ |
-| soft policy on the line | the formula $N(-K x,\; \tfrac{\eta}{2} H_{uu}^{-1})$ | numerical integration of $e^{Q / \eta}$ |
+| soft policy on the line | the gain and the regret that the maximum leaves on the action, as $N(-K x,\; \tfrac{\eta}{2} H_{uu}^{-1})$ | numerical integration of $e^{Q / \eta}$ |
 
 ## 8. Implementation
 
-The module implements the expectation semiring, so the sums of this chapter
-are done in numpy, and Section 5 with GTSAM's ordinary Gaussian factors.
-
-**Soft control**, tables as in Chapter 4:
-
-```python
-def soft_control(eta):
-    """Soft value at the root, and the soft policy of each move."""
-    V, policies = final_reward, []
-    for t in [1, 0]:
-        Q = move_reward + dynamics @ V              # average over the next state
-        V = eta * np.log((base * np.exp(Q / eta)).sum(axis=1))    # soft max
-        policies.insert(0, base * np.exp((Q - V[:, None]) / eta))  # q_t
-    return prior @ V, policies
-```
-
-**Control as inference** differs in one line, the tilted mean over the next
-state:
+Every sum of this chapter is a rule of the module (`SemiringSum`,
+[Appendix A](appendix_a.md)), assigned to the variables by a `SemiringRules`
+object. The graphs are those of Chapter 1; only the rules change. On the
+track, with the helpers of Chapter 1, Section 10, and the coin flip as the
+policy factor:
 
 ```python
-        Q = move_reward + eta * np.log(dynamics @ np.exp(V / eta))
+def rules(at_actions, at_states=SemiringSum.Average()):
+    # One rule for the actions and one for the states.
+    result = SemiringRules()
+    result.setAll([A(0), A(1)], at_actions)
+    result.setAll([S(0), S(1), S(2)], at_states)
+    return result
+
+backward = ordering(S(2), A(1), S(1), A(0), S(0))
 ```
 
-**LEQG** on the line differs from the Riccati recursion of Chapter 6 in the
-tilted matrix and the constant:
+**Soft control**: the soft maximum at the actions, the average at the states.
+
+```python
+soft = rules(SemiringSum.SoftMaximum(eta))
+graph.expectation(backward, soft)                    # 4.75 for eta = 1
+bayes_net = graph.eliminateSequential(backward, soft)
+last_action = bayes_net.at(1)                        # c(a1 | s1)
+last_action.surprise()                               # the soft advantage
+last_action.tilted(1 / eta)                          # the soft policy q_1
+```
+
+**Control as inference** differs in one argument: the states get the tilt
+too. Any elimination order then gives the same value.
+
+```python
+tilt = SemiringSum.Tilted(1 / eta)
+graph.expectation(backward, rules(tilt, tilt))       # 6.83 for eta = 1
+bayes_net = graph.eliminateSequential(backward, rules(tilt, tilt))
+bayes_net.at(0).tilted(1 / eta)        # the dynamics as inference sees them
+```
+
+**LEQG** on the line: no policy factor, the maximum at the actions, and the
+tilted mean at the states. The conditional that the maximum leaves on an
+action is the hard constraint $u + K x = 0$, so the gain is its coefficient on
+the state.
+
+```python
+rules = SemiringRules()
+rules.setAll([U(0), U(1)], SemiringSum.Maximum())
+rules.setAll([X(0), X(1), X(2)], SemiringSum.Tilted(kappa))
+backward = ordering(X(2), U(1), X(1), U(0), X(0))
+
+graph.expectation(backward, rules)                   # the tilted value
+bayes_net = graph.eliminateSequential(backward, rules)
+gain = bayes_net.at(3).conditional().S()[0, 0]       # K_0
+```
+
+Below the critical tilt these calls raise a `ValueError`, which is the
+breakdown of Section 4. The notebook checks the gains and values against the
+recursion of Section 4, which differs from the Riccati recursion of Chapter 6
+in the tilted matrix and the constant:
 
 ```python
 P_tilted = P / (1 + 2 * kappa * Sigma_w * P)          # the tilted matrix
@@ -583,6 +617,10 @@ bayes_net = graph.eliminateSequential(ordering(X(2), U(1), X(1), U(0), X(0)))
 conditional = bayes_net.at(3)                    # R u0 + S x0 = d
 gain = (conditional.S() / conditional.R()).item()   # 0.364 for eta = 1
 ```
+
+Two computations stay in numpy, both as independent checks of the module's
+numbers: the matrix product of Section 3, and the Gaussian integral over
+$(x_0, w_0, w_1)$.
 
 ## 9. What breaks
 

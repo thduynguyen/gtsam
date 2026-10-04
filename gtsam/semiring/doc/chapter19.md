@@ -165,7 +165,8 @@ No. The factor $N(x';\; x + m(z),\; v(z) + \Sigma_w)$ is Gaussian in $x'$, but
 its mean $m(z)$ and its variance $v(z)$ are nonlinear functions of $x$ and
 $u$. The Gaussian family of the module needs a mean that is linear in the
 other variables and a variance that does not depend on them. This chapter
-therefore does Stage 1 in numpy, with the formulas of Section 3.
+therefore does Stage 1 in numpy, with the formulas of Section 3. The module
+supplies the exact reference of Section 5, where the dynamics are linear.
 :::
 
 ## 3. Stage 1: the forward message, by moment matching
@@ -379,7 +380,14 @@ $$J = -1.25 \cdot (2^2 + 1) - 1.25 \cdot (1^2 + 0.75) - (0.5^2 + 0.6875)
 = -6.25 - 2.1875 - 0.9375 = -9.375,$$
 
 which is the value obtained by elimination with the module, as quoted in
-Chapter 18, Section 6. The notebook asserts it.
+Chapter 18, Section 6.
+
+The notebook checks both against the module. It builds this line as a
+`SemiringFactorGraph`, with the policy as a hard-constraint factor, and
+eliminates it. The expectation of the graph is $-9.375$. The forward messages
+come from the same graph without its rewards: the mean and the second moment
+of $x_t$ are the expectations of the "rewards" $x_t$ and $x_t^2$, and they
+give the three Gaussians above.
 
 With a Gaussian process learned from 300 transitions of the line in place of
 the true linear model, the same code gives $J = -9.23$. The difference of
@@ -482,6 +490,29 @@ for round_ in range(5):
 `GaussianProcess.moments(mean, covariance)` implements the three formulas of
 Section 3 in about twenty lines of numpy. The whole notebook runs in a few
 seconds.
+
+The exact reference of Section 5 uses the module. With the helpers `gaussian`
+and `reward`, which lift a Gaussian factor and a quadratic on one variable:
+
+```python
+def line(gain, rewards):
+    """The two-move line under u = -gain * x, with the given reward factors."""
+    graph = SemiringFactorGraph()
+    graph.push_back(gaussian(X(0), I, np.array([2.0]),
+                             noiseModel.Isotropic.Variance(1, 1.0)))
+    for t in range(2):
+        graph.push_back(gaussian(U(t), I, X(t), gain * I, zero,
+                                 noiseModel.Constrained.All(1)))   # the policy
+        graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                                 noiseModel.Isotropic.Variance(1, 0.5)))
+    for factor in rewards:
+        graph.push_back(factor)
+    return graph
+
+line(0.5, penalties).expectation(backward)                  # J = -9.375
+mean = line(0.5, [reward(X(1), 0.0, -1.0)]).expectation(backward)    # E[x1]
+second = line(0.5, [reward(X(1), 2.0, 0.0)]).expectation(backward)   # E[x1^2]
+```
 
 ## 8. What breaks
 

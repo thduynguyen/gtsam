@@ -248,7 +248,8 @@ that were collected before it was taken.
 **Three estimators, one average.** On the track, the notebook computes each
 estimator from 200000 rollouts, and computes the mean and the spread of a
 single rollout's contribution exactly, by enumerating all 24 possible
-trajectories.
+trajectories. Their probabilities are read from the product of all factors of
+the graph, `graph.product()`.
 
 | The value that multiplies $g_t$ | Mean over rollouts | Standard deviation of one rollout, for $\theta_0$, $\theta_1$, $\theta_2$ |
 |---|---|---|
@@ -319,7 +320,9 @@ These numbers are from one seeded run.
 
 ## 5. Implementation
 
-The notebook is plain numpy. The simulator runs all rollouts at once:
+The sampled side of the notebook is plain numpy: the module does not sample,
+and the algorithm must not read the dynamics table. The simulator runs all
+rollouts at once:
 
 ```python
 def rollouts(theta, M, rng):
@@ -381,9 +384,29 @@ moving Right everywhere. It used $200 \times 100 = 20000$ rollouts to get
 there; the exact loop used 200 eliminations and no rollouts. That is the
 price of not knowing the dynamics factor.
 
-The module is not used in this chapter. Its factors need the dynamics as a
-table, which is exactly what is missing. It returns in the role it had in
-Section 4: the exact reference that a sampled method is tested against.
+**The exact reference, with the module.** The module's factors need the
+dynamics as a table, which is exactly what the algorithm is not given. So the
+module does not appear in the sampled loop. It supplies everything the samples
+are compared with, as in Chapter 5: the track is built as a
+`SemiringFactorGraph`, and one elimination gives the exact messages.
+
+```python
+graph = track(theta)                        # the factor graph of Chapter 1
+J = graph.expectation()                     # the expected return
+bayes_tree = graph.eliminateMultifrontal()
+d_1 = bayes_tree.marginalFactor(X(1)).probability()   # the forward message
+
+# Backward, one elimination at a time, to read the tables.
+bucket = value(keys, move_reward) * (step * future).sum(ordering(X(t + 1)))
+Q_t = bucket.value()                        # the action values
+conditional, future = (policy_factor * bucket).eliminate(ordering(U(t)))
+V_t = future.value()                        # the state values
+A_t = conditional.surprise()                # the advantages
+```
+
+The exact gradient $(0.15,\; 1.0,\; 0.35)$ is assembled from `d_t` and `A_t`
+by the formula of Chapter 5, and the column "exact messages" of the table
+above repeats that elimination at every iterate.
 
 ## 6. What breaks
 

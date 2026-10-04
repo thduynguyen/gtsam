@@ -267,47 +267,70 @@ the correction as to a disturbance, so the two can work against each other.
 
 ## 7. Exact checks
 
-The two illustrations use closed-form evaluations of a linear policy on the
-line, by the backward recursion of Chapter 6. The notebook checks them
-against the numbers of earlier chapters and against the module.
+The two illustrations evaluate a linear policy on the line exactly, by
+eliminating a `SemiringFactorGraph` of Gaussian factors with the
+`gtsam/semiring` module. The best gains come from the same graph without
+policy factors, with the controls eliminated by maximum. The notebook checks
+both against the numbers of earlier chapters and against the backward
+recursions of Chapter 6 written out in numpy.
 
 | Check | Result |
 |---|---|
-| Riccati gains for $B = 1$ and their return | $(0.6,\; 0.5)$ and $J^* = -9.25$, as in Chapter 6 |
-| the gains $(0.5,\; 0.5)$ for $B = 1$ | $J = -9.375$, as in Chapter 6 |
-| the recursion against a `SemiringFactorGraph` of Gaussian factors, for $B = 0.5$ and $B = 1$ | equal |
-| the residual correction converges to | the Riccati gains for $B = 0.5$ |
+| best gains for $B = 1$ and their return, by the module | $(0.6,\; 0.5)$ and $J^* = -9.25$, as in Chapter 6 |
+| the gains $(0.5,\; 0.5)$ for $B = 1$, by the module | $J = -9.375$, as in Chapter 6 |
+| the module against the closed-form recursions, for $B = 0.5$, $1$ and $1.5$ | equal, for the evaluation and for the best gains |
+| the residual correction converges to | the best gains for $B = 0.5$ |
 
 ## 8. Implementation
 
-The evaluation of a linear policy for a given actuator gain, and its check
-with the module, in which the policy is a hard constraint $u + K x = 0$:
+The graph of the line for a given actuator gain. The policy, when there is
+one, is a hard constraint $u + K x = 0$:
 
 ```python
+def line(B, gains=None):
+    """The factor graph of the line, with or without policy factors."""
+    graph = SemiringFactorGraph()
+    graph.push_back(gaussian(X(0), I, np.array([mean0]),
+                             noiseModel.Isotropic.Variance(1, variance0)))
+    for t in range(2):
+        if gains is not None:
+            graph.push_back(gaussian(U(t), I, X(t), gains[t] * I, zero,
+                                     noiseModel.Constrained.All(1)))  # policy
+        graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -B * I, zero,
+                                 noiseModel.Isotropic.Variance(1, sigma_w)))
+        graph.push_back(penalty(X(t)))
+        graph.push_back(penalty(U(t)))
+    graph.push_back(penalty(X(2)))
+    return graph
+
+backward = ordering(X(2), U(1), X(1), U(0), X(0))
+
 def evaluate(gains, B):
     """Expected return of u_t = -K_t x_t on the line with actuator gain B."""
-    P, beta = 1.0, 0.0                      # V_2(x) = -x^2
-    for K in reversed(gains):
-        beta = beta + P * sigma_w           # the cost of the noise
-        P = 1 + K ** 2 + (1 - B * K) ** 2 * P
-    return -(P * (mean0 ** 2 + variance0) + beta)
-
-graph = SemiringFactorGraph()
-graph.push_back(gaussian(X(0), I, np.array([mean0]),
-                         noiseModel.Isotropic.Variance(1, variance0)))
-for t, K in enumerate(gains):
-    graph.push_back(gaussian(U(t), I, X(t), K * I, zero,
-                             noiseModel.Constrained.All(1)))        # policy
-    graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -B * I, zero,
-                             noiseModel.Isotropic.Variance(1, sigma_w)))
-    graph.push_back(penalty(X(t)))
-    graph.push_back(penalty(U(t)))
-graph.push_back(penalty(X(2)))
-graph.expectation()                         # equals evaluate(gains, B)
+    return line(B, gains).expectation(backward)
 ```
 
-Domain randomization is the average of `evaluate` over the models, and
-residual learning is gradient ascent on `evaluate(nominal + correction, 0.5)`.
+The best gains are read from the conditionals that the elimination leaves on
+the controls when their rule is the maximum:
+
+```python
+controls = SemiringRules()
+controls.setAll([U(0), U(1)], SemiringSum.Maximum())
+
+def riccati(B):
+    """The best gains for actuator gain B, and their expected return."""
+    bayes_net = line(B).eliminateSequential(backward, controls)
+    # The conditionals of u1 and u0 are at positions 1 and 3.
+    gains = [bayes_net.at(position).conditional().S()[0, 0]
+             for position in (3, 1)]
+    return np.array(gains), line(B).expectation(backward, controls)
+```
+
+Domain randomization hands the average of `evaluate` over the three models
+to a general-purpose optimizer. Residual learning is gradient ascent on
+`evaluate` for $B = 0.5$, with the gradient by central differences. Both
+search over two gains outside the module, and every value of $J$ they use
+is one elimination.
 
 ## 9. What the framework does not cover
 

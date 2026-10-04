@@ -173,6 +173,8 @@ contain, and works through two larger examples in its Sections 7 and 8.
 - **No gradients in one pass.** The second-order semiring of Chapter 5 is run
   in numpy in its notebook; the module gives the gradient through the
   advantages and the marginals.
+- **Discrete keys need at least two values.** A table on a variable with a
+  single value is rejected.
 - **One family per graph.** Discrete and Gaussian factors cannot be mixed;
   combining them throws.
 - **Known models.** The dynamics must be given as factors. Sampling-based RL

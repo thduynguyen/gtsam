@@ -5,12 +5,32 @@
 # [Chapter 21](https://thduynguyen.github.io/gtsam/chapter21): how the error
 # of a learned dynamics factor compounds along the chain, what short rollouts
 # and ensembles do about it, and a small experiment in the style of PETS, an
-# ensemble of learned models planned through with CEM.
+# ensemble of learned models planned through with CEM. Sampling, fitting and
+# CEM are in numpy. Every exact quantity, a forward message, the return of a
+# policy under a model, the plan a model rates best, is a GTSAM factor graph.
 
 # %%
+import gtsam
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, GaussianFactorGraph
+from gtsam import HessianFactor, JacobianFactor, Ordering, noiseModel
+from gtsam import SemiringDiscreteFactor, SemiringFactorGraph
+from gtsam import SemiringGaussianFactor, SemiringRules, SemiringSum
+from gtsam.symbol_shorthand import A, S, U, X
 
 np.set_printoptions(precision=4, suppress=True)
+
+I = np.eye(1)
+zero = np.zeros(1)
+hard = noiseModel.Constrained.All(1)
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
 
 # %% [markdown]
 # ## A slightly wrong model of the line (Section 2)
@@ -63,11 +83,17 @@ assert np.allclose(model, [1.0806, 0.8388], atol=1e-3)
 
 # %%
 def roll(F, B, steps, start=2.0, action=-0.2):
-    """The mean position after some steps of the model x' = F x + B u."""
-    position = start
-    for _ in range(steps):
-        position = F * position + B * action
-    return position
+    """The mean position after some steps of the model x' = F x + B u.
+
+    The chain of the model's dynamics factors, as hard constraints on the
+    mean, is solved forward as one Gaussian factor graph.
+    """
+    graph = GaussianFactorGraph()
+    graph.add(JacobianFactor(X(0), I, np.array([start]), hard))
+    for t in range(steps):
+        graph.add(JacobianFactor(X(t + 1), I, X(t), -F * I,
+                                 np.array([B * action]), hard))
+    return graph.optimize().at(X(steps))[0]
 
 
 members = np.random.default_rng(1).multivariate_normal(model, covariance, 5)
@@ -127,23 +153,79 @@ one_step_error = np.abs(learned - dynamics).sum(axis=2).max()
 print("learned table p(s' | s, a):\n", learned.reshape(6, 3))
 print("one-step error D_p =", one_step_error)
 
-P_true = np.einsum("sa,sat->st", policy, dynamics)
-P_model = np.einsum("sa,sat->st", policy, learned)
-d_true, d_model = prior.copy(), prior.copy()
+state = lambda t: (S(t), 3)  # (key, cardinality)
+action = lambda t: (A(t), 2)
+
+
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+def forward_messages(dynamics_table, steps):
+    """The marginals d_1 .. d_steps of the state, under the coin flip."""
+    graph = SemiringFactorGraph()
+    graph.push_back(probability([state(0)], prior))
+    for t in range(steps):
+        keys = [state(t), action(t)]
+        graph.push_back(probability(keys, policy))
+        graph.push_back(probability(keys + [state(t + 1)], dynamics_table))
+    bayes_tree = graph.eliminateMultifrontal()
+    return [table(bayes_tree.marginalFactor(S(t)).probability(), [state(t)])
+            for t in range(1, steps + 1)]
+
+
+d_true = forward_messages(dynamics, 10)
+d_model = forward_messages(learned, 10)
 for h in range(1, 11):
-    d_true, d_model = d_true @ P_true, d_model @ P_model
-    distance = np.abs(d_true - d_model).sum()
+    distance = np.abs(d_true[h - 1] - d_model[h - 1]).sum()
     assert distance <= h * one_step_error
     if h in [1, 2, 5, 10]:
         print(f"h = {h:2d}: distance of the forward messages {distance:.3f}, "
               f"bound {h * one_step_error:.1f}")
 
 
-def evaluate(table, gamma):
-    """J of the coin flip, by solving the Bellman equation of Chapter 3."""
-    P_pi = np.einsum("sa,sat->st", policy, table)
-    r_pi = (policy * reward).sum(axis=1)
-    return prior @ np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
+def evaluate(dynamics_table, gamma):
+    """J of the coin flip on the endless track, by elimination.
+
+    The discount is the termination outcome of Chapter 3: a fourth state,
+    "ended". One step of the chain is eliminated again and again, by the
+    average, until the value stops changing.
+    """
+    ended_dynamics = np.zeros((4, 2, 4))
+    ended_dynamics[:3, :, :3] = gamma * dynamics_table  # continue
+    ended_dynamics[:3, :, 3] = 1 - gamma  # end
+    ended_dynamics[3, :, 3] = 1  # stay ended
+    now, move, later = (S(0), 4), (A(0), 2), (S(1), 4)
+    step = probability([now, move, later], ended_dynamics)
+    step_reward = value([now, move], np.vstack([reward, [0.0, 0.0]]))
+    coin_flip = probability([now, move], np.full((4, 2), 0.5))
+    V = np.zeros(4)
+    while True:
+        future = (step * value([later], V)).sum(ordering(S(1)))
+        new_factor = (coin_flip * step_reward * future).sum(ordering(A(0)))
+        new_V = table(new_factor.value(), [now])
+        if np.abs(new_V - V).max() < 1e-11:
+            return prior @ new_V[:3]
+        V = new_V
 
 
 r_max = np.abs(reward).max()
@@ -161,42 +243,107 @@ assert np.isclose(evaluate(dynamics, 0.9), 0.4385, atol=1e-4)
 #
 # Stage 1 in a learned model, in a receding horizon: at each move, find the
 # action sequence for the remaining moves that the model, or the average of
-# the ensemble's members, rates highest, and apply its first action. For
-# linear models and quadratic rewards the best first action is linear in the
-# position, $u = -K_t x$, and the gain has a closed form. It is used below to
-# evaluate planners exactly; the CEM planner further down must agree with it.
-
+# the ensemble's members, rates highest, and apply its first action.
+#
+# For linear models and quadratic rewards this is one Gaussian factor graph:
+# the planned actions are shared, and every member of the ensemble has its own
+# chain of states, joined to the actions by its own dynamics factors. Solving
+# the graph is the maximum over the plan of the average over the members. The
+# best first action is linear in the position, $u = -K_t x$, so planning from
+# $x = 1$ gives the gain. It is used below to evaluate planners exactly; the
+# CEM planner further down must agree with it.
 
 # %%
+penalty = noiseModel.Isotropic.Sigma(1, 1 / np.sqrt(2))  # error z^2
+
+
+def member_state(member, t):
+    """The key of the position of one ensemble member after t planned moves."""
+    return gtsam.symbol("m", 10 * member + t)
+
+
+def plan_in_models(models, horizon, start=1.0):
+    """The best action sequence for the average return over the models."""
+    models = np.atleast_2d(models)
+    shared = noiseModel.Isotropic.Sigma(1, np.sqrt(len(models) / 2))
+    graph = GaussianFactorGraph()
+    for t in range(horizon):
+        graph.add(JacobianFactor(U(t), I, zero, penalty))  # reward -u^2
+    for member, (F, B) in enumerate(models):
+        graph.add(JacobianFactor(member_state(member, 0), I,
+                                 np.array([start]), hard))
+        for t in range(horizon):
+            # The member's dynamics, on the mean: x' - F x - B u = 0.
+            graph.add(JacobianFactor(
+                member_state(member, t + 1), I, member_state(member, t),
+                -F * I, U(t), -B * I, zero, hard))
+            # Its reward -x'^2, weighted by one over the number of members.
+            graph.add(JacobianFactor(member_state(member, t + 1), I, zero,
+                                     shared))
+    solution = graph.optimize()
+    return np.array([solution.at(U(t))[0] for t in range(horizon)])
+
+
 def planner_gains(models):
     """Gains of receding-horizon planning with the average over the models."""
-    models = np.atleast_2d(models)
-    F, B = models[:, 0], models[:, 1]
-    # Two moves left: minimize over (u0, u1), from x = 1, the average of
-    # u0^2 + x1^2 + u1^2 + x2^2 with x1 = F + B u0 and x2 = F x1 + B u1.
-    rows, targets = [np.eye(2)], [np.zeros(2)]
-    for f, b in models:
-        rows.append(np.array([[b, 0.0], [f * b, b]]) / np.sqrt(len(models)))
-        targets.append(-np.array([f, f * f]) / np.sqrt(len(models)))
-    plan = np.linalg.lstsq(np.vstack(rows), np.concatenate(targets),
-                           rcond=None)[0]
-    # One move left: minimize u^2 + average of (F + B u)^2.
-    return {0: -plan[0], 1: (F * B).mean() / (1 + (B * B).mean())}
+    return {0: float(-plan_in_models(models, horizon=2)[0]),
+            1: float(-plan_in_models(models, horizon=1)[0])}
+
+
+def gaussian(*args):
+    """Lift a Gaussian factor to (p, 0)."""
+    return SemiringGaussianFactor(JacobianFactor(*args))
+
+
+def cost(key):
+    """Lift the penalty z^2 on one variable to the reward (1, -z^2)."""
+    return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
+
+
+BACKWARD = ordering(X(2), U(1), X(1), U(0), X(0))
+MAXIMUM_AT_ACTIONS = SemiringRules()
+MAXIMUM_AT_ACTIONS.setAll([U(0), U(1)], SemiringSum.Maximum())
+
+
+def line(F, B, gains=None):
+    """The two-move line under the model x' = F x + B u + w.
+
+    With gains=None there is no policy factor and the actions are free.
+    """
+    graph = SemiringFactorGraph()
+    graph.push_back(gaussian(X(0), I, np.array([2.0]),
+                             noiseModel.Isotropic.Variance(1, 1.0)))
+    for t in range(2):
+        if gains is not None:
+            graph.push_back(gaussian(U(t), I, X(t), gains[t] * I, zero, hard))
+        graph.push_back(gaussian(X(t + 1), I, X(t), -F * I, U(t), -B * I, zero,
+                                 noiseModel.Isotropic.Variance(1, SIGMA_W)))
+        graph.push_back(cost(X(t)))
+        graph.push_back(cost(U(t)))
+    graph.push_back(cost(X(2)))
+    return graph
 
 
 def model_return(gains, F=1.0, B=1.0):
-    """J of u_t = -K_t x_t under the model x' = F x + B u + w, exactly."""
-    second, total = 5.0, 0.0  # E[x0^2] = 2^2 + 1
-    for t in range(2):
-        total += (1 + gains[t] ** 2) * second
-        second = (F - B * gains[t]) ** 2 * second + SIGMA_W
-    return -(total + second)
+    """J of u_t = -K_t x_t under the model x' = F x + B u + w, by elimination."""
+    return line(F, B, gains).expectation(BACKWARD)
 
 
 gains = planner_gains([1.0, 1.0])
-print("planning in the true model: gains", gains, " J =", model_return(gains))
+print(f"planning in the true model: gains ({gains[0]:.3f}, {gains[1]:.3f}), "
+      f"J = {model_return(gains):.3f}")
 assert np.isclose(gains[0], 0.6) and np.isclose(gains[1], 0.5)
 assert np.isclose(model_return(gains), -9.25)
+
+# For one model, receding-horizon planning is the Riccati recursion: the
+# semiring graph of the model without a policy, with the maximum at the
+# actions, leaves the same gains in its conditionals.
+bayes_net = line(1.0806, 0.8388).eliminateSequential(BACKWARD,
+                                                     MAXIMUM_AT_ACTIONS)
+riccati = {1: bayes_net.at(1).conditional().S()[0, 0],
+           0: bayes_net.at(3).conditional().S()[0, 0]}
+planned = planner_gains([1.0806, 0.8388])
+assert np.allclose([riccati[0], riccati[1]], [planned[0], planned[1]])
 
 # %% [markdown]
 # ## The planner exploits the model; an ensemble does not (Section 5)

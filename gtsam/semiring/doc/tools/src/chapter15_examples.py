@@ -5,10 +5,16 @@
 # [Chapter 15](https://thduynguyen.github.io/gtsam/chapter15) on the endless
 # track of Chapter 3: SARSA, Q-learning, fitted Q iteration and a small
 # version of DQN. The dynamics table is used only to *sample* transitions,
-# and to compute the exact answers the samples are checked against.
+# and to compute the exact answers the samples are checked against. The exact
+# answers come from the `gtsam/semiring` module, by elimination; the sampling
+# and the learning updates are plain numpy, since they are what the chapter
+# is about.
 
 # %%
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor, SemiringSum
+from gtsam.symbol_shorthand import A, S
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -26,22 +32,111 @@ dynamics[2, L], dynamics[2, R] = [0, 0.8, 0.2], [0, 0, 1]
 reward = np.array([[0.0, -1.0], [0.0, -1.0], [2.0, 1.0]])  # r(s, a)
 coin_flip = np.full((3, 2), 0.5)
 
+# %% [markdown]
+# The exact values are computed by elimination on one step of the endless
+# chain, as in Chapters 3 and 4. The discount is a termination outcome: a
+# fourth state, "ended", reached with probability $1 - \gamma$ after every
+# move.
+
+# %%
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+ENDED = 3
+ended_dynamics = np.zeros((4, 2, 4))
+ended_dynamics[:3, :, :3] = gamma * dynamics  # continue
+ended_dynamics[:3, :, ENDED] = 1 - gamma  # end
+ended_dynamics[ENDED, :, ENDED] = 1  # stay ended
+ended_reward = np.vstack([reward, [0.0, 0.0]])
+ended_prior = np.append(prior, 0.0)
+
+now, move, later = (S(0), 4), (A(0), 2), (S(1), 4)
+transition = probability([now, move, later], ended_dynamics)
+move_reward = value([now, move], ended_reward)
+average, maximum = SemiringSum.Average(), SemiringSum.Maximum()
+
+
+def policy_factor(policy):
+    """A policy table on the three cells, as a factor on (s, a)."""
+    return probability([now, move], np.vstack([policy, [0.5, 0.5]]))
+
+
+def action_values(V):
+    """The bucket of the action without a policy factor: (1, Q).
+
+    V is the value of the next state, an array over the four states. The
+    next state is eliminated by average, and the reward of the move is added.
+    """
+    return move_reward * (transition * value([later], V)).sum(ordering(S(1)))
+
+
+def read_Q(bucket):
+    """The table Q(s, a) on the three cells, from the bucket of the action."""
+    return table(bucket.value(), [now, move])[:3]
+
+
+def sum_out_action(bucket, rule, policy=None):
+    """Eliminate the action from its bucket; the new value, as an array."""
+    if policy is not None:
+        bucket = policy_factor(policy) * bucket
+    return table(bucket.sum(ordering(A(0)), rule).value(), [now])
+
+
+def exact_V(policy):
+    """V of a stationary policy: eliminate until the value stops changing."""
+    V = np.zeros(4)
+    while True:
+        new_V = sum_out_action(action_values(V), average, policy)
+        if np.abs(new_V - V).max() < 1e-13:
+            return new_V
+        V = new_V
+
 
 def exact_Q(policy):
-    """Q of a stationary policy, from the linear system of Chapter 3."""
-    P_pi = np.einsum("sa,sat->st", policy, dynamics)
-    r_pi = (policy * reward).sum(axis=1)
-    V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
-    return reward + gamma * dynamics @ V
+    """Q of a stationary policy: the bucket of the action at the fixed point."""
+    return read_Q(action_values(exact_V(policy)))
 
 
 def value_iteration(sweeps):
-    """Q after some sweeps of value iteration (Chapter 4), from Q = 0."""
-    Q = np.zeros((3, 2))
+    """Q after some sweeps of value iteration (Chapter 4), from Q = 0.
+
+    Each sweep is one step of elimination: the next state by average, the
+    action by maximum.
+    """
+    V = np.zeros(4)
     history = []
     for _ in range(sweeps):
-        Q = reward + gamma * dynamics @ Q.max(axis=1)
-        history.append(Q)
+        bucket = action_values(V)
+        history.append(read_Q(bucket))
+        V = sum_out_action(bucket, maximum)
     return history
 
 
@@ -91,10 +186,27 @@ counts = np.zeros((3, 2))
 np.add.at(counts, (data[:, 0].astype(int), data[:, 1].astype(int)), 1)
 print("first transitions (s, a, r, s'):\n", data[:5])
 print("share of each (s, a) in the data =\n", counts / counts.sum())
-P_coin = np.einsum("sa,sat->st", coin_flip, dynamics)
-d = np.linalg.solve((np.eye(3) - gamma * P_coin).T, prior)
-print("discounted visitation d / 10, split over the two moves =",
-      d / d.sum() / 2)
+
+
+def discounted_visitation(policy):
+    """The forward message d of Chapter 3, by eliminating forward in time.
+
+    One step sums out the current state and action and leaves the marginal of
+    the next state. The mass still in the three cells after t moves is
+    gamma^t d_t, and d is its sum over t.
+    """
+    marginal, d = ended_prior, np.zeros(3)
+    while marginal[:3].sum() > 1e-13:
+        d += marginal[:3]
+        joint = probability([now], marginal) * policy_factor(policy) * transition
+        marginal = table(joint.sum(ordering(S(0), A(0))).probability(), [later])
+    return d
+
+
+d = discounted_visitation(coin_flip)
+print("discounted visitation d =", d)
+print("d / 10, split over the two moves =", d / d.sum() / 2)
+assert np.allclose(d, [3.8062, 3.4746, 2.7192], atol=1e-4)
 assert np.allclose(counts / counts.sum(), (d / d.sum() / 2)[:, None],
                    atol=0.001)
 
@@ -190,29 +302,42 @@ assert np.abs(Q_control - Q_target).max() < 0.25
 # ## Importance weights (Section 4)
 #
 # The data come from the coin flip $\pi_D$; the policy to evaluate, $\pi$,
-# moves Right with probability 0.9. All averages below are computed exactly
-# from the tables, so the differences are not sampling noise.
+# moves Right with probability 0.9. All averages below are computed exactly,
+# by elimination, so the differences are not sampling noise.
 
 # %%
 target_policy = np.tile([0.1, 0.9], (3, 1))
-Q_pi = exact_Q(target_policy)
-V_pi = (target_policy * Q_pi).sum(axis=1)
+V_pi = exact_V(target_policy)
+Q_pi = read_Q(action_values(V_pi))
 
-# One step: r + gamma * (average of Q under pi at s'), with s' from the data.
-one_step = reward + gamma * dynamics @ V_pi
+# The inner bucket holds the value Q of pi for the pair (s', a').
+inner = action_values(V_pi)
 
-# Two steps: r + gamma r' + gamma^2 V(s''), with a' taken by the data policy.
-inner = reward + gamma * dynamics @ V_pi  # value of (s', a')
-two_step_plain = reward + gamma * dynamics @ (coin_flip * inner).sum(axis=1)
+# One step: r + gamma * (average of Q under pi at s'). The next action is
+# averaged under pi itself, so the data policy plays no part.
+one_step = read_Q(action_values(sum_out_action(inner, average, target_policy)))
+
+# Two steps: r + gamma r' + gamma^2 V(s''). Now the next action a' is the one
+# in the data, so it is averaged under the data policy.
+two_step_plain = read_Q(action_values(
+    sum_out_action(inner, average, coin_flip)))
+
+# The importance weight is one more factor on (s', a'): multiplied with the
+# factor of the data policy, it gives the factor of pi.
 rho = target_policy / coin_flip  # pi(a' | s') / pi_D(a' | s')
-two_step_weighted = reward + gamma * dynamics @ (
-    coin_flip * rho * inner).sum(axis=1)
+weight = probability([now, move], np.vstack([rho, [1.0, 1.0]]))
+two_step_weighted = read_Q(action_values(
+    sum_out_action(weight * inner, average, coin_flip)))
 print("Q of pi =\n", Q_pi)
 print("one-step target, averaged =\n", one_step)
 print("two-step target, averaged, no weights =\n", two_step_plain)
 print("two-step target, averaged, with weights =\n", two_step_weighted)
 print("importance weights rho =\n", rho)
+assert np.allclose(Q_pi, [[3.979, 4.470], [4.352, 6.730], [8.315, 9.202]],
+                   atol=1e-3)
 assert np.allclose(one_step, Q_pi)
+assert np.allclose(two_step_plain,
+                   [[3.802, 3.750], [4.039, 6.303], [7.566, 8.882]], atol=1e-3)
 assert np.allclose(two_step_weighted, Q_pi)
 assert np.abs(two_step_plain - Q_pi).max() > 0.5
 

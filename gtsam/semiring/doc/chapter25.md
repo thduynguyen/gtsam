@@ -109,10 +109,13 @@ So the two rules are the ordinary product and sum of polynomials, and the
 laws elimination needs (Chapter 2, Section 3) hold because they hold for
 polynomials.
 
-**On the track.** The notebook runs the elimination routine of Chapter 2 with
-these four functions and nothing else changed. What is left at the root is
-the table of Section 1. Enumerating the 24 possible trajectories gives the
-same five numbers.
+**On the track.** The `gtsam/semiring` module has no rule for entries that
+are whole distributions. So the notebook eliminates the track with a short
+routine in numpy that takes these four functions as its semiring, in the
+order of Chapter 1. What is left at the root is the table of Section 1. Two
+checks give the same five numbers: the table of all 24 possible
+trajectories, and the module itself, on a graph in which the accumulated
+reward is one more variable (Section 6).
 
 ## 3. The other semirings are summaries of this one
 
@@ -349,8 +352,9 @@ the place of the mean.
 
 ## 6. Implementation
 
-The convolution semiring, as the four functions that the elimination routine
-of Chapter 2 takes. An entry is a tuple of 13 arrays, one per value of $z$:
+The convolution semiring, as the four functions that the notebook's numpy
+elimination routine takes. An entry is a tuple of 13 arrays, one per value
+of $z$:
 
 ```python
 Z = np.arange(-2, 11)  # the possible accumulated rewards
@@ -385,7 +389,61 @@ class Convolution:
 distribution = eliminate(Convolution, terms, order)
 ```
 
-The projection of C51:
+**The same distribution from the module.** The module cannot hold an entry
+$h(z)$, but it can hold a variable. Add one variable per step for the reward
+accumulated so far, `C(t)` in the code, with the 13 values of $z$. Replace
+each reward factor by a probability factor that is 1 when the accumulated
+reward after the step is the one before plus $r$, and 0 otherwise. The graph
+then has probabilities only. Eliminating everything except the last of the
+new variables leaves its marginal, which is the distribution of the return:
+
+```python
+count = lambda t: (C(t), len(Z))
+
+def adds(reward):
+    """The factor on (c, ..., c') that is 1 when c' = c + reward(...)."""
+    after = Z[:, None] + np.ravel(reward)[None, :]
+    return (after[:, :, None] == Z).reshape(
+        (len(Z),) + np.shape(reward) + (len(Z),)).astype(float)
+
+counted = SemiringFactorGraph()
+counted.push_back(probability([state(0)], prior))
+counted.push_back(probability([count(0)], Z == 0))  # nothing accumulated yet
+for t in range(2):
+    keys = [state(t), action(t)]
+    counted.push_back(probability(keys, policy))
+    counted.push_back(probability(keys + [state(t + 1)], dynamics))
+    counted.push_back(probability([count(t)] + keys + [count(t + 1)],
+                                  adds(move_reward)))
+counted.push_back(probability([count(2), state(2), count(3)],
+                              adds(final_reward)))
+_, remaining = counted.eliminatePartialSequential(
+    ordering(S(0), A(0), C(0), S(1), A(1), C(1), S(2), C(2)))
+marginal = table(remaining.product().probability(), [count(3)])
+```
+
+The two computations are the same sums in a different arrangement: the
+masses $h(z)$ of an entry are the dependence of a factor on the new
+variable. The convolution semiring keeps that variable out of the graph, and
+the graph with the new variable needs no new semiring.
+
+**The summaries, on the module.** The mean, the tilted means and the best
+return of Section 3 are eliminations of the track with the module's rules,
+and the notebook compares each with the number read from the distribution:
+
+```python
+graph.expectation(backward)                                         # 1.4
+graph.expectation(backward, everywhere(SemiringSum.Tilted(0.5)))    # 5.43
+graph.expectation(backward, everywhere(SemiringSum.Maximum()))      # 9
+```
+
+The second-moment semiring has three numbers per entry, which the module
+does not have either, and runs in the numpy routine.
+
+**The projection of C51**, and the backup as factor operations. The position
+on the grid is again one more variable. The projection becomes a factor on
+(cell, action, next grid value, grid value), and one backup is a product of
+factors and a sum over the action, the next cell and the next grid value:
 
 ```python
 def project(values, probabilities):
@@ -398,21 +456,34 @@ def project(values, probabilities):
     np.add.at(result, lower, probabilities * (1 - weight_upper))
     np.add.at(result, upper, probabilities * weight_upper)
     return result
+
+# The projection as a factor: where a unit mass at each next grid value lands.
+projection = np.array([[[project(reward[s, a] + gamma * atoms[j:j + 1],
+                                 np.ones(1)) for j in range(len(atoms))]
+                        for a in range(2)] for s in range(3)])
+# The action can be summed out once, before the sweeps.
+operator = (policy_factor * step * probability(
+    [cell, move, next_atom, atom], projection)).sum(ordering(A(0)))
+
+for sweep in range(300):
+    bucket = operator * probability([next_cell, next_atom], categorical)
+    categorical = table(bucket.sum(ordering(S(1), C(1))).probability(),
+                        [cell, atom])
 ```
 
-The module implements the expectation semiring only, so this chapter runs in
-numpy.
+The simulations and the sampled version of Section 5 are numpy.
 
 ## 7. Exact tests
 
 | Quantity | Computed by | Checked against |
 |---|---|---|
-| the distribution of the return on the track | elimination with the convolution semiring | enumeration of the 24 trajectories |
-| its mean, $1.4$ | the first moment of the distribution | the expectation semiring, Chapter 1 |
-| tilted means for $\kappa = -0.5,\; 0.5,\; 2$ | $\frac{1}{\kappa} \log m(\kappa)$ from the distribution | the tilted semiring, Chapter 2 |
-| the variance, $14.74$ | the second-moment semiring | the distribution |
-| the value factor on $s_1$ | partial elimination | its means are $V_1$ of Chapter 1 |
-| the grid distributions on the endless track | the projected backup | their means are $V$ of Chapter 3 |
+| the distribution of the return on the track | elimination with the convolution semiring, in numpy | the table of the 24 trajectories, and the module's marginal of the accumulated reward |
+| its mean, $1.4$ | the first moment of the distribution | the module, with the average at every variable |
+| tilted means for $\kappa = -0.5,\; 0.5,\; 2$ | $\frac{1}{\kappa} \log m(\kappa)$ from the distribution | the module, with the tilted rule at every variable |
+| the largest return, $9$ | the largest $z$ with $h(z) > 0$ | the module, with the maximum at every variable |
+| the variance, $14.74$ | the second-moment semiring, in numpy | the distribution |
+| the value factor on $s_1$ | partial elimination with the convolution semiring | its means are the module's $V_1 = (-0.5,\; 3.5,\; 5.5)$ |
+| the grid distributions on the endless track | the projected backup, as factor operations of the module | their means are the module's $V$ of Chapter 3 |
 
 ## 8. What breaks, and what still maps
 

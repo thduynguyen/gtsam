@@ -272,9 +272,12 @@ A `SemiringGaussianFactor` stores the pair in the log-dual form $(\ell, v)$ of
 **Eliminating a variable** $x$ with separator $S$ works on the two channels in
 turn.
 
-1. *Probability channel.* Ordinary Gaussian elimination
-   (`EliminatePreferCholesky`) of the Gaussian factors gives the conditional
-   $p(x \mid S)$ and a new Gaussian factor on $S$. The conditional is an
+1. *Probability channel.* Ordinary Gaussian elimination (`EliminateQR`) of
+   the Gaussian factors gives the conditional $p(x \mid S)$ and a new Gaussian
+   factor on $S$. QR is used because it keeps the rows of the factors: when a
+   normalized conditional such as the dynamics is eliminated, the new factor
+   has no rows left, and is dropped as carrying no information. With Cholesky
+   it would be a matrix of rounding errors. The conditional is an
    affine function of the separator plus noise,
 
    $$x = K\, S + k + W e, \qquad e \sim N(0, I).$$
@@ -404,7 +407,6 @@ graph work through the base interface.
 | the maximum of a Gaussian variable that has a density, and the soft maximum of one that has none | a convention for the probability channel in each case |
 
 These are listed as limitations in the module's README.
-
 
 ---
 

@@ -480,6 +480,35 @@ TEST(SemiringFactorGraph, TiltBreakdown) {
                   std::invalid_argument);
 }
 
+// Hard constraints, such as a deterministic policy and a known start, have
+// infinite information. What elimination leaves on a separator must still be
+// kept, in any elimination order.
+TEST(SemiringFactorGraph, HardConstraints) {
+  SemiringFactorGraph graph;
+  const auto exact = noiseModel::Constrained::All(1);
+  graph.emplace_shared<SemiringGaussianFactor>(
+      std::make_shared<JacobianFactor>(X(0), I_1x1, Vector1(2.0), exact));
+  for (size_t t = 0; t < 2; t++) {
+    // The policy u = -0.5 x, without jitter.
+    graph.emplace_shared<SemiringGaussianFactor>(
+        std::make_shared<JacobianFactor>(U(t), I_1x1, X(t), 0.5 * I_1x1,
+                                         Vector1(0.0), exact));
+    graph.emplace_shared<SemiringGaussianFactor>(
+        std::make_shared<JacobianFactor>(
+            X(t + 1), I_1x1, X(t), -I_1x1, U(t), -I_1x1, Vector1(0.0),
+            noiseModel::Isotropic::Variance(1, noise)));
+    graph.emplace_shared<SemiringGaussianFactor>(penalty(X(t)));
+    graph.emplace_shared<SemiringGaussianFactor>(penalty(U(t)));
+  }
+  graph.emplace_shared<SemiringGaussianFactor>(penalty(X(2)));
+  // From x0 = 2: -(4 + 1) - (1 + 0.5 + 0.25 + 0.125) - (0.25 + 0.125 + 0.5).
+  const double expected = -7.75;
+  EXPECT_DOUBLES_EQUAL(expected, graph.expectation(backward), 1e-9);
+  EXPECT_DOUBLES_EQUAL(expected, graph.expectation(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(
+      expected, graph.expectation(Ordering::Natural(graph)), 1e-9);
+}
+
 // The maximum needs a variable without a density and a value that is
 // concave in it.
 TEST(SemiringGaussianFactor, MaximumRequirements) {

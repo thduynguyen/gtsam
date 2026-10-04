@@ -324,8 +324,9 @@ $$\bar v_\eta = -(1.774 \cdot 4 + 1.717) = -8.814,$$
 
 and the mean of the tilted distribution is the plan
 $(-1.032,\; -0.387)$, whose first action is $-K_0\, x_0$. The notebook
-computes the same two results a second way, from one Gaussian integral over
-the whole plan.
+computes the table and these two results by eliminating the graph with the
+soft maximum at the actions (Section 6), and checks them against the
+recursion above and against one Gaussian integral over the whole plan.
 
 The soft value lies between the two ends of Section 2: the return of the
 best plan is $-6.4$, and the average return of plans drawn from the sampling
@@ -480,10 +481,83 @@ def cem(plan_return, moves, samples, elites, iterations, rng, verbose=True):
     return mean
 ```
 
-This chapter does not use the module. The module's factors hold tables and
-quadratics, and here no factor is ever formed: the model is only run. The
-exact values that the samples are checked against come from the recursion of
-Section 4 and from Chapter 9.
+The samples never form a factor: the model is only run. The exact numbers
+that the samples are checked against do come from factors, and the notebook
+computes them with the module. The graph is the graph of Section 1, with the
+sampling distribution as the policy factor of every action. The helpers
+`gaussian` and `penalty` are those of Chapter 1, Section 10, and a noise
+model of variance zero is a hard constraint:
+
+```python
+graph = SemiringFactorGraph()
+graph.push_back(gaussian(X(0), I, np.array([x0]), noise_model(0)))
+for t in range(moves):
+    # The sampling distribution N(plan_t, Sigma_e) of the action.
+    graph.push_back(gaussian(U(t), I, np.array([plan[t]]),
+                             noise_model(variance)))
+    # The noise-free model x' = x + u.
+    graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                             noise_model(0)))
+    graph.push_back(penalty(X(t)))
+    graph.push_back(penalty(U(t)))
+graph.push_back(penalty(X(moves)))
+```
+
+The actions are summed out by the soft maximum, and the states keep the
+default rule, the average. The ordering `backward` runs backward in time,
+from $x_T$ to $x_0$:
+
+```python
+soft = SemiringRules()
+soft.setAll([U(t) for t in range(moves)], SemiringSum.SoftMaximum(eta))
+graph.expectation(backward, soft)              # -8.814 for eta = 1
+bayes_net = graph.eliminateSequential(backward, soft)
+```
+
+The conditional that the soft maximum leaves on an action holds the sampling
+density and the surprise $A_t(u, x) = Q_t(x, u) - V_t(x)$. Its tilted
+version, the density times $e^{A_t / \eta}$, is the improved distribution of
+the action. The module has `tilted` only for discrete conditionals, so the
+notebook takes this product with plain GTSAM: $e^{A_t / \eta}$ is a
+`HessianFactor`, and eliminating the action from the two factors gives a
+`GaussianConditional`.
+
+```python
+def tilted(conditional, eta):
+    # The sampling density times e^{A / eta}, as R u + S x = d.
+    surprise = conditional.surprise()  # the quadratic A(u, x)
+    u, x = surprise.keys()
+    G = -surprise.information() / eta
+    g = -surprise.linearTerm().ravel() / eta
+    exponent = HessianFactor(u, x, G[:1, :1], G[:1, 1:], g[:1], G[1:, 1:],
+                             g[1:], -surprise.constantTerm() / eta)
+    graph = GaussianFactorGraph()
+    graph.add(conditional.conditional())  # the sampling density
+    graph.add(exponent)                   # the factor e^{A / eta}
+    bayes_net, _ = graph.eliminatePartialSequential(ordering(u))
+    return bayes_net.at(0)
+```
+
+The gain $K_t$ is $S / R$ of this conditional. Putting the tilted
+conditionals of the actions back into the Bayes net, in place of the sampling
+densities, and solving it with `GaussianBayesNet.optimize` gives the mean of
+the tilted distribution over plans.
+
+The other exact numbers of the chapter are the same graph with other rules:
+
+| Number | Policy factor | Rule at the actions | Rule at the states |
+|---|---|---|---|
+| best return $-6.4$ and the LQR plan | none | `Maximum()` | average |
+| average return $-17$ of sampled plans | sampling distribution | average | average |
+| soft value and tilted mean, for every $\eta$ and every horizon | sampling distribution | `SoftMaximum(eta)` | average |
+| each round of the exact iteration of Section 4 | sampling distribution, centered on the current plan | `SoftMaximum(eta)` | average |
+| tilting the slips too (Section 7) | sampling distribution; the dynamics factor has the slips | `SoftMaximum(eta)` | `Tilted(1 / eta)` |
+| iLQR inside MPC | none; the linearized graph of Chapter 9 | `Maximum()` | average |
+
+What stays in numpy: the sampling and the rollouts of MPPI and CEM, the
+simulated runs under slips, and two independent checks of the module's
+numbers, the recursion of Section 4 and one Gaussian integral over the whole
+plan.
 
 ## 7. What breaks
 

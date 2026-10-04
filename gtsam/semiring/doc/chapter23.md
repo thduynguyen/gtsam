@@ -348,37 +348,65 @@ here.
 
 ## 7. Implementation
 
-The two passes of Stage 1 and the update of Stage 2, from the notebook:
+Both passes of Stage 1 run on the `gtsam/semiring` module. The backward pass
+is one elimination of the graph of Section 1, with the coin flip as the policy
+factors, the soft maximum as the rule of the two actions, and the average,
+the default, at the states. The model of the expert is read from the
+conditionals on the actions with `tilted`:
 
 ```python
-def backward(theta):
-    """Soft action values and the soft-optimal policy of each move."""
-    move_reward, V = rewards(theta)          # the reward tables, V_2 = r(s2)
-    policies = {}
-    for t in [1, 0]:
-        Q = move_reward + dynamics @ V       # average over the next state
-        V = eta * np.log((base_policy * np.exp(Q / eta)).sum(axis=1))
-        policies[t] = base_policy * np.exp((Q - V[:, None]) / eta)
-    return policies
+backward_order = ordering(S(2), A(1), S(1), A(0), S(0))
+soft_actions = SemiringRules()
+soft_actions.setAll([A(0), A(1)], SemiringSum.SoftMaximum(eta))
 
-def features(policies):
-    """Expected features: [number of moves Right, last cell is 0, 1, 2]."""
-    d, moves_right = prior, 0.0
+def soft_pass(move_reward, final_reward):
+    """The soft-optimal policy of each move, for given reward tables."""
+    graph = SemiringFactorGraph()
+    graph.push_back(prior_factor)
     for t in range(2):
-        pairs = d[:, None] * policies[t]     # d_t(s) pi_t(a | s)
-        moves_right += pairs[:, R].sum()
-        d = np.einsum("sa,sat->t", pairs, dynamics)
-    return np.concatenate([[moves_right], d])
+        graph.push_back(base_factors[t])          # the coin flip
+        graph.push_back(dynamics_factors[t])
+        graph.push_back(value([state(t), action(t)], move_reward))
+    graph.push_back(value([state(2)], final_reward))
+    bayes_net = graph.eliminateSequential(backward_order, soft_actions)
+    # The conditionals of a1 and a0 are at positions 1 and 3.
+    return {1: table(bayes_net.at(1).tilted(1 / eta), [state(1), action(1)]),
+            0: table(bayes_net.at(3).tilted(1 / eta), [state(0), action(0)])}
+```
 
+`tilted(kappa)` returns $c\, e^{\kappa A}$ for the conditional $c$ and the
+surprise $A$ that the elimination stored. Here $c = \pi_0$,
+$A = Q_t - V_t$ and $\kappa = 1 / \eta$, which is the policy of Section 2.
+
+The forward pass multiplies and sums factors. The probability channel of the
+product of the message and the policy factor is the visitation
+$d_t(s)\, \pi_t(a \mid s)$:
+
+```python
+def forward(policies):
+    """Visitations d_t(s) pi_t(a | s) of each move, and d_2(s)."""
+    message, pairs = prior_factor, {}
+    for t in range(2):
+        keys = [state(t), action(t)]
+        pair = message * probability(keys, policies[t])
+        pairs[t] = table(pair.probability(), keys)
+        message = (pair * dynamics_factors[t]).sum(ordering(S(t), A(t)))
+    return pairs, table(message.probability(), [state(2)])
+```
+
+Stage 2 is arithmetic on four numbers, in numpy, with `features` adding up
+the visitations of the forward pass:
+
+```python
 theta = np.zeros(4)
 for k in range(20000):
     theta = theta + 2.0 * (counted - features(backward(theta)))
 ```
 
-The backward pass is the elimination routine of Chapter 2 with the tilted
-semiring at the actions and the expectation semiring at the states. The
-module implements the expectation semiring only, so this chapter runs in
-numpy.
+The value of Section 6 is the same bucket of the last state summed out by two
+rules: `bucket.sum(ordering(S(2)))` gives $2$, and
+`bucket.sum(ordering(S(2)), SemiringSum.SoftMaximum(eta))` gives $5.57$. Only
+the sampling of the 500 demonstrations of Section 5 is outside the module.
 
 ## 8. What breaks
 

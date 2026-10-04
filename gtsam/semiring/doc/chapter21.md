@@ -110,7 +110,8 @@ of them.
 
 *On the endless track of Chapter 3,* the notebook estimates the dynamics
 table from 20 sampled transitions for every cell and move, which gives
-$D_p = 0.5$, and evaluates the coin-flip policy exactly in both tables:
+$D_p = 0.5$, and evaluates the coin-flip policy exactly in both tables, by
+the elimination of Chapter 3 with the module:
 
 | discount $\gamma$ | horizon $1 / (1 - \gamma)$ | true $J$ | model $\hat J$ | error | bound |
 |---|---|---|---|---|---|
@@ -309,16 +310,19 @@ Three remarks on the table.
 
 Planning in the *true* model must return the best policy. For the line, with
 linear models and quadratic rewards, the best first action of a plan is
-linear in the position, $u = -K_t\, x$, and its gain has a closed form (the
-notebook's `planner_gains`). With the true model $F = B = 1$ it gives
+linear in the position, $u = -K_t\, x$, and its gain is found by solving one
+Gaussian factor graph (the notebook's `planner_gains`, in Section 7). With
+the true model $F = B = 1$ it gives
 
 $$K_0 = 0.6, \qquad K_1 = 0.5, \qquad J = -9.25,$$
 
 the Riccati gains and the best return of [Chapter 6](chapter06.md). The CEM
 planner of the next section, run on the true model, applies the same gains to
-three decimals. And the exact evaluation used for the track in Section 2
-returns $J = 0.4385$ for the coin flip in the true table, the value of
-Chapter 3. The notebook asserts all three.
+three decimals. For a single model the planner's gains are also those of the
+Riccati recursion on that model, which the module computes by eliminating the
+model's graph with the maximum at the actions. And the exact evaluation used
+for the track in Section 2 returns $J = 0.4385$ for the coin flip in the true
+table, the value of Chapter 3. The notebook asserts all four.
 
 ## 7. Implementation: a small PETS on the line
 
@@ -377,8 +381,8 @@ for t in range(2):
 | one learned model | $0.585$, $0.500$ | $-9.253$ | $-9.123$ |
 | ensemble of 5 | $0.574$, $0.495$ | $-9.259$ | $-9.128$ |
 
-The column "exact" evaluates the planner's gains on the real line in closed
-form. The column "sampled" is the average return of 10000 real episodes
+The column "exact" evaluates the planner's gains on the real line by
+elimination, with the module. The column "sampled" is the average return of 10000 real episodes
 controlled by CEM. Its level carries the sampling error of those episodes.
 Its differences between rows do not, because all rows use the same random
 numbers, and they match the differences of the exact column.
@@ -386,6 +390,46 @@ numbers, and they match the differences of the exact column.
 With 10 transitions, both learned planners are within $0.01$ of the best
 return. This data set happens to give a good model; the table of Section 4
 shows the spread over many data sets.
+
+**The exact quantities** are GTSAM factor graphs. Three are used.
+
+- *The plan an ensemble rates best.* The planned actions are shared
+  variables, and every member has its own chain of positions, tied to the
+  actions by its own dynamics factors, as hard constraints. Each member's
+  rewards are weighted by one over the number of members. Solving this one
+  `GaussianFactorGraph` maximizes, over the plan, the average of the members'
+  returns:
+
+  ```python
+  def plan_in_models(models, horizon, start=1.0):
+      shared = noiseModel.Isotropic.Sigma(1, np.sqrt(len(models) / 2))
+      graph = GaussianFactorGraph()
+      for t in range(horizon):
+          graph.add(JacobianFactor(U(t), I, zero, penalty))       # -u^2
+      for member, (F, B) in enumerate(models):
+          graph.add(JacobianFactor(member_state(member, 0), I,
+                                   np.array([start]), hard))
+          for t in range(horizon):
+              graph.add(JacobianFactor(                           # dynamics
+                  member_state(member, t + 1), I, member_state(member, t),
+                  -F * I, U(t), -B * I, zero, hard))
+              graph.add(JacobianFactor(member_state(member, t + 1), I, zero,
+                                       shared))                   # -x'^2 / E
+      solution = graph.optimize()
+      return np.array([solution.at(U(t))[0] for t in range(horizon)])
+  ```
+
+  Planned from $x = 1$, the first action is minus the gain.
+- *The return of a policy under a model,* true or learned: the semiring graph
+  of Chapter 1 with that model's dynamics factor and the policy as a
+  hard-constraint factor, eliminated by the average.
+- *The forward messages and the return on the endless track* of Section 2:
+  the marginals of the states of a semiring graph, and the repeated
+  elimination of one step with the termination state of Chapter 3.
+
+The module has no factor for a mixture of models, so the average over the
+members is written out as one chain per member, in plain GTSAM, and not as a
+rule for a discrete "member" variable.
 
 **What the real PETS adds.** Each member of its ensemble is a neural network
 that predicts a mean and a variance for the next state, so the noise of the

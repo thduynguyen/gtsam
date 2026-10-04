@@ -5,25 +5,104 @@
 # [Chapter 16](https://thduynguyen.github.io/gtsam/chapter16): the
 # deterministic policy gradient on the line of Chapter 1, checked against
 # the Riccati solution and against finite differences, and a small version
-# of DDPG and TD3 with a linear policy and a quadratic critic.
+# of DDPG and TD3 with a linear policy and a quadratic critic. Every exact
+# quantity is computed by elimination with the `gtsam/semiring` module; the
+# sampling and the learning updates are plain numpy.
 
 # %%
 import numpy as np
-from gtsam import HessianFactor, JacobianFactor
-from gtsam import SemiringFactorGraph, SemiringGaussianFactor, noiseModel
+from gtsam import HessianFactor, JacobianFactor, Ordering
+from gtsam import SemiringFactorGraph, SemiringGaussianFactor, SemiringRules
+from gtsam import SemiringSum
+from gtsam import noiseModel
 from gtsam.symbol_shorthand import U, X
 
 np.set_printoptions(precision=4, suppress=True)
 
 # %% [markdown]
-# ## The two-move line with a deterministic policy (Sections 1 and 2)
+# ## The line of Chapter 1 as semiring factors
 #
-# The policy is $u_t = -K_t x_t$, optionally with Gaussian noise of variance
-# $\Sigma_e$. Stage 1 is exact: a backward pass for the quadratic values and a
-# forward pass for the second moment of the state.
+# A density is lifted to $(p, 0)$ and a quadratic penalty to $(1, r)$. A
+# deterministic policy is a hard constraint $u + K x = 0$: a
+# `JacobianFactor` with a constrained noise model.
 
 # %%
 SIGMA_W, MU_0, SIGMA_0 = 0.5, 2.0, 1.0  # the line of Chapter 1
+I, zero = np.eye(1), np.zeros(1)
+average, maximum = SemiringSum.Average(), SemiringSum.Maximum()
+
+
+def gaussian(*args):
+    """Lift a Gaussian factor to (p, 0)."""
+    return SemiringGaussianFactor(JacobianFactor(*args))
+
+
+def penalty(key):
+    """Lift the penalty z^2 on one variable to the reward (1, -z^2)."""
+    return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
+
+
+def square(key):
+    """The value z^2 on one variable, as the factor (1, z^2)."""
+    return SemiringGaussianFactor.Reward(HessianFactor(key, 2 * I, zero, 0.0))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def variance(v):
+    """A scalar Gaussian noise model with the given variance."""
+    return noiseModel.Isotropic.Variance(1, v)
+
+
+prior = gaussian(X(0), I, np.array([MU_0]), variance(SIGMA_0))
+
+
+def dynamics(t):
+    """x' = x + u + w, the dynamics factor of move t."""
+    return gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero, variance(SIGMA_W))
+
+
+def policy(t, K, sigma_e=0.0):
+    """u = -K x + e: a density, or a hard constraint if there is no noise."""
+    model = variance(sigma_e) if sigma_e > 0 else noiseModel.Constrained.All(1)
+    return gaussian(U(t), I, X(t), K * I, zero, model)
+
+
+def blocks(bucket, t=0):
+    """(H_uu, H_ux, H_xx, constant) of Q = -(H_uu u^2 + 2 H_ux u x + H_xx x^2
+    + constant), read from the bucket of the action u_t."""
+    Q = bucket.value()  # a HessianFactor: 0.5 z' G z - g' z + 0.5 f
+    keys, G = list(Q.keys()), Q.augmentedInformation()
+    u, x = keys.index(U(t)), keys.index(X(t))
+    return -G[u, u] / 2, -G[u, x] / 2, -G[x, x] / 2, -G[-1, -1] / 2
+
+
+# %% [markdown]
+# ## The two-move line with a deterministic policy (Sections 1 and 2)
+#
+# The policy is $u_t = -K_t x_t$, optionally with Gaussian noise of variance
+# $\Sigma_e$. Stage 1 is exact: a backward pass of eliminations for the
+# quadratic values, and the second moment of the state as the forward
+# message.
+
+
+# %%
+def second_moment(gains, t, sigma_e=0.0):
+    """The forward message m_t = E[x_t^2]: the expectation of the value
+    x_t^2 under the prior, the policy and the dynamics up to step t."""
+    graph = SemiringFactorGraph()
+    graph.push_back(prior)
+    for k in range(t):
+        graph.push_back(policy(k, gains[k], sigma_e))
+        graph.push_back(dynamics(k))
+    graph.push_back(square(X(t)))
+    return graph.expectation()
 
 
 def stage1(gains, sigma_e=0.0):
@@ -32,17 +111,18 @@ def stage1(gains, sigma_e=0.0):
     Returns J, the blocks (H_uu, H_ux) of Q_t, and the forward messages
     m_t = E[x_t^2].
     """
-    P, beta = 1.0, 0.0  # V_2(x) = -x^2
+    future = penalty(X(2))  # (1, V_2), with V_2(x) = -x^2
     H = {}
     for t in [1, 0]:
-        K = gains[t]
-        H_uu, H_ux, H_xx = 1 + P, P, 1 + P  # blocks of Q_t(x, u)
-        H[t] = (H_uu, H_ux)
-        beta = beta + P * SIGMA_W + H_uu * sigma_e
-        P = H_xx - 2 * H_ux * K + H_uu * K ** 2  # V_t(x) = -(P x^2 + beta)
-    m = {0: MU_0 ** 2 + SIGMA_0}
-    m[1] = (1 - gains[0]) ** 2 * m[0] + sigma_e + SIGMA_W
-    J = -(P * m[0] + beta)
+        # Eliminate the next state by average; add the rewards: (1, Q_t).
+        phi = dynamics(t).multiply(future).sum(ordering(X(t + 1)))
+        bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
+        H[t] = blocks(bucket, t)[:2]
+        # Eliminate the action by average under the policy: (1, V_t).
+        future = policy(t, gains[t], sigma_e).multiply(bucket).sum(
+            ordering(U(t)))
+    J = prior.multiply(future).expectation()
+    m = {t: second_moment(gains, t, sigma_e) for t in range(2)}
     return J, H, m
 
 
@@ -70,46 +150,53 @@ for gains in [(0.5, 0.5), (0.3, 0.8), (0.6, 0.5)]:
 assert np.isclose(stage1((0.5, 0.5))[0], -9.375)
 assert np.isclose(stage1((0.5, 0.5), sigma_e=0.1)[0], -9.825)
 assert np.isclose(stage1((0.6, 0.5))[0], -9.25)
-assert np.allclose(deterministic_gradient((0.6, 0.5)), 0)
+assert np.allclose(deterministic_gradient((0.6, 0.5)), 0, atol=1e-9)
 assert np.allclose(deterministic_gradient((0.5, 0.5)), [2.5, 0.0])
+assert np.allclose(deterministic_gradient((0.3, 0.8)), [8.76, -3.54], atol=5e-3)
 
 # %% [markdown]
-# The same expected returns from the module. A deterministic policy is a
-# hard constraint $u + K x = 0$: a `JacobianFactor` with a constrained noise
-# model.
+# The same expected returns in one call, from the whole factor graph,
+# eliminated backward in time.
 
 # %%
-I, zero = np.eye(1), np.zeros(1)
-
-
-def gaussian(*args):
-    """Lift a Gaussian factor to (p, 0)."""
-    return SemiringGaussianFactor(JacobianFactor(*args))
-
-
-def penalty(key):
-    """Lift the penalty z^2 on one variable to the reward (1, -z^2)."""
-    return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
+backward = ordering(X(2), U(1), X(1), U(0), X(0))
 
 
 def expected_return(gains):
     graph = SemiringFactorGraph()
-    graph.push_back(gaussian(X(0), I, np.array([MU_0]),
-                             noiseModel.Isotropic.Variance(1, SIGMA_0)))
+    graph.push_back(prior)
     for t in range(2):
-        graph.push_back(gaussian(U(t), I, X(t), gains[t] * I, zero,
-                                 noiseModel.Constrained.All(1)))
-        graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
-                                 noiseModel.Isotropic.Variance(1, SIGMA_W)))
+        graph.push_back(policy(t, gains[t]))
+        graph.push_back(dynamics(t))
         graph.push_back(penalty(X(t)))
         graph.push_back(penalty(U(t)))
     graph.push_back(penalty(X(2)))
-    return graph.expectation()
+    return graph.expectation(backward)
 
 
 for gains in [(0.5, 0.5), (0.3, 0.8), (0.6, 0.5)]:
     print(f"K = {gains}: graph.expectation() = {expected_return(gains):.4f}")
     assert np.isclose(expected_return(gains), stage1(gains)[0])
+
+# The gains at which the gradient vanishes are those of the maximum rule: the
+# Riccati recursion of Chapter 6, as one elimination of the same graph without
+# its policy factors.
+graph = SemiringFactorGraph()
+graph.push_back(prior)
+for t in range(2):
+    graph.push_back(dynamics(t))
+    graph.push_back(penalty(X(t)))
+    graph.push_back(penalty(U(t)))
+graph.push_back(penalty(X(2)))
+rules = SemiringRules()
+rules.setAll([U(0), U(1)], maximum)
+bayes_net = graph.eliminateSequential(backward, rules)
+riccati = (bayes_net.at(3).conditional().S()[0, 0],
+           bayes_net.at(1).conditional().S()[0, 0])
+print("Riccati gains (K0, K1) =", riccati,
+      " J* =", graph.expectation(backward, rules))
+assert np.allclose(riccati, (0.6, 0.5))
+assert np.isclose(graph.expectation(backward, rules), -9.25)
 
 # %% [markdown]
 # ## The limit of a Gaussian policy (Section 3)
@@ -130,34 +217,77 @@ assert np.allclose(finite_differences(gains, 0.001),
 # ## The endless line (Section 4)
 #
 # The same robot with no last move and the discount $\gamma = 0.9$ of
-# Chapter 3, and one gain $K$ for every step. The exact reference is the
-# fixed point of the discounted Riccati recursion.
+# Chapter 3, and one gain $K$ for every step. Every step of the chain is the
+# same, so one set of factors is eliminated again and again, with the value of
+# the next state scaled by $\gamma$. The exact reference is the fixed point
+# with the maximum rule at the action: the discounted Riccati recursion.
 
 # %%
 gamma = 0.9
+transition = dynamics(0)  # on x0, u0, x1
+stage_reward = penalty(X(0)).multiply(penalty(U(0)))  # (1, -(x^2 + u^2))
 
-P = 1.0
-for _ in range(1000):  # Riccati: eliminate x' by average, u by max
-    H_uu, H_ux, H_xx = 1 + gamma * P, gamma * P, 1 + gamma * P
-    P = H_xx - H_ux ** 2 / H_uu
-K_star = H_ux / H_uu
+
+def quadratic(key, P, beta):
+    """The value -(P x^2 + beta) on one variable, as the factor (1, v)."""
+    return SemiringGaussianFactor.Reward(
+        HessianFactor(key, np.array([[-2.0 * P]]), zero, -2.0 * beta))
+
+
+def read(factor):
+    """(P, beta) of a factor on one variable whose value is -(P x^2 + beta)."""
+    G = factor.value().augmentedInformation()
+    return -G[0, 0] / 2, -G[1, 1] / 2
+
+
+def action_bucket(P, beta, reward=stage_reward):
+    """The bucket of the action, (1, Q): the reward now, plus gamma times the
+    average over the next state of its value -(P x'^2 + beta)."""
+    future = quadratic(X(1), gamma * P, gamma * beta)
+    return reward.multiply(transition.multiply(future).sum(ordering(X(1))))
+
+
+P, beta = 1.0, 0.0
+for _ in range(1000):  # Riccati: eliminate x' by average, u by maximum
+    bucket = action_bucket(P, beta)
+    conditional, new_value = bucket.eliminate(ordering(U(0)), maximum)
+    P, beta = read(new_value)
+K_star = conditional.conditional().S()[0, 0]  # the conditional is u + K x = 0
+H_uu, H_ux, H_xx, constant = blocks(action_bucket(P, beta))
 m_0 = MU_0 ** 2 + SIGMA_0
-beta_star = gamma * P * SIGMA_W / (1 - gamma)
-J_star = -(P * m_0 + beta_star)
+J_star = prior.multiply(quadratic(X(0), P, beta)).expectation()
 print(f"P* = {P:.4f}, K* = {K_star:.4f}, J* = {J_star:.4f}")
 print(f"blocks of Q*: H_uu = {H_uu:.4f}, H_ux = {H_ux:.4f}, "
-      f"H_xx = {H_xx:.4f}, constant = {gamma * (P * SIGMA_W + beta_star):.4f}")
+      f"H_xx = {H_xx:.4f}, constant = {constant:.4f}")
 assert np.isclose(K_star, 0.5884, atol=1e-4)
+assert np.isclose(P, 1.5884, atol=1e-4)
+assert np.isclose(J_star, -15.0898, atol=1e-4)
+
+
+def evaluate(K, reward=stage_reward):
+    """(P, beta) of the value of u = -K x for a quadratic reward: eliminate
+    with the average rule until the value stops changing."""
+    rule = policy(0, K)
+    P, beta = 0.0, 0.0
+    for _ in range(2000):
+        new_P, new_beta = read(rule.multiply(action_bucket(P, beta, reward)).sum(
+            ordering(U(0))))
+        if abs(new_P - P) + abs(new_beta - beta) < 1e-12:
+            break
+        P, beta = new_P, new_beta
+    return new_P, new_beta
 
 
 def stage1_endless(K):
     """Exact messages of u = -K x on the endless line."""
-    P = (1 + K ** 2) / (1 - gamma * (1 - K) ** 2)  # V(x) = -(P x^2 + beta)
-    beta = gamma * P * SIGMA_W / (1 - gamma)
-    H_uu, H_ux = 1 + gamma * P, gamma * P
-    # Discounted second moment: m = sum_t gamma^t E[x_t^2].
-    m = (m_0 + gamma * SIGMA_W / (1 - gamma)) / (1 - gamma * (1 - K) ** 2)
-    return -(P * m_0 + beta), H_uu, H_ux, m
+    P, beta = evaluate(K)  # V(x) = -(P x^2 + beta)
+    J = prior.multiply(quadratic(X(0), P, beta)).expectation()
+    H_uu, H_ux = blocks(action_bucket(P, beta))[:2]
+    # The discounted second moment m = sum_t gamma^t E[x_t^2] is the expected
+    # discounted sum of the "reward" x^2 (Chapter 3, Section 5): the same
+    # elimination with x^2 in place of the reward.
+    m = prior.multiply(quadratic(X(0), *evaluate(K, square(X(0))))).expectation()
+    return J, H_uu, H_ux, m
 
 
 def gradient_endless(K):
@@ -172,7 +302,13 @@ for K in [0.3, K_star, 0.8]:
           f"gradient = {gradient_endless(K):8.4f}, "
           f"finite differences = {numeric:8.4f}")
     assert np.isclose(gradient_endless(K), numeric, atol=1e-4)
-assert abs(gradient_endless(K_star)) < 1e-9
+assert abs(gradient_endless(K_star)) < 1e-8
+assert np.isclose(gradient_endless(0.3), 31.557, atol=1e-3)
+assert np.isclose(gradient_endless(0.8), -9.732, atol=1e-3)
+# The forward message against its closed form.
+assert np.isclose(stage1_endless(0.3)[3],
+                  (m_0 + gamma * SIGMA_W / (1 - gamma)) /
+                  (1 - gamma * (1 - 0.3) ** 2))
 
 # Stage 2 with exact messages: gradient ascent on K.
 K = 0.3

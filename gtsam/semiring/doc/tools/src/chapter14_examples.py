@@ -11,12 +11,21 @@
 import itertools
 
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor, SemiringFactorGraph
+from gtsam.symbol_shorthand import U, X
 from scipy.optimize import minimize
 
 np.set_printoptions(precision=4, suppress=True)
 
 # %% [markdown]
 # ## The endless track (Chapter 3) and its exact messages
+#
+# The exact messages come from the module: the track as semiring factors with
+# the termination outcome of Chapter 3. The value $V$ of a policy is obtained
+# by composing moves, $Q$ is the bucket of the action without a policy factor,
+# and the forward message $d(s)$ is the expected return when each step spent
+# in the cell pays 1.
 
 # %%
 L, R = 0, 1
@@ -40,14 +49,134 @@ def policy_table(theta):
     return np.stack([1 - right, right], axis=1)
 
 
+ENDED = 3
+now, move, later = (X(0), 4), (U(0), 2), (X(1), 4)  # (key, cardinality)
+
+
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+def with_ended(cells, fill=0.0):
+    """Add the row of the state "ended" to a table over the three cells."""
+    cells = np.asarray(cells, float)
+    return np.concatenate([cells, np.full((1,) + cells.shape[1:], fill)])
+
+
+def step_factor(discount=gamma):
+    """The dynamics of one move; the episode continues with prob. `discount`."""
+    ended = np.zeros((4, 2, 4))
+    ended[:3, :, :3] = discount * dynamics  # continue
+    ended[:3, :, ENDED] = 1 - discount  # end
+    ended[ENDED, :, ENDED] = 1  # stay ended
+    return probability([now, move, later], ended)
+
+
+def one_move(policy, rewards=reward, discount=gamma):
+    """One move under a policy, as a factor on (s, s'): the action summed out."""
+    bucket = (probability([now, move], with_ended(policy, 0.5)) *
+              value([now, move], with_ended(rewards)) * step_factor(discount))
+    return bucket.sum(ordering(U(0)))
+
+
+def relabel(factor, old_keys, new_keys):
+    """The same factor on other variables."""
+    return SemiringDiscreteFactor.FromChannels(
+        DecisionTreeFactor(
+            new_keys, table(factor.probability(), old_keys).ravel().tolist()),
+        DecisionTreeFactor(
+            new_keys, table(factor.weightedValue(), old_keys).ravel().tolist()))
+
+
+def compose(moves, doublings):
+    """Compose a factor on (X(0), X(1)) with itself, `doublings` times.
+
+    Each doubling multiplies the factor with a copy of itself on the
+    following states and sums out the state in between, which doubles the
+    number of moves. Returns the factor and the key of its last state.
+    """
+    for i in range(1, doublings + 1):
+        middle, end = (X(i), 4), (X(i + 1), 4)
+        copy = relabel(moves, [now, middle], [middle, end])
+        moves = (moves * copy).sum(ordering(X(i)))  # now on (X(0), X(i + 1))
+    return moves, (X(doublings + 1), 4)
+
+
+def evaluate(policy, rewards=reward, discount=gamma):
+    """V of the endless chain under a policy: 1024 moves, by ten doublings."""
+    moves, end = compose(one_move(policy, rewards, discount), 10)
+    return table(moves.sum(ordering(end[0])).value(), [now])[:3]
+
+
+def action_values(V, rewards=reward, discount=gamma, baseline=None):
+    """Q(s, a) = r(s, a) + discount * E[V(s')] (minus a baseline on s, if any).
+
+    It is the value of the bucket of the action, without a policy factor.
+    """
+    bucket = value([now, move], with_ended(rewards)) * (
+        step_factor(discount) * value([later], with_ended(V))).sum(
+            ordering(X(1)))
+    if baseline is not None:
+        bucket = value([now], with_ended(-np.asarray(baseline))) * bucket
+    return table(bucket.value(), [now, move])[:3]
+
+
+def visitation(policy):
+    """d(s): the expected number of steps spent in each cell per episode.
+
+    It is the expected return of a reward that pays 1 per step in the cell.
+    """
+    visits = np.zeros(3)
+    for cell in range(3):
+        pays_one = np.zeros((3, 2))
+        pays_one[cell] = 1.0
+        visits[cell] = prior @ evaluate(policy, pays_one)
+    return visits
+
+
+def expected_return(policy):
+    """J of a policy table, by elimination."""
+    return prior @ evaluate(policy)
+
+
+def advantages(policy):
+    """J, V and the advantage A = Q - V of a policy table."""
+    V = evaluate(policy)
+    return prior @ V, V, action_values(V) - V[:, None]
+
+
 def stage1(policy):
     """Exact J, V, Q, A and discounted visitation d of a policy table."""
-    P_pi = np.einsum("sa,sat->st", policy, dynamics)
-    r_pi = (policy * reward).sum(axis=1)
-    V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
-    Q = reward + gamma * dynamics @ V
-    d = np.linalg.solve((np.eye(3) - gamma * P_pi).T, prior)
-    return prior @ V, V, Q, Q - V[:, None], d
+    V = evaluate(policy)
+    Q = action_values(V)
+    return prior @ V, V, Q, Q - V[:, None], visitation(policy)
 
 
 old = policy_table(np.zeros(3))  # the coin flip
@@ -70,7 +199,7 @@ candidates = {
     "Left everywhere": np.eye(2)[[L, L, L]],
 }
 for name, new in candidates.items():
-    J_new, _, _, _, d_new = stage1(new)
+    J_new, d_new = expected_return(new), visitation(new)
     lemma = (d_new[:, None] * new * A_old).sum()
     surrogate = (d_old[:, None] * new * A_old).sum()
     print(f"{name:26s} J_new - J_old = {J_new - J_old:8.4f}   "
@@ -83,8 +212,8 @@ worst = 0.0
 for _ in range(1000):
     a_policy = rng.dirichlet([1, 1], size=3)
     b_policy = rng.dirichlet([1, 1], size=3)
-    J_a, _, _, A_a, _ = stage1(a_policy)
-    J_b, _, _, _, d_b = stage1(b_policy)
+    J_a, _, A_a = advantages(a_policy)
+    J_b, d_b = expected_return(b_policy), visitation(b_policy)
     worst = max(worst, abs(J_b - J_a - (d_b[:, None] * b_policy * A_a).sum()))
 print("largest violation over 1000 random pairs of policies:", worst)
 assert worst < 1e-10
@@ -109,7 +238,7 @@ print("gradient =", gradient, " natural gradient =", natural)
 def kl(theta_from, theta_to):
     """KL between trajectory distributions: sum_s d(s) KL(pi(.|s) || pi'(.|s))."""
     p, q = policy_table(theta_from), policy_table(theta_to)
-    d = stage1(p)[4]
+    d = visitation(p)
     return (d[:, None] * p * np.log(p / q)).sum()
 
 
@@ -123,7 +252,7 @@ print("direction:", toward_greedy)
 rows = {}
 for step in [0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]:
     theta_new = step * toward_greedy
-    J_new = stage1(policy_table(theta_new))[0]
+    J_new = expected_return(policy_table(theta_new))
     rows[step] = (J_new, surrogate(theta_new), kl(np.zeros(3), theta_new),
                   0.5 * theta_new @ fisher @ theta_new)
     print(f"step {step:4.2f}: J = {J_new:.4f}  surrogate = {rows[step][1]:.4f}  "
@@ -153,7 +282,7 @@ rng = np.random.default_rng(1)
 smallest_slack = np.inf
 for _ in range(2000):
     new = policy_table(rng.normal(scale=rng.choice([0.01, 0.1, 1.0]), size=3))
-    J_new = stage1(new)[0]
+    J_new = expected_return(new)
     L_new = J_old + (d_old[:, None] * new * A_old).sum()
     max_kl = (old * np.log(old / new)).sum(axis=1).max()
     smallest_slack = min(smallest_slack, J_new - (L_new - C * max_kl))
@@ -175,18 +304,35 @@ move_reward = np.array([[0.0, -1.0]] * 3)
 final_reward = np.array([0.0, 0.0, 10.0])
 
 
+cell = lambda t: (X(t), 3)  # the keys of the two-move track
+choice = lambda t: (U(t), 2)
+
+
+def track(theta):
+    """The factor graph of the two-move track under the logistic policy."""
+    graph = SemiringFactorGraph()
+    graph.push_back(probability([cell(0)], track_prior))
+    for t in range(2):
+        keys = [cell(t), choice(t)]
+        graph.push_back(probability(keys, policy_table(theta)))
+        graph.push_back(probability(keys + [cell(t + 1)], dynamics))
+        graph.push_back(value(keys, move_reward))
+    graph.push_back(value([cell(2)], final_reward))
+    return graph
+
+
 def track_messages(theta):
-    """J, A_t and d_t of the two-move track, for the logistic policy."""
-    policy = policy_table(theta)
-    V = final_reward
-    A = {}
-    for t in [1, 0]:
-        Q = move_reward + dynamics @ V
-        V = (policy * Q).sum(axis=1)
-        A[t] = Q - V[:, None]
-    d = {0: track_prior}
-    d[1] = np.einsum("s,sa,sat->t", d[0], policy, dynamics)
-    return track_prior @ V, A, d
+    """J, A_t and d_t of the two-move track, by elimination (Chapter 5)."""
+    graph = track(theta)
+    bayes_net = graph.eliminateSequential(
+        ordering(X(2), U(1), X(1), U(0), X(0)))
+    # The conditionals of a_1 and a_0 are at positions 1 and 3.
+    A = {1: table(bayes_net.at(1).surprise(), [cell(1), choice(1)]),
+         0: table(bayes_net.at(3).surprise(), [cell(0), choice(0)])}
+    bayes_tree = graph.eliminateMultifrontal()
+    d = {t: table(bayes_tree.marginalFactor(X(t)).probability(), [cell(t)])
+         for t in range(2)}
+    return graph.expectation(), A, d
 
 
 J0, A0, d0 = track_messages(np.zeros(3))
@@ -213,13 +359,17 @@ def track_kl(theta):
 
 
 # The trajectory KL, by enumerating all trajectories of the two-move track.
+# Their probabilities are the probability channel of the product of all
+# factors of the graph.
 theta_test = np.array([0.3, -0.4, 0.8])
 new = policy_table(theta_test)
+trajectory_probability = table(
+    track(np.zeros(3)).product().probability(),
+    [cell(0), choice(0), cell(1), choice(1), cell(2)])
 brute = 0.0
 for s0, a0, s1, a1, s2 in itertools.product(
         range(3), range(2), range(3), range(2), range(3)):
-    p = (track_prior[s0] * pi0[s0, a0] * dynamics[s0, a0, s1] * pi0[s1, a1] *
-         dynamics[s1, a1, s2])
+    p = trajectory_probability[s0, a0, s1, a1, s2]
     if p > 0:
         brute += p * np.log(pi0[s0, a0] * pi0[s1, a1] /
                             (new[s0, a0] * new[s1, a1]))
@@ -253,7 +403,7 @@ assert np.isclose(quadratic, 7.54)
 # Back on the endless track, with sampled messages as in Chapter 13: each
 # iteration runs 5 episodes, updates a TD(0) critic, and then updates the
 # policy from that one batch in one of three ways. The expected return of
-# each iterate is evaluated exactly, for reporting only.
+# each iterate is evaluated exactly, by elimination, for reporting only.
 
 
 # %%
@@ -277,7 +427,7 @@ def train(rule, seed, M=5, iterations=60, alpha=0.2, epochs=20, clip=0.2,
     theta, V_hat = np.zeros(3), np.zeros(3)
     history = []
     for iteration in range(iterations):
-        history.append(stage1(policy_table(theta))[0])
+        history.append(expected_return(policy_table(theta)))
         # Stage 1, at theta_old: sampled forward message, learned critic.
         s, a, r, s_next = episodes(theta, M, rng)
         for i in rng.permutation(len(s)):
@@ -296,7 +446,7 @@ def train(rule, seed, M=5, iterations=60, alpha=0.2, epochs=20, clip=0.2,
             g = a - sigmoid(theta[s])  # score term
             theta = theta + alpha * np.bincount(
                 s, weights=active * rho * advantage * g, minlength=3) / M
-    history.append(stage1(policy_table(theta))[0])
+    history.append(expected_return(policy_table(theta)))
     return np.array(history)
 
 

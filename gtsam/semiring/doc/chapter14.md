@@ -331,7 +331,8 @@ ones.
 ## 4. Exact special cases
 
 **The lemma, to machine precision.** Section 2: both sides agree to
-$1.4 \times 10^{-14}$ over 1000 random pairs of policies.
+$1.6 \times 10^{-14}$ over 1000 random pairs of policies. Both sides are
+computed with the module, by exact elimination on the endless track.
 
 **A TRPO step is a natural-gradient step.** Take the two-move track of
 Chapter 1 with the policy of Chapter 5 at $\theta = 0$, where Chapter 5 found
@@ -417,8 +418,33 @@ The best possible value is $J^* = 6.490$.
   no longer tries the right one, and cannot recover.
 - **The clip removes the failures and keeps the speed.**
 
-The module is not used in the sampled loop. It appears in the exact tests,
-through the numbers of Chapter 5.
+**The exact side, with the module.** The module is not used in the sampled
+loop, whose algorithm must not read the dynamics table. It computes every
+exact quantity of the chapter. On the endless track, with the termination
+outcome of [Chapter 3](chapter03.md):
+
+```python
+V = evaluate(policy)                # the value of the chain, by composing moves
+A = action_values(V) - V[:, None]   # the bucket of the action, minus V
+d = visitation(policy)              # expected visits: the return of a reward
+                                    # that pays 1 per step in a cell
+J = prior @ V
+
+# The lemma: the new forward message times the old advantages.
+J_new - J_old == (d_new[:, None] * new_policy * A_old).sum()
+# The surrogate: the same with the old forward message.
+surrogate = J_old + (d_old[:, None] * new_policy * A_old).sum()
+```
+
+`evaluate` multiplies the factor of $n$ moves with a copy of itself on the
+following states and sums out the state in between, which gives the factor of
+$2n$ moves; ten doublings reach 1024 moves. The expected return of every
+iterate of the three PPO variants is computed this way.
+
+On the two-move track of the TRPO test, the messages are those of Chapter 5,
+from one `eliminateSequential` for the advantages and the Bayes tree for the
+marginals, and the probabilities of the trajectories in the check of the KL
+divergence are read from `graph.product()`.
 
 ## 6. What breaks
 

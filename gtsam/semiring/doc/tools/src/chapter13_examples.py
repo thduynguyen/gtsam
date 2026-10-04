@@ -9,6 +9,9 @@
 
 # %%
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor
+from gtsam.symbol_shorthand import U, X
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -16,7 +19,8 @@ np.set_printoptions(precision=4, suppress=True)
 # ## The endless track with a parametric policy (Section 1)
 #
 # $\pi_\theta(R \mid s) = \sigma(\theta_s)$, one parameter per cell. The
-# simulator is `episodes`; the tables are used for the exact reference only.
+# simulator is `episodes`; the tables are used for the exact reference only,
+# as the factors of a semiring factor graph.
 
 # %%
 L, R = 0, 1
@@ -42,20 +46,137 @@ def policy_table(theta):
 # %% [markdown]
 # ## The exact two stages (Section 1)
 #
-# Stage 1 solves the linear systems of Chapter 3 for the backward message $V$
-# and the forward message $d$. The gradient is the formula of Chapter 5.
-
+# Stage 1 is done with the module, on the endless track with the termination
+# outcome of Chapter 3. The backward message $V$ is the value of the chain,
+# obtained by composing moves; $Q$ is the bucket of the action without a
+# policy factor; and the forward message $d(s)$, the expected number of visits
+# to a cell, is the expected return when each step in that cell pays 1. The
+# gradient is the formula of Chapter 5.
 
 # %%
+ENDED = 3
+now, move, later = (X(0), 4), (U(0), 2), (X(1), 4)  # (key, cardinality)
+
+
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+def with_ended(cells, fill=0.0):
+    """Add the row of the state "ended" to a table over the three cells."""
+    cells = np.asarray(cells, float)
+    return np.concatenate([cells, np.full((1,) + cells.shape[1:], fill)])
+
+
+def step_factor(discount=gamma):
+    """The dynamics of one move; the episode continues with prob. `discount`."""
+    ended = np.zeros((4, 2, 4))
+    ended[:3, :, :3] = discount * dynamics  # continue
+    ended[:3, :, ENDED] = 1 - discount  # end
+    ended[ENDED, :, ENDED] = 1  # stay ended
+    return probability([now, move, later], ended)
+
+
+def one_move(policy, rewards=reward, discount=gamma):
+    """One move under a policy, as a factor on (s, s'): the action summed out."""
+    bucket = (probability([now, move], with_ended(policy, 0.5)) *
+              value([now, move], with_ended(rewards)) * step_factor(discount))
+    return bucket.sum(ordering(U(0)))
+
+
+def relabel(factor, old_keys, new_keys):
+    """The same factor on other variables."""
+    return SemiringDiscreteFactor.FromChannels(
+        DecisionTreeFactor(
+            new_keys, table(factor.probability(), old_keys).ravel().tolist()),
+        DecisionTreeFactor(
+            new_keys, table(factor.weightedValue(), old_keys).ravel().tolist()))
+
+
+def compose(moves, doublings):
+    """Compose a factor on (X(0), X(1)) with itself, `doublings` times.
+
+    Each doubling multiplies the factor with a copy of itself on the
+    following states and sums out the state in between, which doubles the
+    number of moves. Returns the factor and the key of its last state.
+    """
+    for i in range(1, doublings + 1):
+        middle, end = (X(i), 4), (X(i + 1), 4)
+        copy = relabel(moves, [now, middle], [middle, end])
+        moves = (moves * copy).sum(ordering(X(i)))  # now on (X(0), X(i + 1))
+    return moves, (X(doublings + 1), 4)
+
+
+def evaluate(policy, rewards=reward, discount=gamma):
+    """V of the endless chain under a policy: 1024 moves, by ten doublings."""
+    moves, end = compose(one_move(policy, rewards, discount), 10)
+    return table(moves.sum(ordering(end[0])).value(), [now])[:3]
+
+
+def action_values(V, rewards=reward, discount=gamma, baseline=None):
+    """Q(s, a) = r(s, a) + discount * E[V(s')] (minus a baseline on s, if any).
+
+    It is the value of the bucket of the action, without a policy factor.
+    """
+    bucket = value([now, move], with_ended(rewards)) * (
+        step_factor(discount) * value([later], with_ended(V))).sum(
+            ordering(X(1)))
+    if baseline is not None:
+        bucket = value([now], with_ended(-np.asarray(baseline))) * bucket
+    return table(bucket.value(), [now, move])[:3]
+
+
+def visitation(policy):
+    """d(s): the expected number of steps spent in each cell per episode.
+
+    It is the expected return of a reward that pays 1 per step in the cell.
+    """
+    visits = np.zeros(3)
+    for cell in range(3):
+        pays_one = np.zeros((3, 2))
+        pays_one[cell] = 1.0
+        visits[cell] = prior @ evaluate(policy, pays_one)
+    return visits
+
+
+def expected_return(theta):
+    """J of the logistic policy, by elimination."""
+    return prior @ evaluate(policy_table(theta))
+
+
 def exact_stage1(theta):
     """J, V, Q, A and the discounted visitation d of the policy."""
     policy = policy_table(theta)
-    P_pi = np.einsum("sa,sat->st", policy, dynamics)
-    r_pi = (policy * reward).sum(axis=1)
-    V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
-    Q = reward + gamma * dynamics @ V
-    d = np.linalg.solve((np.eye(3) - gamma * P_pi).T, prior)
-    return prior @ V, V, Q, Q - V[:, None], d
+    V = evaluate(policy)
+    Q = action_values(V)
+    return prior @ V, V, Q, Q - V[:, None], visitation(policy)
 
 
 def exact_gradient(theta):
@@ -73,8 +194,8 @@ print("A(s, R) - A(s, L) =", A[:, R] - A[:, L])
 print("exact gradient =", gradient)
 
 h = 1e-6
-numeric = np.array([(exact_stage1(theta + h * e)[0]
-                     - exact_stage1(theta - h * e)[0]) / (2 * h)
+numeric = np.array([(expected_return(theta + h * e)
+                     - expected_return(theta - h * e)) / (2 * h)
                     for e in np.eye(3)])
 print("finite differences =", numeric)
 assert np.allclose(gradient, numeric)
@@ -164,7 +285,8 @@ assert np.allclose(V_hat, V, atol=0.3)
 #
 # Each iteration runs a few episodes with the current policy, updates the
 # critic by TD(0), and moves the actor along the sampled gradient. The
-# expected return of each iterate is evaluated exactly, for reporting only.
+# expected return of each iterate is evaluated exactly, by elimination, for
+# reporting only.
 
 # %%
 def actor_critic(iterations, M, alpha_theta, alpha_V, seed):
@@ -172,7 +294,7 @@ def actor_critic(iterations, M, alpha_theta, alpha_V, seed):
     theta, V_hat = np.zeros(3), np.zeros(3)
     history = []
     for k in range(iterations + 1):
-        history.append(exact_stage1(theta)[0])
+        history.append(expected_return(theta))
         s, a, r, s_next = episodes(theta, M, rng)  # stage 1: sample
         V_hat = critic_update(V_hat, s, r, s_next, alpha_V, rng)  # the critic
         theta = theta + alpha_theta * sampled_gradient(  # stage 2: the actor
@@ -184,7 +306,7 @@ def exact_loop(iterations, alpha_theta):
     theta = np.zeros(3)
     history = []
     for k in range(iterations + 1):
-        history.append(exact_stage1(theta)[0])
+        history.append(expected_return(theta))
         theta = theta + alpha_theta * exact_gradient(theta)
     return history, theta
 

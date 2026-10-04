@@ -124,6 +124,14 @@ TEST(SemiringDiscreteFactor, ProductLaws) {
   EXPECT(agree((f * g) * h, f * (g * h)));
 }
 
+// A variable with a single value cannot be a key of a table.
+TEST(SemiringDiscreteFactor, SingleValuedKey) {
+  const DiscreteKey single(7, 1);
+  CHECK_EXCEPTION(
+      SemiringDiscreteFactor(DecisionTreeFactor(single & A, "0.6 0.4")),
+      std::invalid_argument);
+}
+
 // The virtual product agrees with the typed one.
 TEST(SemiringDiscreteFactor, Multiply) {
   const SemiringDiscreteFactor expected = transition() * stateReward();

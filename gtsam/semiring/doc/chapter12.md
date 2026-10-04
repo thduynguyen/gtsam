@@ -384,8 +384,8 @@ Three results of this chapter are checked against exact computations.
 
 | Result | Sampled or learned | Exact reference |
 |---|---|---|
-| tabular TD(0) on the coin flip | $\hat V = (-0.230,\; 1.087,\; 4.094)$ after 200000 transitions | $V = (-0.2248,\; 1.1017,\; 4.1231)$, from the linear system of Chapter 3 |
-| bias of the $n$-step target | measured on 20000 paths | $\gamma^n P_\pi^n (\hat V - V)$, from the tables |
+| tabular TD(0) on the coin flip | $\hat V = (-0.230,\; 1.087,\; 4.094)$ after 200000 transitions | $V = (-0.2248,\; 1.1017,\; 4.1231)$, by elimination with the module |
+| bias of the $n$-step target | measured on 20000 paths | $\gamma^n P_\pi^n (\hat V - V)$: the error carried back $n$ moves, by $n$ elimination steps without rewards |
 | parametric TD(0) | $\theta_V = (0.594,\; 3.736)$ | the TD fixed point $(0.625,\; 3.750)$, from a $2 \times 2$ linear system |
 
 The first row is the correctness test of the chapter: in a table, with a
@@ -422,10 +422,43 @@ residual = r[i] + gamma * features[s_next[i]] @ theta_V - features[s[i]] @ theta
 theta_V += alpha * residual * features[s[i]]
 ```
 
-As in Chapter 11, the module does not appear in the algorithm, since its
-factors need the dynamics as a table. Its role is the reference: on a problem
-small enough to write down, exact elimination gives the $V$ that a
-bootstrapped method must reach.
+**The exact reference, with the module.** As in Chapter 11, the module does
+not appear in the algorithm, since its factors need the dynamics as a table.
+It computes every exact number of this chapter. The endless track is built
+from semiring factors with the termination outcome of
+[Chapter 3](chapter03.md), and three kinds of elimination are used.
+
+```python
+# One step: sum out the next state, then the action, by the average.
+bucket = policy_factor * reward_factor * (step * value([later], V)).sum(
+    ordering(X(1)))
+new_V = bucket.sum(ordering(U(0))).value()
+
+# The value of the endless chain: compose the factor of one move with itself.
+moves = one_move(policy)                    # a factor on (s, s')
+for i in range(1, 11):                      # 2, 4, ..., 1024 moves
+    copy = relabel(moves, [now, middle], [middle, end])
+    moves = (moves * copy).sum(ordering(X(i)))
+V = moves.sum(ordering(...)).value()
+
+# Q: the bucket of the action, without a policy factor.
+Q = (reward_factor * (step * value([later], V)).sum(ordering(X(1)))).value()
+```
+
+The doubling in the middle is the unrolled chain of Chapter 3 built quickly:
+multiplying the factor of $n$ moves with a copy of itself on the following
+states, and summing out the state in between, gives the factor of $2n$ moves.
+After ten doublings the chain has 1024 moves, and the probability that an
+episode is still running is $0.9^{1024}$, far below rounding error.
+
+The same tools give the other exact numbers. The bias of the $n$-step target
+is $n$ steps of the first kind applied to the error $\hat V - V$, without
+rewards. The mean of the GAE estimate is the value of a chain whose reward is
+the expected TD residual and whose continuation probability is
+$\gamma \lambda$. The long-run visit frequencies are the probability channel
+of 256 moves without a discount. Only the TD fixed point of Section 4 is a
+plain linear solve: it is a statement about the learning rule, not about the
+chain.
 
 ## 8. What breaks
 
