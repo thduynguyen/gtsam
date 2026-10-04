@@ -14,33 +14,39 @@ for readers who know factor graphs from SLAM.
 
 ## Documentation
 
-The documentation is a book of chapters, best read online at
+The documentation is a book, best read online at
 **https://thduynguyen.github.io/gtsam/**, where the maths, figures and
 collapsible notes are typeset properly.
+
+The book maps the algorithms of optimal control and RL onto one framework with
+two stages: an inner elimination on the semiring factor graph that evaluates
+the current policy, and an outer step that improves it. Chapter 5 defines the
+framework, and Appendix C lists every algorithm of the book with its choices.
 
 The sources are in [`doc/`](doc), written in [MyST Markdown](https://mystmd.org).
 GitHub's own preview of those files shows the text but not the book's
 formatting. To build the book locally, run `myst build --html` or `myst start`
 in `doc/`.
 
-Each chapter has a companion notebook that runs its examples. The notebooks
-open in Google Colab, where their first cell installs a GTSAM wheel that
-contains this module.
+Each chapter has a companion notebook that runs its examples and checks every
+number quoted in the chapter. The notebooks open in Google Colab from the
+badge at the top of each chapter; those that use this module install a GTSAM
+wheel that contains it in their first cell.
 
-| Chapter | Content | Run the examples |
-|---|---|---|
-| [1. MDPs as factor graphs: evaluating a policy by variable elimination](doc/chapter01.md) | An MDP as a factor graph; why ordinary elimination cannot evaluate it; semiring factors and their operators; the correspondence between RL quantities and elimination; a discrete and a continuous (LQR) worked example; how to use the module. | [notebook](doc/chapter01_examples.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/thduynguyen/gtsam/blob/feature/semiringfactor/gtsam/semiring/doc/chapter01_examples.ipynb) |
-| [2. Finding the best policy in one pass](doc/chapter02.md) | A teaser for policy optimization: for tabular MDPs and for LQR, replacing the expectation over actions by a maximum yields the best policy in one backward pass. For LQR this is, line by line, the Riccati recursion of classic control. | [notebook](doc/chapter02_examples.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/thduynguyen/gtsam/blob/feature/semiringfactor/gtsam/semiring/doc/chapter02_examples.ipynb) |
+<!-- chapters:begin -->
+**Part I: Exact elimination on decision graphs**
 
-Planned chapters:
+- 1. [MDPs as factor graphs: evaluating a policy by variable elimination](doc/chapter01.md) ([notebook](doc/chapter01_examples.ipynb))
+- 2. [The semiring family](doc/chapter02.md) ([notebook](doc/chapter02_examples.ipynb))
+- 3. [Infinite horizon and discounting](doc/chapter03.md) ([notebook](doc/chapter03_examples.ipynb))
+- 4. [Decision nodes and elimination order](doc/chapter04.md) ([notebook](doc/chapter04_examples.ipynb))
+- 5. [Gradients by elimination: the two-stage framework](doc/chapter05.md) ([notebook](doc/chapter05_examples.ipynb))
 
-- **Optimal control with known dynamics.** A generic two-stage framework on
-  semiring factor graphs, an inner elimination that evaluates a policy inside
-  an outer optimization that improves it, with the algorithms of control mapped
-  to optimization on the graph.
-- **Reinforcement learning.** The case where the dynamics are unknown or only
-  available through a simulator, with RL algorithms mapped to the same two
-  stages, the exact sums and integrals replaced by sample approximations.
+**Appendices**
+
+- [The GTSAM implementation](doc/appendix_a.md)
+- [Notation](doc/appendix_b.md)
+<!-- chapters:end -->
 
 ## Classes
 
@@ -83,15 +89,17 @@ contain, and works through two larger examples in its Sections 7 and 8.
 ## Tests
 
 - C++: `gtsam/semiring/tests/`, run with the `check.semiring` target.
-- Python: `python/gtsam/tests/test_SemiringFactorGraph.py`. It checks every
-  number in the worked examples of the chapters.
+- Python: `python/gtsam/tests/test_SemiringFactorGraph.py`. It checks the
+  numbers of the worked examples that use the module (Chapters 1, 4 and 6).
+- The companion notebooks of the chapters assert every number they quote.
 
 ## Limitations
 
 - **Expectation semiring only.** The built-in elimination evaluates a given
-  policy. The maximum over action variables of Chapter 2, which finds the best
+  policy. The maximum over action variables of Chapter 4, which finds the best
   policy, is not a built-in elimination function yet; it can be written by
-  hand with the factor interface, as shown there.
+  hand with the factor interface, as shown there. The other semirings of
+  Chapter 2 are run in the notebooks, in numpy.
 - **One family per graph.** Discrete and Gaussian factors cannot be mixed;
   combining them throws.
 - **Known models.** The dynamics must be given as factors. Sampling-based RL

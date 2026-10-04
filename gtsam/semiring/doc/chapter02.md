@@ -56,8 +56,8 @@ Only $\otimes$ and $\oplus$ differ.
 
 A semiring is specified by four things: what an entry is, the product
 $\otimes$, the sum $\oplus$, and how the terms of the MDP are lifted to
-entries. It also has a zero $\mathbb{0}$, the entry of an impossible outcome,
-and a one $\mathbb{1}$, the entry of a factor that changes nothing.
+entries. It also has a zero $\mathbf{0}$, the entry of an impossible outcome,
+and a one $\mathbf{1}$, the entry of a factor that changes nothing.
 
 ### Sum-product
 
@@ -397,7 +397,7 @@ its ordinary discrete elimination.
 Every conditional produced by elimination satisfies one identity, in every
 semiring:
 
-$$\bigoplus_x c(x \mid S) = \mathbb{1} \qquad \text{for every value of } S.$$
+$$\bigoplus_x c(x \mid S) = \mathbf{1} \qquad \text{for every value of } S.$$
 
 In words: adding a conditional over its own variable gives the *one* of the
 semiring.
@@ -409,12 +409,12 @@ for the product:
 
 $$\bigoplus_x c(x \mid S) = \bigoplus_x \big(\psi(x, S) \oslash \phi(S)\big)
 = \Big(\bigoplus_x \psi(x, S)\Big) \oslash \phi(S)
-= \phi(S) \oslash \phi(S) = \mathbb{1}.$$
+= \phi(S) \oslash \phi(S) = \mathbf{1}.$$
 :::
 
 What it says depends on what the one is:
 
-| Semiring | $\mathbb{1}$ | The invariant, written out | Meaning |
+| Semiring | $\mathbf{1}$ | The invariant, written out | Meaning |
 |---|---|---|---|
 | sum-product | $1$ | $\sum_x p(x \mid S) = 1$ | a conditional is normalized |
 | expectation | $(1, 0)$ | $\sum_x p(x \mid S) = 1$ and $\sum_x p(x \mid S)\, c_v(x \mid S) = 0$ | it is normalized, and its surprises average to zero |
@@ -450,7 +450,7 @@ of the optimism discussed in [Chapter 8](chapter08.md).
 **Why the invariant matters.**
 
 - **It is a test.** Any implementation of a semiring factor can be checked by
-  adding each conditional over its variable and comparing with $\mathbb{1}$.
+  adding each conditional over its variable and comparing with $\mathbf{1}$.
   The unit tests of the module do this ([Appendix A](appendix_a.md)).
 - **It makes the Bayes net relative.** The product of all conditionals is the
   product of all factors divided by the result at the root. For the
@@ -574,3 +574,8 @@ The first column is the first choice every algorithm in this book makes. The
   translation forests", *EMNLP*, 2009. The expectation semiring.
 - P. Whittle, *Risk-Sensitive Optimal Control*, Wiley, 1990. The exponential
   tilt as a model of the attitude toward risk.
+
+---
+
+Previous: [Chapter 1: MDPs as factor graphs: evaluating a policy by variable elimination](chapter01.md).
+Next: [Chapter 3: Infinite horizon and discounting](chapter03.md).

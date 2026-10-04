@@ -48,7 +48,7 @@ letter, the last column says so.
 | $(\ell, v)$, $\ell = \log p$ | the log-dual form | Ch. 2 |
 | $(p, m)$, $m = p\, e^{\kappa v}$ | the stored form of the tilted semiring | Ch. 2 |
 | $\otimes$, $\oplus$, $\oslash$ | the product, sum and division of a semiring | Ch. 1, 2 |
-| $\mathbb{0}$, $\mathbb{1}$ | its zero and its one | Ch. 2 |
+| $\mathbf{0}$, $\mathbf{1}$ | its zero and its one | Ch. 2 |
 | $x$, $S$ | the variable being eliminated, and its separator | Ch. 1 |
 | $\psi(x, S)$ | the product of the factors in the bucket of $x$ | Ch. 1 |
 | $\phi(S)$ | the new factor that elimination leaves on the separator | Ch. 1 |
@@ -118,3 +118,7 @@ and the return.
 | $\rho$ | an importance weight, a ratio of two probabilities | Ch. 14 | |
 
 Other symbols are local to one chapter and are defined where they are used.
+
+---
+
+Previous: [Appendix A: The GTSAM implementation](appendix_a.md).

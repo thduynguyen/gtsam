@@ -653,3 +653,8 @@ table.
 - J. Peters and S. Schaal, "Reinforcement learning of motor skills with
   policy gradients", *Neural Networks*, 2008. Policy gradients and natural
   gradients in robotics.
+
+---
+
+Previous: [Chapter 4: Decision nodes and elimination order](chapter04.md).
+Next: [Appendix A: The GTSAM implementation](appendix_a.md).

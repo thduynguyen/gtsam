@@ -338,7 +338,7 @@ class TestSemiringTrackExample(GtsamTestCase):
                 table(value.value(), [self.state(t)]), expectedV[t])
 
     def test_best_policy(self):
-        """Maximizing over the action is dynamic programming (chapter 2)."""
+        """Maximizing over the action is dynamic programming (chapter 4)."""
         expectedQ = [[[0, 4.6], [1.4, 7.6], [7.4, 8]],
                      [[0, -1], [0, 7], [2, 9]]]
         expectedV = [[4.6, 7.6, 8], [0, 7, 9]]
@@ -611,7 +611,7 @@ class TestSemiringLineExample(GtsamTestCase):
                              noiseModel.Constrained.All(1))
 
     def test_best_policy_is_riccati(self):
-        """Maximizing over the action is the Riccati recursion (chapter 2)."""
+        """Maximizing over the action is the Riccati recursion (chapter 6)."""
         # P and beta of V_t(x) = -(P x^2 + beta), and the gains, for t = 0, 1.
         expectedP, expectedBeta = [1.6, 1.5], [1.25, 0.5]
         expectedGain = [0.6, 0.5]

@@ -78,7 +78,7 @@ $t$ times in a row, which has probability $\gamma^t$. The reward of step $t$
 is collected only if the robot is still running. Since the coin that ends the
 episode does not depend on anything else,
 
-$$\mathbb{E}\Big[\sum_{t=0}^{\infty} \mathbb{1}[\text{running at } t]\; r(s_t, a_t)\Big]
+$$\mathbb{E}\Big[\sum_{t=0}^{\infty} \mathbf{1}[\text{running at } t]\; r(s_t, a_t)\Big]
 = \sum_{t=0}^{\infty} \underbrace{P(\text{running at } t)}_{\gamma^t}\;
 \mathbb{E}[r(s_t, a_t)]
 = \mathbb{E}\Big[\sum_{t=0}^{\infty} \gamma^t\, r(s_t, a_t)\Big].$$
@@ -446,3 +446,8 @@ For 20 moves it returns $0.236$, the value in the table of Section 3.
   iterative policy evaluation.
 - D. P. Bertsekas, *Dynamic Programming and Optimal Control*, Athena
   Scientific. Contraction arguments for discounted problems.
+
+---
+
+Previous: [Chapter 2: The semiring family](chapter02.md).
+Next: [Chapter 4: Decision nodes and elimination order](chapter04.md).

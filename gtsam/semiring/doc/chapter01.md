@@ -10,8 +10,9 @@ evaluate one looks like variable elimination, but the numbers that ordinary
 elimination passes around cannot do the job. Giving every factor entry a second
 number fixes that, and elimination then produces the quantities RL is built on.
 
-Finding the *best* policy, rather than evaluating a given one, starts in
-[Chapter 2](chapter02.md).
+This is the first chapter of a book. [Chapter 2](chapter02.md) places the
+pair of numbers in a family of semirings, and finding the *best* policy, rather
+than evaluating a given one, starts in [Chapter 4](chapter04.md).
 
 **Run the examples.** The code of this chapter's examples is in the companion
 notebook [chapter01_examples.ipynb](chapter01_examples.ipynb), which runs
@@ -1560,4 +1561,4 @@ Complete examples are in the tests:
 
 ---
 
-Next: [Chapter 2: Finding the best policy in one pass](chapter02.md).
+Next: [Chapter 2: The semiring family](chapter02.md).

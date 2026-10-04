@@ -415,3 +415,8 @@ each, in the [companion notebook](chapter04_examples.ipynb).
   *Artificial Intelligence*, 1999.
 - R. S. Sutton and A. G. Barto, *Reinforcement Learning: An Introduction*, 2nd
   edition, MIT Press, 2018. Chapter 4: value iteration and policy iteration.
+
+---
+
+Previous: [Chapter 3: Infinite horizon and discounting](chapter03.md).
+Next: [Chapter 5: Gradients by elimination: the two-stage framework](chapter05.md).
