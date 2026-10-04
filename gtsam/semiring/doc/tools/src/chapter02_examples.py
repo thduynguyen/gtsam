@@ -230,6 +230,129 @@ for kappa in [-2, 0.5, 2]:
     print(f"kappa = {kappa:4.1f}: brute force {brute:.4f}")
 
 # %% [markdown]
+# ## Joint optimization is a member of the family (Section 2)
+#
+# Trajectory optimization, as it is done with GTSAM, maximizes the return plus
+# the log-probability over all variables at once. That is max-sum with a
+# probability lifted to its logarithm. There is no policy: the actions are
+# free variables.
+
+
+# %%
+class MaxSumLog(MaxSum):
+    """Max-sum with a probability f lifted to log f (minus infinity at 0)."""
+    name = "max-sum, log lifting"
+
+    def __init__(self, weight=1.0):
+        self.weight = weight  # the weight of the reward factors
+
+    def probability(self, p):
+        with np.errstate(divide="ignore"):
+            return (np.log(p),)
+
+    def reward(self, r):
+        return (self.weight * r,)
+
+
+planning_terms = [term for term in terms if term[1] not in
+                  [("s0", "a0"), ("s1", "a1")] or term[0] == "reward"]
+
+best_possible = float(eliminate(MaxSum(), planning_terms, order)[0])
+joint = float(eliminate(MaxSumLog(), planning_terms, order)[0])
+print("max-sum, 0 / -inf lifting:", best_possible)
+print("max-sum, log lifting     :", round(joint, 4))
+
+# The trajectory that attains it, by brute force over the trajectories.
+candidates = []
+for s0 in range(3):
+    for a0 in range(2):
+        for s1 in range(3):
+            for a1 in range(2):
+                for s2 in range(3):
+                    p = prior[s0] * dynamics[s0, a0, s1] * dynamics[s1, a1, s2]
+                    if p > 0:
+                        ret = reward[s0, a0] + reward[s1, a1] + final[s2]
+                        candidates.append(
+                            (np.log(p) + ret, ret, p, (s0, a0, s1, a1, s2)))
+score, ret, p, trajectory = max(candidates)
+print("best trajectory (s0, a0, s1, a1, s2):", trajectory,
+      " return", ret, " probability", round(p, 3))
+assert np.isclose(best_possible, 9.0)
+assert np.isclose(joint, score) and np.isclose(joint, 8 + np.log(0.4))
+
+# %% [markdown]
+# On the line of Chapter 1 (linear dynamics with noise of variance 0.5,
+# quadratic rewards) the joint optimization is a least-squares problem. With a
+# weight $\kappa$ on the reward factors, the plan from a state $x$ minimizes
+# $\kappa\,(\text{costs}) + \sum w^2 / (2 \Sigma_w)$ over the actions and
+# the slips $w$. Its feedback gains are compared with the Riccati gains, and
+# each policy is then evaluated on the real, noisy system.
+
+
+# %%
+def joint_gains(weight, noise=0.5):
+    """Gains of the joint least-squares plan, by its backward recursion.
+
+    Maximizing over the slip w as well as over the action replaces the value
+    matrix P by P / (1 + 2 * weight * P * noise) before each Riccati step.
+    """
+    P, gains = 1.0, []
+    for _ in range(2):
+        tilted = P / (1 + 2 * weight * P * noise)
+        K = tilted / (1 + tilted)
+        P = 1 + tilted - tilted ** 2 / (1 + tilted)
+        gains.append(K)
+    return gains[::-1]  # K0, K1
+
+
+def least_squares_gain(weight, noise=0.5):
+    """The first gain again, by solving the joint problem as one linear system.
+
+    Unknowns z = (u0, x1, u1, x2), for x0 = 1; minimizes
+    weight * (x0^2 + u0^2 + x1^2 + u1^2 + x2^2)
+      + (x1 - x0 - u0)^2 / (2 noise) + (x2 - x1 - u1)^2 / (2 noise).
+    """
+    rows, rhs = [], []
+    for index in range(4):  # the four cost terms on u0, x1, u1, x2
+        row = np.zeros(4)
+        row[index] = np.sqrt(weight)
+        rows.append(row), rhs.append(0.0)
+    scale = 1 / np.sqrt(2 * noise)
+    rows.append(scale * np.array([-1.0, 1, 0, 0])), rhs.append(scale * 1.0)
+    rows.append(scale * np.array([0.0, -1, -1, 1])), rhs.append(0.0)
+    z = np.linalg.lstsq(np.array(rows), np.array(rhs), rcond=None)[0]
+    return -z[0]  # u0 = -K0 x0 with x0 = 1
+
+
+def true_return(K0, K1, noise=0.5):
+    """Expected return of u = -K x on the real system, x0 ~ N(2, 1)."""
+    P, beta = 1.0, 0.0
+    for K in [K1, K0]:
+        beta += P * noise
+        P = 1 + K ** 2 + P * (1 - K) ** 2
+    return -(P * (2 ** 2 + 1) + beta)
+
+
+assert np.isclose(true_return(0.6, 0.5), -9.25)  # the Riccati gains
+print("weight    K0      K1     true expected return")
+print(f"   -> 0  0.6000  0.5000  {true_return(0.6, 0.5):.3f}   (Riccati)")
+expected = {0.5: (0.4516, 0.4, -9.565), 1.0: (0.3636, 0.3333, -10.089),
+            2.0: (0.2632, 0.25, -11.070)}
+for weight, (K0_ref, K1_ref, J_ref) in expected.items():
+    K0, K1 = joint_gains(weight)
+    J = true_return(K0, K1)
+    print(f"  {weight:4.1f}   {K0:.4f}  {K1:.4f}  {J:.3f}")
+    assert np.isclose(K0, least_squares_gain(weight))
+    assert np.allclose([K0, K1, J], [K0_ref, K1_ref, J_ref], atol=1e-3)
+K0, K1 = joint_gains(1e-6)
+assert np.allclose([K0, K1], [0.6, 0.5], atol=1e-4)
+
+# With a tight dynamics factor the plan is the Riccati plan, whatever the weight.
+K0, K1 = joint_gains(1.0, noise=1e-6)
+print("weight 1, dynamics variance 1e-6:", round(K0, 4), round(K1, 4))
+assert np.allclose([K0, K1], [0.6, 0.5], atol=1e-4)
+
+# %% [markdown]
 # ## Conditionals and the normalization invariant (Section 5)
 #
 # Take the bucket of the last action $a_1$ under the coin-flip policy. Its

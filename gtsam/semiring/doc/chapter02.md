@@ -183,24 +183,10 @@ choose its start and choose to slip. An agent chooses only its actions.
 [Chapter 4](chapter04.md) takes the maximum over the actions alone, and gets
 $6.1$.
 
-:::{dropdown} How does this relate to GTSAM's most probable assignment?
-GTSAM finds a most probable assignment of a discrete graph with *max-product*:
-entries are probabilities, the product is multiplication and the sum is the
-maximum,
-
-$$\max_\tau \prod_i f_i(\tau).$$
-
-Taking logarithms turns the product into a sum and leaves the maximum alone, so
-max-product on $f$ is max-sum on $\log f$:
-
-$$\log \max_\tau \prod_i f_i = \max_\tau \sum_i \log f_i.$$
-
-Nonlinear least squares is the continuous case: $\log f_i$ is minus a squared
-error, and the maximum is the least-squares solution. So a SLAM optimizer is a
-max-sum eliminator. The table above differs from it only in the lifting: a
-reward enters as $r$ and a probability as $0$ or $-\infty$, where MAP
-estimation would enter a probability as $\log f$.
-:::
+GTSAM users know this semiring well, with a different lifting: optimizing all
+the variables of a graph jointly is max-sum elimination. The last subsection
+of this section places trajectory optimization, as it is done with GTSAM, in
+the family, with what that choice gets right and wrong.
 
 ### Tilted
 
@@ -387,6 +373,131 @@ probabilities $p_1$ and $p_2$, merge:
 | expectation | $\dfrac{p_1 v_1 + p_2 v_2}{p_1 + p_2}$ | the average |
 | tilted, or soft maximum | $\dfrac{1}{\kappa} \log \dfrac{p_1 e^{\kappa v_1} + p_2 e^{\kappa v_2}}{p_1 + p_2}$ | between the average and the better (or the worse) |
 | max-sum | $\max(v_1, v_2)$ | the better |
+
+### Where trajectory optimization with GTSAM sits in the family
+
+A common way to plan with factor graphs is to put the dynamics factors and the
+cost factors of a problem in one graph and to optimize all states and actions
+together, as a nonlinear least-squares problem. This subsection says what
+that computes, in the terms of this chapter.
+
+**The answer first.** Joint optimization is **max-sum elimination, with a
+probability lifted to its logarithm**. It is a member of the family, and it
+differs from the max-sum semiring above in one row:
+
+| | Max-sum, as above | Joint optimization |
+|---|---|---|
+| entry | a value $v$ | a value $v$ |
+| product, sum | $v_1 + v_2$, $\;\max(v_1, v_2)$ | $v_1 + v_2$, $\;\max(v_1, v_2)$ |
+| a reward table $r$ becomes | $r$ | $r$ |
+| a probability table $f$ becomes | $0$ where $f > 0$, and $-\infty$ where $f = 0$ | $\log f$ |
+| an unlikely outcome costs | nothing | its log-probability |
+| eliminating every variable gives | $\max_{\tau \,:\, p(\tau) > 0} R(\tau)$ | $\max_\tau \big[R(\tau) + \log p(\tau)\big]$ |
+
+:::{dropdown} Why is a least-squares solver a max-sum eliminator?
+An optimizer in GTSAM minimizes the sum of the errors of all factors. The
+error of a Gaussian dynamics factor is minus its log-density, up to a
+constant, and the error of a cost factor is the cost, which is minus the
+reward:
+
+$$\min_\tau \sum_i \text{error}_i(\tau)
+= -\max_\tau \Big[\underbrace{\sum_{\text{dynamics}} \log f_i(\tau)}_{\log p(\tau)}
++ \underbrace{\sum_{\text{costs}} r_i(\tau)}_{R(\tau)}\Big].$$
+
+The errors add, which is the product $\otimes$ of max-sum. And eliminating a
+variable from a least-squares problem keeps, for every value of the separator,
+the best value of that variable: the Schur complement that Cholesky leaves on
+the separator is the *minimum* of the quadratic over the eliminated variable.
+That is the sum $\oplus = \max$. It is applied to every variable alike, the
+states as well as the actions.
+
+For discrete graphs the same computation is called *max-product*, on the
+factors themselves: $\log \max_\tau \prod_i f_i = \max_\tau \sum_i \log f_i$.
+:::
+
+**The same variables, three treatments.** A planning graph has two kinds of
+variables. The agent chooses the actions. The dynamics choose the states, at
+random. The three computations below differ only in how they sum out the
+states. On the track, with no policy factor, since the actions are free:
+
+| Sum over the states | Sum over the actions | Result | What the number is |
+|---|---|---|---|
+| maximum; any possible outcome is free | maximum | $9$ | the best trajectory that *can* occur: it counts on a slip of probability $0.2$ |
+| maximum; an outcome costs its log-probability | maximum | $7.08$ | joint optimization: the plan "start in cell 1, Right, Right", of return $8$ and probability $0.4$, scored $8 + \log 0.4$ |
+| average | maximum | $6.1$ | what the best policy really collects on average ([Chapter 4](chapter04.md)) |
+
+Joint optimization does not count on the slip, which would be too improbable.
+It still chooses the start cell, and it assumes that the first move succeeds.
+Its number is the score of one favorable trajectory. It is **NOT** an
+expected return.
+
+**What that choice gets right, and what it costs.**
+
+| | Joint optimization: maximum over states and actions | Semiring elimination: average over states, maximum over actions |
+|---|---|---|
+| computes | the best trajectory, and its score $R + \log p$ | the best policy, and its expected return |
+| deterministic dynamics (hard-constrained factors) | exact | exact: the two coincide |
+| linear dynamics, quadratic costs, tight dynamics factors | the right actions | the right actions |
+| noisy dynamics with soft dynamics factors | **optimistic**: it plans as if the noise will help | exact |
+| the value it reports | the score of the plan | the expected return |
+| rewards | costs only: a Gaussian factor needs a positive semidefinite matrix | of any sign |
+| what comes out | a trajectory, and feedback gains in the conditionals | values, advantages, the policy |
+| machinery | one sparse nonlinear least-squares problem, with everything GTSAM offers: any elimination order, incremental solving, constraints, manifolds, robust losses; estimation of the past and planning of the future in one graph | elimination backward in time; in this module, tables and linear-Gaussian factors |
+
+The left column is the right tool when the system is deterministic or nearly
+so, which covers much of motion planning. The right column is needed when the
+noise is comparable to what the costs care about, when a given policy has to
+be evaluated, or when the expected return itself is the quantity of interest.
+
+**The weight between cost and dynamics factors is a risk dial.** In a joint
+graph the user chooses how heavily the cost factors weigh against the dynamics
+factors. That weight is the tilt $\kappa$ of this section. On the line example
+of Chapter 1 (noise variance $\Sigma_w = 0.5$), put a weight $\kappa$ on the
+rewards, so that the plan maximizes $\kappa R + \log p$ over the actions and
+over the slips. The gains of the resulting feedback law, and the return that
+each policy really collects on the noisy system:
+
+| weight $\kappa$ of the reward factors | $\to 0$ | $0.5$ | $1$ | $2$ |
+|---|---|---|---|---|
+| gains $K_0$, $K_1$ of the joint plan | $0.6$, $0.5$ | $0.452$, $0.4$ | $0.364$, $0.333$ | $0.263$, $0.25$ |
+| true expected return | $-9.25$ | $-9.565$ | $-10.089$ | $-11.070$ |
+
+The first column is the best policy, the Riccati gains of
+[Chapter 6](chapter06.md). As the costs weigh more, the plan relies more on
+favorable slips to bring the robot home and uses weaker gains, and the real
+return drops.
+
+What matters is the product $\kappa\, \Sigma_w$: the variance of the dynamics
+factor relative to that of the cost factors. With a tight dynamics factor,
+variance $10^{-6}$, the plan has the gains $0.6$ and $0.5$ at any weight.
+That is why stiff dynamics factors work well in practice: for linear dynamics
+and quadratic costs the best action does not depend on the noise, so planning
+as if there were none gives the right actions.
+
+:::{dropdown} Why is the weight a tilt?
+Take one step. The future is worth $V(x') = -P\, x'^2$, and the next state is
+$x' = m + w$, with $m$ the predicted state and $w$ the slip, of variance
+$\Sigma_w$. Joint optimization maximizes over the slip, at the price of its
+log-probability:
+
+$$\max_w \Big[-\kappa\, P\,(m + w)^2 - \frac{w^2}{2 \Sigma_w}\Big]
+= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2.$$
+
+The tilted mean of this section, with a positive tilt $\kappa$, gives the same
+quadratic, plus a constant that does not affect the actions:
+
+$$\log \mathbb{E}_w\big[e^{-\kappa P (m + w)^2}\big]
+= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2 - \tfrac{1}{2} \log(1 + 2 \kappa P \Sigma_w).$$
+
+Both replace $P$ by the smaller $P / (1 + 2 \kappa P \Sigma_w)$: the future
+looks less costly than it is, because the slip is assumed to help. The correct
+average, the limit $\kappa \to 0$, keeps $P$ and adds the constant
+$P\, \Sigma_w$. So for Gaussian factors, joint optimization is the tilted
+semiring at the states, with a positive, risk-seeking tilt equal to the weight
+of the costs, and the maximum at the actions. [Chapter 8](chapter08.md)
+develops this under the name LEQG, and [Chapter 9](chapter09.md) compares
+joint optimization with the exact treatment on a nonlinear example.
+:::
 
 ## 3. What elimination needs
 
@@ -644,7 +755,7 @@ Section 8. This is exactly how `SemiringGaussianFactor` is stored: a
 | maximum | average | the best policy | 4, 6, 15, 16 |
 | soft maximum | average | a soft-optimal policy | 8, 10, 17 |
 | maximum | tilted mean | a risk-sensitive best policy | 8 |
-| maximum | maximum | the best trajectory, optimistic about the dynamics | 9 |
+| maximum | maximum | the best trajectory, optimistic about the dynamics: joint optimization, as in trajectory optimization with GTSAM | 2, 9 |
 
 The first column is the first choice every algorithm in this book makes. The
 [taxonomy table](appendix_c.md) lists it for each of them.
