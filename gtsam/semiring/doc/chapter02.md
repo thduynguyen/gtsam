@@ -58,13 +58,13 @@ explanation first.
   number called the *temperature*. Under this name it is used as a smooth
   stand-in for the maximum.
 
-| Semiring | An entry holds | The question it answers | As a formula | Result on the track |
-|---|---|---|---|---|
-| sum-product | a probability $p$ | What is the total probability of all trajectories? | $\sum_\tau p(\tau)$ | $1$ |
-| expectation | a pair $(p, v)$ | What return does the policy collect on average? | $\sum_\tau p(\tau)\, R(\tau)$ | $1.4$ |
-| max-sum | a value $v$ | What is the return of the best trajectory that can occur? | $\max_{\tau \,:\, p(\tau) > 0} R(\tau)$ | $9$ |
-| tilted, with tilt $\kappa$ | a pair $(p, v)$ | What is the average return, if lucky trajectories count more ($\kappa > 0$) or less ($\kappa < 0$)? | $\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}$ | $5.43$ for $\kappa = 0.5$, and $-0.28$ for $\kappa = -0.5$ |
-| soft maximum, with temperature $\eta$ | a pair $(p, v)$ | What is a smooth version of the best return? | $\eta \log \sum_\tau p(\tau)\, e^{R(\tau) / \eta}$ | $5.43$ for $\eta = 2$ |
+| Semiring | An entry holds | The question it answers | As a formula | Result on the track | In the literature |
+|---|---|---|---|---|---|
+| sum-product | a probability $p$ | What is the total probability of all trajectories? | $\sum_\tau p(\tau)$ | $1$ | [\[4\]](#ch02-aji2000), [\[5\]](#ch02-dechter1999), [\[6\]](#ch02-kschischang2001) |
+| expectation | a pair $(p, v)$ | What return does the policy collect on average? | $\sum_\tau p(\tau)\, R(\tau)$ | $1.4$ | [\[7\]](#ch02-eisner2002), [\[8\]](#ch02-li2009) |
+| max-sum | a value $v$ | What is the return of the best trajectory that can occur? | $\max_{\tau \,:\, p(\tau) > 0} R(\tau)$ | $9$ | [\[4\]](#ch02-aji2000), [\[5\]](#ch02-dechter1999), [\[9\]](#ch02-viterbi1967) |
+| tilted, with tilt $\kappa$ | a pair $(p, v)$ | What is the average return, if lucky trajectories count more ($\kappa > 0$) or less ($\kappa < 0$)? | $\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}$ | $5.43$ for $\kappa = 0.5$, and $-0.28$ for $\kappa = -0.5$ | [\[10\]](#ch02-howard1972), [\[11\]](#ch02-jacobson1973), [\[12\]](#ch02-whittle1990) |
+| soft maximum, with temperature $\eta$ | a pair $(p, v)$ | What is a smooth version of the best return? | $\eta \log \sum_\tau p(\tau)\, e^{R(\tau) / \eta}$ | $5.43$ for $\eta = 2$ | [\[13\]](#ch02-kappen2005), [\[14\]](#ch02-todorov2006), [\[15\]](#ch02-levine2018) |
 
 **The last two rows are the same rule.** Substituting $\eta = 1 / \kappa$
 turns one formula into the other, which is why $\eta = 2$ gives the same
@@ -73,7 +73,9 @@ different names in the literature and are used for different purposes, as
 Section 2 explains. So the family has five names and four different rules.
 
 The graph, the tables and the elimination order are the same in all five rows.
-Only $\otimes$ and $\oplus$ differ. Section 2 defines them for each row.
+Only $\otimes$ and $\oplus$ differ. Section 2 defines them for each row. The
+numbers in the last column refer to the [references](#chapter02-references) at
+the end of the chapter.
 
 ## 2. The five semirings
 
@@ -390,8 +392,8 @@ probabilities $p_1$ and $p_2$, merge:
 
 Why is elimination valid with all of these, and what would make it fail? The
 answer is three properties. They are stated for factors, following the
-*valuation algebras* of Shenoy and Shafer (1990) and Kohlas (2003); see the
-[references](#chapter02-references).
+*valuation algebras* of Shenoy and Shafer [\[1\]](#ch02-shenoy1990) and Kohlas
+[\[2\]](#ch02-kohlas2003).
 
 Write $f \otimes g$ for the product of two factors and $f^{\downarrow S}$ for
 the factor $f$ with all variables except those in $S$ summed out by $\oplus$.
@@ -419,8 +421,8 @@ This is the distributive law at the level of factors. It is what makes
 elimination cheap: when a variable is summed out, only the factors in its
 bucket take part, and all others wait outside the sum.
 
-**The three axioms hold whenever the entries form a commutative semiring**,
-that is, whenever $\otimes$ and $\oplus$ on entries are commutative and
+**The three axioms hold whenever the entries form a commutative semiring**
+[\[3\]](#ch02-kohlas2008), that is, whenever $\otimes$ and $\oplus$ on entries are commutative and
 associative and satisfy
 
 $$a \otimes (b \oplus c) = (a \otimes b) \oplus (a \otimes c).$$
@@ -650,28 +652,76 @@ The first column is the first choice every algorithm in this book makes. The
 (chapter02-references)=
 ## 9. References
 
-- P. P. Shenoy and G. Shafer, "Axioms for probability and belief-function
-  propagation", *Uncertainty in Artificial Intelligence 4*, 1990. The three
-  axioms, and message passing derived from them.
-- J. Kohlas, *Information Algebras: Generic Structures for Inference*,
-  Springer, 2003. Valuation algebras, including those with division.
-- J. Kohlas and N. Wilson, "Semiring induced valuation algebras: exact and
-  approximate local computation algorithms", *Artificial Intelligence*, 2008.
-  A commutative semiring on entries gives a valuation algebra on factors.
-- S. M. Aji and R. J. McEliece, "The generalized distributive law", *IEEE
-  Transactions on Information Theory*, 2000. One message-passing algorithm for
-  any commutative semiring.
-- R. Dechter, "Bucket elimination: a unifying framework for reasoning",
-  *Artificial Intelligence*, 1999. Variable elimination for sums, maxima and
-  mixtures of the two.
-- F. R. Kschischang, B. J. Frey and H.-A. Loeliger, "Factor graphs and the
-  sum-product algorithm", *IEEE Transactions on Information Theory*, 2001.
-- J. Eisner, "Parameter estimation for probabilistic finite-state
-  transducers", *ACL*, 2002; Z. Li and J. Eisner, "First- and second-order
-  expectation semirings with applications to minimum-risk training on
-  translation forests", *EMNLP*, 2009. The expectation semiring.
-- P. Whittle, *Risk-Sensitive Optimal Control*, Wiley, 1990. The exponential
-  tilt as a model of the attitude toward risk.
+(ch02-shenoy1990)=
+\[1\] P. P. Shenoy and G. Shafer, "Axioms for probability and belief-function
+propagation", *Uncertainty in Artificial Intelligence 4*, 1990. The three
+axioms, and message passing derived from them.
+
+(ch02-kohlas2003)=
+\[2\] J. Kohlas, *Information Algebras: Generic Structures for Inference*,
+Springer, 2003. Valuation algebras, including those with division.
+
+(ch02-kohlas2008)=
+\[3\] J. Kohlas and N. Wilson, "Semiring induced valuation algebras: exact and
+approximate local computation algorithms", *Artificial Intelligence*, 2008. A
+commutative semiring on entries gives a valuation algebra on factors.
+
+(ch02-aji2000)=
+\[4\] S. M. Aji and R. J. McEliece, "The generalized distributive law", *IEEE
+Transactions on Information Theory*, 2000. One message-passing algorithm for
+any commutative semiring, with sum-product and max-sum as instances.
+
+(ch02-dechter1999)=
+\[5\] R. Dechter, "Bucket elimination: a unifying framework for reasoning",
+*Artificial Intelligence*, 1999. Variable elimination for sums, maxima and
+mixtures of the two.
+
+(ch02-kschischang2001)=
+\[6\] F. R. Kschischang, B. J. Frey and H.-A. Loeliger, "Factor graphs and the
+sum-product algorithm", *IEEE Transactions on Information Theory*, 2001.
+
+(ch02-eisner2002)=
+\[7\] J. Eisner, "Parameter estimation for probabilistic finite-state
+transducers", *ACL*, 2002. The expectation semiring.
+
+(ch02-li2009)=
+\[8\] Z. Li and J. Eisner, "First- and second-order expectation semirings with
+applications to minimum-risk training on translation forests", *EMNLP*, 2009.
+
+(ch02-viterbi1967)=
+\[9\] A. J. Viterbi, "Error bounds for convolutional codes and an
+asymptotically optimum decoding algorithm", *IEEE Transactions on Information
+Theory*, 1967. The best path through a chain by keeping the better of two
+partial paths: max-sum elimination.
+
+(ch02-howard1972)=
+\[10\] R. A. Howard and J. E. Matheson, "Risk-sensitive Markov decision
+processes", *Management Science*, 1972. The exponential tilt of the return in
+a tabular decision process.
+
+(ch02-jacobson1973)=
+\[11\] D. H. Jacobson, "Optimal stochastic linear systems with exponential
+performance criteria and their relation to deterministic differential games",
+*IEEE Transactions on Automatic Control*, 1973. The tilt in the linear-
+Gaussian case.
+
+(ch02-whittle1990)=
+\[12\] P. Whittle, *Risk-Sensitive Optimal Control*, Wiley, 1990. The
+exponential tilt as a model of the attitude toward risk.
+
+(ch02-kappen2005)=
+\[13\] H. J. Kappen, "Path integrals and symmetry breaking for optimal control
+theory", *Journal of Statistical Mechanics*, 2005. Control whose value is a
+log-sum-exp over trajectories.
+
+(ch02-todorov2006)=
+\[14\] E. Todorov, "Linearly-solvable Markov decision problems", *NeurIPS*,
+2006. With a soft maximum over the actions the backup becomes linear.
+
+(ch02-levine2018)=
+\[15\] S. Levine, "Reinforcement learning and control as probabilistic
+inference: tutorial and review", arXiv:1805.00909, 2018. The soft maximum in
+RL, with its temperature.
 
 ---
 
