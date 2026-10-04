@@ -18,7 +18,10 @@
 #include <gtsam/semiring/SemiringDiscreteConditional.h>
 #include <gtsam/semiring/SemiringDiscreteFactor.h>
 
+#include <algorithm>
+#include <cmath>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <stdexcept>
 
@@ -30,6 +33,62 @@ using ADT = AlgebraicDecisionTree<Key>;
 
 double add(const double& a, const double& b) { return a + b; }
 double subtract(const double& a, const double& b) { return a - b; }
+double larger(const double& a, const double& b) { return std::max(a, b); }
+double smaller(const double& a, const double& b) { return std::min(a, b); }
+
+/// p * v where p is positive, and zero elsewhere, also if v is infinite.
+double weigh(const double& p, const double& v) { return p > 0.0 ? p * v : 0.0; }
+
+/**
+ * The value table w / p, with a given value for impossible outcomes, so that
+ * they cannot win a maximum (minus infinity) or a minimum (plus infinity).
+ */
+DecisionTreeFactor valuesOfPossible(const DecisionTreeFactor& probability,
+                                    const DecisionTreeFactor& weighted,
+                                    double impossible) {
+  return probability.apply(weighted,
+                           [impossible](const double p, const double w) {
+                             return p > 0.0 ? w / p : impossible;
+                           });
+}
+
+/**
+ * The merged value of the frontal outcomes for every separator assignment:
+ * their maximum, or their tilted mean
+ *   (1 / tilt) log sum_x p(x | S) exp(tilt v(x, S)).
+ * The tilted mean is computed relative to the extreme value, so that no
+ * exponential overflows. The result is zero where the total probability is.
+ */
+DecisionTreeFactor mergedValue(const DecisionTreeFactor& probability,
+                               const DecisionTreeFactor& weighted,
+                               const DecisionTreeFactor& total,
+                               const Ordering& frontalKeys,
+                               const SemiringSum& sum) {
+  const double infinity = std::numeric_limits<double>::infinity();
+  const bool upward = sum.isMaximum() || sum.tilt() > 0.0;
+  const DecisionTreeFactor values =
+      valuesOfPossible(probability, weighted, upward ? -infinity : infinity);
+  const DecisionTreeFactor extreme =
+      *values.combine(frontalKeys, upward ? larger : smaller);
+  const auto finite = [](const double p, const double v) {
+    return p > 0.0 ? v : 0.0;
+  };
+  if (sum.isMaximum()) return total.apply(extreme, finite);
+
+  // sum_x p(x, S) exp(tilt (v - extreme)), with every exponent <= 0.
+  const double tilt = sum.tilt();
+  const DecisionTreeFactor stretched =
+      values.apply(extreme, [tilt](const double v, const double e) {
+        return std::isfinite(v) ? std::exp(tilt * (v - e)) : 0.0;
+      });
+  const DecisionTreeFactor mass =
+      *(probability * stretched).combine(frontalKeys, add);
+  const DecisionTreeFactor relative =
+      mass.apply(total, [tilt](const double m, const double p) {
+        return p > 0.0 ? std::log(m / p) / tilt : 0.0;
+      });
+  return total.apply(extreme, finite).apply(relative, add);
+}
 
 /// The union of the discrete keys of two tables, sorted in increasing order.
 DiscreteKeys unionKeys(const DecisionTreeFactor& a,
@@ -154,7 +213,7 @@ SemiringFactor::shared_ptr SemiringDiscreteFactor::multiply(
 
 /* ************************************************************************* */
 SemiringDiscreteFactor SemiringDiscreteFactor::sumOut(
-    const Ordering& frontalKeys) const {
+    const Ordering& frontalKeys, const SemiringSum& sum) const {
   const std::map<Key, size_t> cardinalities = probability_.cardinalities();
   for (Key key : frontalKeys) {
     if (!cardinalities.count(key)) {
@@ -163,14 +222,19 @@ SemiringDiscreteFactor SemiringDiscreteFactor::sumOut(
           DefaultKeyFormatter(key) + ", which is not in the factor");
     }
   }
-  return FromChannels(*probability_.combine(frontalKeys, add),
-                      *weighted_.combine(frontalKeys, add));
+  const DecisionTreeFactor total = *probability_.combine(frontalKeys, add);
+  if (sum.isAverage()) {
+    return FromChannels(total, *weighted_.combine(frontalKeys, add));
+  }
+  const DecisionTreeFactor merged =
+      mergedValue(probability_, weighted_, total, frontalKeys, sum);
+  return FromChannels(total, total.apply(merged, weigh));
 }
 
 /* ************************************************************************* */
 SemiringFactor::EliminationResult SemiringDiscreteFactor::eliminate(
-    const Ordering& frontalKeys) const {
-  const This marginal = sumOut(frontalKeys);
+    const Ordering& frontalKeys, const SemiringSum& sum) const {
+  const This marginal = sumOut(frontalKeys, sum);
   auto conditional = std::make_shared<SemiringDiscreteConditional>(
       *this, marginal, frontalKeys);
   return {conditional, std::make_shared<This>(marginal)};

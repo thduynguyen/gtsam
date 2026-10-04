@@ -22,6 +22,8 @@
 #include <gtsam/inference/Factor.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <gtsam/semiring/SemiringSum.h>
+
 #include <memory>
 #include <utility>
 
@@ -91,15 +93,26 @@ class GTSAM_EXPORT SemiringFactor : public Factor {
   virtual shared_ptr multiply(const SemiringFactor& other) const = 0;
 
   /**
-   * Eliminate the frontal variables. Returns the conditional on the frontal
-   * variables given the separator, whose value channel is the surprise
-   * v - E[v | separator], and the semiring sum over the frontal variables,
-   * whose value channel is E[v | separator].
+   * Eliminate the frontal variables with the given rule. Returns the
+   * conditional on the frontal variables given the separator and the semiring
+   * sum over the frontal variables, a new factor on the separator.
+   *
+   * The value channel of the new factor is the values of the frontal outcomes
+   * merged by the rule: their average E[v | separator], their maximum, or
+   * their tilted mean. The value channel of the conditional is v minus that
+   * merged value: the surprise, the regret, or the soft advantage.
    */
-  virtual EliminationResult eliminate(const Ordering& frontalKeys) const = 0;
+  virtual EliminationResult eliminate(const Ordering& frontalKeys,
+                                      const SemiringSum& sum) const = 0;
+
+  /// Eliminate the frontal variables by averaging, the expectation semiring.
+  EliminationResult eliminate(const Ordering& frontalKeys) const {
+    return eliminate(frontalKeys, SemiringSum());
+  }
 
   /// Semiring sum over the frontal variables, a new factor on the separator.
-  shared_ptr sum(const Ordering& frontalKeys) const;
+  shared_ptr sum(const Ordering& frontalKeys,
+                 const SemiringSum& sum = SemiringSum()) const;
 
   /**
    * Expected value E[v] under the normalized probability channel, obtained by

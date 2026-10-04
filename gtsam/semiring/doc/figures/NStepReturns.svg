@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" width="880" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">Targets with n sampled rewards</title>
+  <desc id="desc">Three rows. In the first, one sampled reward is followed by the learned value of the next state. In the second, three sampled rewards are followed by the learned value three steps later. In the third, the sampled rewards run to the end of the episode and no learned value is used.</desc>
+  <rect x="0.5" y="0.5" width="879" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="270.0" y1="90" x2="210" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="270.0" y1="90" x2="330" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="90" x2="330" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="270.0" y1="190" x2="210" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="270.0" y1="190" x2="330" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="390.0" y1="190" x2="330" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="390.0" y1="190" x2="450" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="510.0" y1="190" x2="450" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="510.0" y1="190" x2="570" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="640" y1="190" x2="570" y2="190" stroke="#57606a" stroke-width="2"/>
+  <line x1="270.0" y1="290" x2="210" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="270.0" y1="290" x2="330" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="390.0" y1="290" x2="330" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="390.0" y1="290" x2="450" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="510.0" y1="290" x2="450" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="510.0" y1="290" x2="570" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="630.0" y1="290" x2="570" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="630.0" y1="290" x2="690" y2="290" stroke="#57606a" stroke-width="2"/>
+  <line x1="710" y1="290" x2="738" y2="290" stroke="#57606a" stroke-width="2"/>
+  <rect x="263.0" y="83.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="393.0" y="83.0" width="14" height="14" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="263.0" y="183.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="383.0" y="183.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="503.0" y="183.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="633.0" y="183.0" width="14" height="14" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="263.0" y="283.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="383.0" y="283.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="503.0" y="283.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="623.0" y="283.0" width="14" height="14" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <circle cx="210" cy="90" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="210" y="96" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="330" cy="90" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="330" y="96" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="210" cy="190" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="210" y="196" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="330" cy="190" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="330" y="196" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="450" cy="190" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="450" y="196" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="570" cy="190" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="570" y="196" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+3</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="210" cy="290" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="210" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="330" cy="290" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="330" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="450" cy="290" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="450" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="570" cy="290" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="570" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+3</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="690" cy="290" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="690" y="296" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">t+4</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="40" y="95" font-size="13" text-anchor="start" fill="#24292f" font-weight="bold">n = 1 (TD)</text>
+  <text x="270.0" y="74" font-size="13" text-anchor="middle" fill="#a85a08">r<tspan dy="3.9" font-size="9.4">t</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="400" y="74" font-size="13" text-anchor="middle" fill="#075e7a">γ V̂(s<tspan dy="3.9" font-size="9.4">t+1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="40" y="195" font-size="13" text-anchor="start" fill="#24292f" font-weight="bold">n = 3</text>
+  <text x="270.0" y="174" font-size="13" text-anchor="middle" fill="#a85a08">r<tspan dy="3.9" font-size="9.4">t</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="390.0" y="174" font-size="13" text-anchor="middle" fill="#a85a08">γ r<tspan dy="3.9" font-size="9.4">t+1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="510.0" y="174" font-size="13" text-anchor="middle" fill="#a85a08">γ<tspan dy="-5.46" font-size="9.4">2</tspan><tspan dy="5.46" font-size="9.4">​</tspan> r<tspan dy="3.9" font-size="9.4">t+2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="640" y="174" font-size="13" text-anchor="middle" fill="#075e7a">γ<tspan dy="-5.46" font-size="9.4">3</tspan><tspan dy="5.46" font-size="9.4">​</tspan> V̂(s<tspan dy="3.9" font-size="9.4">t+3</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="40" y="295" font-size="13" text-anchor="start" fill="#24292f" font-weight="bold">Monte Carlo</text>
+  <text x="270.0" y="274" font-size="13" text-anchor="middle" fill="#a85a08">r<tspan dy="3.9" font-size="9.4">t</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="390.0" y="274" font-size="13" text-anchor="middle" fill="#a85a08">γ r<tspan dy="3.9" font-size="9.4">t+1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="510.0" y="274" font-size="13" text-anchor="middle" fill="#a85a08">γ<tspan dy="-5.46" font-size="9.4">2</tspan><tspan dy="5.46" font-size="9.4">​</tspan> r<tspan dy="3.9" font-size="9.4">t+2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="630.0" y="274" font-size="13" text-anchor="middle" fill="#a85a08">γ<tspan dy="-5.46" font-size="9.4">3</tspan><tspan dy="5.46" font-size="9.4">​</tspan> r<tspan dy="3.9" font-size="9.4">t+3</tspan><tspan dy="-3.9" font-size="9.4">​</tspan></text>
+  <text x="745" y="296" font-size="13" text-anchor="start" fill="#57606a">…  to the end</text>
+  <line x1="16" y1="350" x2="864" y2="350" stroke="#d0d7de"/>
+  <circle cx="32" cy="371" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="375" font-size="12" fill="#57606a">state</text>
+  <rect x="102.5" y="365" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="123.5" y="375" font-size="12" fill="#57606a">(1, v): value</text>
+  <rect x="229.39999999999998" y="365" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="250.39999999999998" y="375" font-size="12" fill="#57606a">learned factor</text>
+</svg>

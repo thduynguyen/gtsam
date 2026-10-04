@@ -1,5 +1,10 @@
 # Chapter 1: MDPs as factor graphs: evaluating a policy by variable elimination
 
+:::{div}
+:class: in-progress
+**This book is a work in progress.** It is still being written and revised: its content is incomplete and may contain errors.
+:::
+
 This chapter shows how a factor graph can represent a Markov decision process
 (MDP) and evaluate a given policy on it with GTSAM's ordinary variable
 elimination (VE). It is written for readers who know factor graphs from SLAM
@@ -10,22 +15,14 @@ evaluate one looks like variable elimination, but the numbers that ordinary
 elimination passes around cannot do the job. Giving every factor entry a second
 number fixes that, and elimination then produces the quantities RL is built on.
 
-Finding the *best* policy, rather than evaluating a given one, starts in
-[Chapter 2](chapter02.md).
+This is the first chapter of a book. [Chapter 2](chapter02.md) places the
+pair of numbers in a family of semirings, and finding the *best* policy, rather
+than evaluating a given one, starts in [Chapter 4](chapter04.md).
 
-Contents:
-
-1. [An MDP as a factor graph](#1-an-mdp-as-a-factor-graph)
-2. [What is computed on an MDP](#2-what-is-computed-on-an-mdp)
-3. [Why ordinary elimination cannot compute it](#3-why-ordinary-elimination-cannot-compute-it)
-4. [The fix: probability and value in every entry](#4-the-fix-probability-and-value-in-every-entry)
-5. [The stored form and the expectation semiring](#5-the-stored-form-and-the-expectation-semiring)
-6. [Correspondence between RL concepts and VE operations](#6-correspondence-between-rl-concepts-and-ve-operations)
-7. [Worked example: the discrete case](#7-worked-example-the-discrete-case)
-8. [Worked example: the continuous case](#8-worked-example-the-continuous-case)
-9. [The two factor families](#9-the-two-factor-families)
-10. [Using the module](#10-using-the-module)
-11. [References](#11-references)
+**Run the examples.** The code of this chapter's examples is in the companion
+notebook [chapter01_examples.ipynb](chapter01_examples.ipynb), which runs
+online:
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/thduynguyen/gtsam/blob/feature/semiringfactor/gtsam/semiring/doc/chapter01_examples.ipynb)
 
 ## 1. An MDP as a factor graph
 
@@ -153,9 +150,7 @@ landed in a particular $s'$, it is the reward received now plus the value of
 that state. The residual is the change: how much better or worse landing in
 $s'$ is than the average outcome of taking $a$ in $s$. It is the agent's luck.
 
-<details>
-<summary><span style="color: gray;">Why is the TD residual zero when the dynamics are deterministic?</span></summary>
-
+:::{dropdown} Why is the TD residual zero when the dynamics are deterministic?
 Because there is no luck involved. Taking $a$ in $s$ then always leads to one
 state, $s' = f(s, a)$, with probability 1 and to every other state with
 probability 0. The average has a single term, and that term is the value of
@@ -164,12 +159,9 @@ the only state that can occur:
 $$\mathbb{E}[V_{t+1} \mid s, a] = 1 \cdot V_{t+1}\big(f(s, a)\big)
 \quad\Longrightarrow\quad
 \delta_t = V_{t+1}\big(f(s, a)\big) - V_{t+1}\big(f(s, a)\big) = 0.$$
+:::
 
-</details>
-
-<details>
-<summary><span style="color: gray;">How is the TD residual used to learn value functions from sampled transitions?</span></summary>
-
+:::{dropdown} How is the TD residual used to learn value functions from sampled transitions?
 This module assumes the dynamics are known, so it computes
 $\mathbb{E}[V_{t+1} \mid s, a]$ exactly. RL usually does not know the dynamics.
 It can only try action $a$ in state $s$ and observe one transition: the reward
@@ -200,19 +192,14 @@ averages to zero for every $s$ and $a$, which is exactly the Bellman backup.
 This is *temporal-difference learning*: it replaces the sum over $s'$, which
 needs the dynamics, by samples of $s'$, which only need experience. The
 analogous update for a policy uses the advantage.
+:::
 
-</details>
-
-<br>
-
-<div>
-<em>Zero mean.</em> Each of the two surprises has zero mean: averaged over the
+*Zero mean.* Each of the two surprises has zero mean: averaged over the
 variable that became known, weighted by that variable's own probabilities, it
 cancels. A single action or outcome can have a large positive or negative
 surprise; only the weighted average is zero.
-<details>
-<summary><span style="color: gray;">Why do both have zero mean?</span></summary>
 
+:::{dropdown} Why do both have zero mean?
 Each is a quantity minus its own average, and the average of "something minus
 its average" is zero.
 
@@ -234,11 +221,7 @@ $$\sum_{s'} p(s' \mid s, a)\, \delta_t(s, a, s')
 \;-\; \mathbb{E}[V_{t+1} \mid s, a] \underbrace{\sum_{s'} p(s' \mid s, a)}_{1} = 0.$$
 
 Good luck and bad luck balance exactly.
-
-</details>
-</div>
-
-<br>
+:::
 
 **This has the shape of variable elimination.** Read the recursion as a SLAM
 person would. The step for $Q_t$ sums out $s_{t+1}$ and leaves a function of
@@ -305,7 +288,7 @@ each as a factor $e^{r}$, since $e^{r_1} e^{r_2} = e^{r_1 + r_2}$; a quadratic
 cost written as a Gaussian factor is the common case. The graph then represents
 the reweighted distribution $p(\tau)\, e^{R(\tau)}$. This is the
 *control as inference* formulation of Kappen et al. (2012) and Levine (2018),
-listed in the [references](#11-references). It is a sound method for what it
+listed in the [references](#chapter01-references). It is a sound method for what it
 computes, but it answers a different question:
 
 - Maximizing over it finds the single best trajectory. It maximizes over next
@@ -336,11 +319,9 @@ The name comes from algebra: the pairs, with a product and a sum, form a
 *semiring*, and this particular one is the **expectation semiring**, introduced
 by Eisner (2002) and extended by Li and Eisner (2009) for computing
 expectations over the paths of weighted automata and parse forests; see the
-[references](#11-references).
+[references](#chapter01-references).
 
-<details>
-<summary><span style="color: gray;">What is a ring, what is a semiring, and why name the factor after it?</span></summary>
-
+:::{dropdown} What is a ring, what is a semiring, and why name the factor after it?
 A **ring** is a set of values with an addition and a multiplication that
 behave like those of ordinary numbers: both are associative, addition is
 commutative, there is a zero and a one, multiplication distributes over
@@ -386,10 +367,7 @@ rules of the table below:
 A *semiring factor* is a factor whose entries are these pairs in place of plain
 numbers. Section 5 shows that the laws hold, by rewriting the pairs in a form
 where the two operations are ordinary arithmetic.
-
-</details>
-
-<br>
+:::
 
 This section presents the pair in the form that is easiest to reason about,
 $(p, v)$. Section 5 gives the equivalent form that is stored. The MDP's terms
@@ -446,9 +424,7 @@ Its value is the expected reward from $s'$ onward. At the last step there are
 no later variables, and this factor is the final reward itself,
 $(1,\; r(s_T))$, which is $V_T$.
 
-<details>
-<summary><span style="color: gray;">Why is its probability 1?</span></summary>
-
+:::{dropdown} Why is its probability 1?
 The probability channel never sees the rewards (each reward factor contributes
 a factor of 1), so it is what ordinary elimination computes: the product of all
 policy and dynamics factors after step $t$, with all future action and state
@@ -459,8 +435,7 @@ $$\sum_{a_{t+1},\, s_{t+2},\, \dots,\, s_T} \;\; \prod_{k=t+1}^{T-1}
 
 It equals one because every factor in the product is a conditional
 distribution, which sums to one over its own variable.
-
-</details>
+:::
 
 #### Eliminate the next state
 
@@ -502,9 +477,7 @@ The two factors of the bucket are gone. In their place are the conditional
 $c(s' \mid s, a)$, drawn as the arrows into $s'$, and one new value factor
 $\phi(s, a)$ joining $s$ and $a$.
 
-<details>
-<summary><span style="color: gray;">The probability channel of this conditional is just the dynamics. Why multiply and marginalize at all?</span></summary>
-
+:::{dropdown} The probability channel of this conditional is just the dynamics. Why multiply and marginalize at all?
 The probability channel comes out equal to the dynamics factor that went in.
 That is a property of this bucket, not of elimination in general: the only
 probability factor touching $s'$ was already a normalized conditional on $s'$.
@@ -518,8 +491,7 @@ chain of normalized conditionals eliminated backward in time, for example with
 a prior on a later state, an observation factor, unnormalized factors or a
 different elimination order. The conditional then differs from every input
 factor, exactly as in a SLAM graph.
-
-</details>
+:::
 
 #### Eliminate the action
 
@@ -605,9 +577,7 @@ often used in RL: $A_t + \delta_t = r(s, a) + V_{t+1}(s') - V_t(s)$.
 
 Subtracting $\bar v$ is what RL calls subtracting a **baseline**.
 
-<details>
-<summary><span style="color: gray;">What does the Bayes net as a whole represent?</span></summary>
-
+:::{dropdown} What does the Bayes net as a whole represent?
 In an ordinary Bayes net, multiplying all the conditionals gives back the joint
 probability of the full assignment. The same question can be asked here:
 multiply all the semiring conditionals for one trajectory $\tau$, what comes
@@ -694,10 +664,7 @@ What this gives:
   The average of "return minus average return" is zero. So putting the
   conditionals of a Bayes net back into a factor graph and calling
   `expectation()` on it must return 0. The unit tests verify this.
-
-
-
-</details>
+:::
 
 ## 5. The stored form and the expectation semiring
 
@@ -736,9 +703,7 @@ The second sum is the numerator of $\bar v(S)$ above, since
 $w(x, S) = p(x, S)\, v(x, S)$. The division by $p(S)$ is done once, at the end,
 when the value is read back from the weighted value as $v = w / p$.
 
-<details>
-<summary><span style="color: gray;">Example: averaging in stages</span></summary>
-
+:::{dropdown} Example: averaging in stages
 Take three outcomes with probabilities $0.5,\ 0.25,\ 0.25$ and values
 $4,\ 0,\ 8$. The expected value is
 $0.5 \cdot 4 + 0.25 \cdot 0 + 0.25 \cdot 8 = 4$.
@@ -754,8 +719,7 @@ first stage would have been as easy to write and wrong in general.
 $0 + 2 = 2$, then $2 + 2 = 4$, with probabilities $0.25 + 0.25 = 0.5$, then
 $0.5 + 0.5 = 1$. Any order and any grouping gives $(1, 4)$, and the value is
 read at the end as $4 / 1 = 4$.
-
-</details>
+:::
 
 The weighted value $w$ is the value weighted by its probability: the contribution of outcome $x$
 to an expected value, i.e. one term of $\mathbb{E}[v] = \sum_x p(x)\, v(x)$. It
@@ -892,9 +856,7 @@ probabilities.
 GTSAM's elimination returns the Bayes net and discards a factor with no
 variables, so $J$ is not in the Bayes net. `graph.expectation()` recovers it.
 
-<details>
-<summary><span style="color: gray;">How does this relate to the rewards-as-factors workaround of Section 3?</span></summary>
-
+:::{dropdown} How does this relate to the rewards-as-factors workaround of Section 3?
 The workaround of Section 3 turns each reward into the factor $e^{r}$, so a
 trajectory gets the weight $p(\tau)\, e^{R(\tau)}$. Trajectories with a high
 return are weighted up strongly, and the distribution is no longer $p(\tau)$.
@@ -922,8 +884,7 @@ that: effects of second order in $\varepsilon$ are dropped. Because the
 probability part never changes, the policy and dynamics are the given ones, and
 the $\varepsilon$ part, summed over trajectories, is their expected return
 $\sum_\tau p(\tau)\, R(\tau) = J$.
-
-</details>
+:::
 
 ## 6. Correspondence between RL concepts and VE operations
 
@@ -963,9 +924,7 @@ table is for readers who know linear-quadratic control.
 | value function at a chosen step | separator factor left by partial elimination | `graph.eliminatePartialSequential(ordering)` |
 | expected return $J(\pi)$ | semiring sum over all variables | `graph.expectation()` |
 
-<details>
-<summary><span style="color: gray;">One more correspondence: state visitation</span></summary>
-
+:::{dropdown} One more correspondence: state visitation
 $d_t(s)$ is the probability that the agent is in state $s$ at step $t$, when it
 starts from $p(s_0)$ and follows the policy. In factor graph terms it is
 nothing new: it is the *marginal* of the variable $s_t$,
@@ -976,8 +935,7 @@ Eliminating backward in time produces the values; the marginals come from the
 forward pass over the Bayes net or Bayes tree, as in any GTSAM graph. In this
 module, `bayesTree.marginalFactor(key)` returns the marginal, and its
 probability channel is $d_t(s)$.
-
-</details>
+:::
 
 ### Linear-Gaussian case
 
@@ -1228,8 +1186,9 @@ $6.6$ above the average.
 | $s_2$ | cell 2 | $10 - 10 = 0$ | no luck involved: Right in cell 2 always stays |
 | | | **sum $= +6.6$** | $= R - J = 8 - 1.4$ |
 
-Section 10 builds this example in Python. The unit tests check these numbers,
-and use a smaller one-decision example as their fixture
+The [companion notebook](chapter01_examples.ipynb) runs these steps one by one,
+and Section 10 builds the example in Python. The unit tests check these
+numbers, and use a smaller one-decision example as their fixture
 (`gtsam/semiring/tests/TwoActionExample.h`).
 
 ## 8. Worked example: the continuous case
@@ -1415,7 +1374,8 @@ $3.325$ above the average.
 Every surprise is positive here because nothing random went wrong: the average
 return includes the cost of slip and jitter, and this trajectory had none.
 
-Section 10 builds this example in Python, and the unit tests check these
+The [companion notebook](chapter01_examples.ipynb) runs these steps one by one,
+and Section 10 builds the example in Python. The unit tests check these
 numbers.
 
 ## 9. The two factor families
@@ -1467,18 +1427,15 @@ from gtsam.symbol_shorthand import A, S
 state = lambda t: (S(t), 3)   # (key, cardinality): cell 0, 1 or 2
 action = lambda t: (A(t), 2)  # 0 = Left, 1 = Right
 
-
 def probability(keys, table):
     """Lift a probability table to (p, 0)."""
     return SemiringDiscreteFactor(
         DecisionTreeFactor(keys, np.ravel(table).tolist()))
 
-
 def reward(keys, table):
     """Lift a reward table to (1, r)."""
     return SemiringDiscreteFactor.Reward(
         DecisionTreeFactor(keys, np.ravel(table).tolist()))
-
 
 # The tables of Section 7; the first key varies slowest.
 prior = [0.5, 0.5, 0.0]                           # p(s0)
@@ -1536,21 +1493,17 @@ from gtsam.symbol_shorthand import U, X
 I = np.eye(1)
 zero = np.zeros(1)
 
-
 def variance(v):
     """A scalar Gaussian noise model with the given variance."""
     return noiseModel.Isotropic.Variance(1, v)
-
 
 def gaussian(*args):
     """Lift a Gaussian factor to (p, 0)."""
     return SemiringGaussianFactor(JacobianFactor(*args))
 
-
 def penalty(key):
     """Lift the penalty z^2 on one variable to the reward (1, -z^2)."""
     return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
-
 
 graph = SemiringFactorGraph()
 # Start: x0 = 2 + noise of variance 1.
@@ -1592,6 +1545,7 @@ Complete examples are in the tests:
   formula checked, the same MDP and LQR checks in Python,
   hand-written Bellman backups and greedy backward induction.
 
+(chapter01-references)=
 ## 11. References
 
 - J. Eisner, "Parameter estimation for probabilistic finite-state transducers",
@@ -1612,4 +1566,4 @@ Complete examples are in the tests:
 
 ---
 
-Next: [Chapter 2: Finding the best policy in one pass](chapter02.md).
+Next: [Chapter 2: The semiring family](chapter02.md).

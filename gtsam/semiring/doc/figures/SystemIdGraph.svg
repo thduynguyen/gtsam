@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 330" width="860" height="330" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">System identification as a factor graph</title>
+  <desc id="desc">One variable, the parameters theta p of the dynamics, joined to one factor for each observed transition. Each factor holds the error of predicting the next state of that transition.</desc>
+  <rect x="0.5" y="0.5" width="859" height="329" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="130" y1="200" x2="430" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="280" y1="200" x2="430" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="430" y1="200" x2="430" y2="80" stroke="#57606a" stroke-width="2"/>
+  <line x1="730" y1="200" x2="430" y2="80" stroke="#57606a" stroke-width="2"/>
+  <rect x="122.0" y="192.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="272.0" y="192.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="422.0" y="192.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="722.0" y="192.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <circle cx="430" cy="80" r="28" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="430" y="86" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">θ<tspan dy="5.4" font-size="13.0">p</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="130" y="228" font-size="13" text-anchor="middle" fill="#24292f">(x, u, x′)<tspan dy="-5.46" font-size="9.4">(1)</tspan><tspan dy="5.46" font-size="9.4">​</tspan></text>
+  <text x="280" y="228" font-size="13" text-anchor="middle" fill="#24292f">(x, u, x′)<tspan dy="-5.46" font-size="9.4">(2)</tspan><tspan dy="5.46" font-size="9.4">​</tspan></text>
+  <text x="430" y="228" font-size="13" text-anchor="middle" fill="#24292f">(x, u, x′)<tspan dy="-5.46" font-size="9.4">(3)</tspan><tspan dy="5.46" font-size="9.4">​</tspan></text>
+  <text x="580" y="205" font-size="24" text-anchor="middle" fill="#57606a">…</text>
+  <text x="730" y="228" font-size="13" text-anchor="middle" fill="#24292f">(x, u, x′)<tspan dy="-5.46" font-size="9.4">(M)</tspan><tspan dy="5.46" font-size="9.4">​</tspan></text>
+  <text x="480" y="62" font-size="12" text-anchor="start" fill="#57606a">the parameters (F, B) of the dynamics: the unknown</text>
+  <text x="430" y="258" font-size="12" text-anchor="middle" fill="#57606a">one factor per observed transition, with error x′ − F x − B u</text>
+  <line x1="16" y1="280" x2="844" y2="280" stroke="#d0d7de"/>
+  <circle cx="32" cy="301" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="47" y="305" font-size="12" fill="#57606a">parameter</text>
+  <rect x="127.69999999999999" y="295" width="12" height="12" fill="#ffffff" stroke="#24292f" stroke-width="1.5"/>
+  <text x="148.7" y="305" font-size="12" fill="#57606a">factor known only through samples</text>
+</svg>

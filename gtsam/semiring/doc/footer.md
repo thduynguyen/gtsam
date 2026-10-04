@@ -1,0 +1,1 @@
+Copyright © 2026 Duy Ta. All rights reserved. Written with the assistance of Claude (Anthropic). The example code is under the BSD license of GTSAM. See [Copyright, license and authorship](LICENSE.md).

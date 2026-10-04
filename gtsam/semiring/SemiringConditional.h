@@ -98,8 +98,11 @@ class GTSAM_EXPORT SemiringConditional
   SemiringFactor::shared_ptr multiply(
       const SemiringFactor& other) const override;
 
+  using SemiringFactor::eliminate;
+
   /// Eliminate the frontal variables from this conditional, as a factor.
-  EliminationResult eliminate(const Ordering& frontalKeys) const override;
+  EliminationResult eliminate(const Ordering& frontalKeys,
+                              const SemiringSum& sum) const override;
 
   /// Expected value of this conditional, as a factor.
   double expectation() const override;

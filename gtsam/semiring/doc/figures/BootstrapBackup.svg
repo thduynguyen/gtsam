@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 380" width="840" height="380" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">One sampled transition and the bootstrapped target</title>
+  <desc id="desc">A state, its action and the next state. The dynamics factor is white: only one sampled next state is seen. A learned value factor sits on the next state and another on the state. A dashed arrow from the first to the second carries the target, the reward plus gamma times the estimate at the next state.</desc>
+  <rect x="0.5" y="0.5" width="839" height="379" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="330" y1="160" x2="170" y2="160" stroke="#57606a" stroke-width="2"/>
+  <line x1="330" y1="160" x2="330" y2="280" stroke="#57606a" stroke-width="2"/>
+  <line x1="330" y1="160" x2="490" y2="160" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="220" x2="170" y2="160" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="220" x2="330" y2="280" stroke="#57606a" stroke-width="2"/>
+  <line x1="170" y1="280" x2="170" y2="160" stroke="#57606a" stroke-width="2"/>
+  <line x1="170" y1="280" x2="330" y2="280" stroke="#57606a" stroke-width="2"/>
+  <line x1="610" y1="160" x2="490" y2="160" stroke="#57606a" stroke-width="2"/>
+  <line x1="60" y1="160" x2="170" y2="160" stroke="#57606a" stroke-width="2"/>
+  <path d="M 604.4 143.8 Q 335.0 36.0 75.8 139.7" fill="none" stroke="#075e7a" stroke-width="2" stroke-dasharray="5 4"/><polygon points="65.6,143.8 74.1,135.5 77.5,143.9" fill="#075e7a"/>
+  <rect x="322.0" y="152.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="242.0" y="212.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="162.0" y="272.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="602.0" y="152.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="52.0" y="152.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <circle cx="170" cy="160" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="170" y="166" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s</text>
+  <circle cx="330" cy="280" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="330" y="286" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a</text>
+  <circle cx="490" cy="160" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="490" y="166" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s′</text>
+  <text x="330" y="144" font-size="13" text-anchor="middle" fill="#24292f">p(s′ | s, a): one sample</text>
+  <text x="236" y="242" font-size="13" text-anchor="end" fill="#24292f">π(a | s)</text>
+  <text x="170" y="308" font-size="13" text-anchor="middle" fill="#a85a08">r(s, a)</text>
+  <text x="610" y="188" font-size="13" text-anchor="middle" fill="#075e7a">V̂(s′)</text>
+  <text x="60" y="188" font-size="13" text-anchor="middle" fill="#075e7a">V̂(s)</text>
+  <text x="335" y="62" font-size="13" text-anchor="middle" fill="#075e7a" font-weight="bold">target for V̂(s):  r + γ V̂(s′)</text>
+  <line x1="16" y1="330" x2="824" y2="330" stroke="#d0d7de"/>
+  <circle cx="32" cy="351" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="355" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="351" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="355" font-size="12" fill="#57606a">action</text>
+  <rect x="185.3" y="345" width="12" height="12" fill="#ffffff" stroke="#24292f" stroke-width="1.5"/>
+  <text x="206.3" y="355" font-size="12" fill="#57606a">factor known only through samples</text>
+  <rect x="438.20000000000005" y="345" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="459.20000000000005" y="355" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="602.9000000000001" y="345" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="623.9000000000001" y="355" font-size="12" fill="#57606a">(1, v): value</text>
+  <rect x="729.8000000000001" y="345" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="750.8000000000001" y="355" font-size="12" fill="#57606a">learned factor</text>
+</svg>

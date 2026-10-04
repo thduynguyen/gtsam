@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" width="900" height="330" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The belief as a forward message</title>
+  <desc id="desc">Two states joined by the dynamics factor with the action fixed. Each state also has a sensor factor with its reading fixed. Eliminating the first state sends a forward message to the second, the predicted belief; multiplying it by the second sensor factor and normalizing gives the belief.</desc>
+  <rect x="0.5" y="0.5" width="899" height="329" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="60" y1="170" x2="140" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="140" y1="80" x2="140" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="310" y1="170" x2="140" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="310" y1="170" x2="480" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="480" y1="80" x2="480" y2="170" stroke="#57606a" stroke-width="2"/>
+  <path d="M 175.0 215.0 Q 310.0 182.6 434.3 212.4" fill="none" stroke="#075e7a" stroke-width="2"/><polygon points="445.0,215.0 433.3,216.8 435.4,208.1" fill="#075e7a"/>
+  <rect x="52.0" y="162.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="132.0" y="72.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="302.0" y="162.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="472.0" y="72.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <circle cx="140" cy="170" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="140" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">s<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="480" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="480" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="60" y="154" font-size="13" text-anchor="middle" fill="#24292f">p(s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="156" y="85" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>), y<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> fixed</text>
+  <text x="310" y="154" font-size="13" text-anchor="middle" fill="#24292f">p(s<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, a<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>), a<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> fixed</text>
+  <text x="496" y="85" font-size="13" text-anchor="start" fill="#24292f">p(y<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | s<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>), y<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> fixed</text>
+  <text x="310" y="262" font-size="12" text-anchor="middle" fill="#075e7a" font-weight="bold">forward message: d<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(s<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan> | y<tspan dy="3.6" font-size="8.6">0</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>), the predicted belief</text>
+  <text x="690" y="165" font-size="12" text-anchor="middle" fill="#57606a">marginal of s<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>:</text>
+  <text x="690" y="183" font-size="12" text-anchor="middle" fill="#57606a" font-weight="bold">the belief d<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(s<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan> | y<tspan dy="3.6" font-size="8.6">0</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>, y<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>)</text>
+  <line x1="16" y1="280" x2="884" y2="280" stroke="#d0d7de"/>
+  <circle cx="32" cy="301" r="8" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="47" y="305" font-size="12" fill="#57606a">eliminated; arrows: its conditional</text>
+  <circle cx="297.5" cy="301" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="312.5" y="305" font-size="12" fill="#57606a">state</text>
+  <rect x="368.0" y="295" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="389.0" y="305" font-size="12" fill="#57606a">(p, 0): probability</text>
+</svg>

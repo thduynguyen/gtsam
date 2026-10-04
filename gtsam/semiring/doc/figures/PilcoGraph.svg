@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The graph of PILCO</title>
+  <desc id="desc">The chain of states and actions with policy factors that depend on a parameter theta, reward factors, and dynamics factors drawn in teal: each is a Gaussian process learned from transitions. Above each state is its forward message, a Gaussian, carried from one state to the next by moment matching.</desc>
+  <rect x="0.5" y="0.5" width="899" height="469" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="250" y1="170" x2="100" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="170" x2="250" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="170" x2="400" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="175" y1="235" x2="100" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="175" y1="235" x2="250" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="300" x2="100" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="300" x2="250" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="170" x2="400" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="170" x2="550" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="170" x2="700" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="475" y1="235" x2="400" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="475" y1="235" x2="550" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="300" x2="400" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="300" x2="550" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="790" y1="170" x2="700" y2="170" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="95" x2="100" y2="143" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="400" y1="72" x2="400" y2="143" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="700" y1="72" x2="700" y2="143" stroke="#57606a" stroke-width="2" stroke-dasharray="5 4"/>
+  <path d="M 325 385 Q 150 365 175 235" fill="none" stroke="#57606a" stroke-width="2"/>
+  <path d="M 325 385 Q 450 365 475 235" fill="none" stroke="#57606a" stroke-width="2"/>
+  <path d="M 155.0 57.0 Q 250.0 57.0 334.0 57.0" fill="none" stroke="#075e7a" stroke-width="2"/><polygon points="345.0,57.0 334.0,61.5 334.0,52.5" fill="#075e7a"/>
+  <path d="M 455.0 57.0 Q 550.0 57.0 634.0 57.0" fill="none" stroke="#075e7a" stroke-width="2"/><polygon points="645.0,57.0 634.0,61.5 634.0,52.5" fill="#075e7a"/>
+  <rect x="242.0" y="162.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="167.0" y="227.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="92.0" y="292.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="542.0" y="162.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="467.0" y="227.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="392.0" y="292.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <rect x="782.0" y="162.0" width="16" height="16" fill="#d9730d" stroke="#d9730d" stroke-width="2"/>
+  <circle cx="100" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="100" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="700" cy="170" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="700" y="176" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="250" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="250" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="550" cy="300" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="550" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="325" cy="385" r="24" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="325" y="391" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">θ</text>
+  <text x="100" y="62" font-size="13" text-anchor="middle" fill="#075e7a" font-weight="bold">N(μ<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, Σ<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="400" y="62" font-size="13" text-anchor="middle" fill="#075e7a" font-weight="bold">N(μ<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, Σ<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="700" y="62" font-size="13" text-anchor="middle" fill="#075e7a" font-weight="bold">N(μ<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, Σ<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="250" y="154" font-size="13" text-anchor="middle" fill="#075e7a">Gaussian process</text>
+  <text x="161" y="257" font-size="13" text-anchor="end" fill="#24292f">π<tspan dy="3.9" font-size="9.4">θ</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>(u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="100" y="328" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">0</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="250" y="44" font-size="12" text-anchor="middle" fill="#075e7a">moment matching</text>
+  <text x="550" y="154" font-size="13" text-anchor="middle" fill="#075e7a">Gaussian process</text>
+  <text x="461" y="257" font-size="13" text-anchor="end" fill="#24292f">π<tspan dy="3.9" font-size="9.4">θ</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>(u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan> | x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="400" y="328" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>, u<tspan dy="3.9" font-size="9.4">1</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="550" y="44" font-size="12" text-anchor="middle" fill="#075e7a">moment matching</text>
+  <text x="790" y="154" font-size="13" text-anchor="middle" fill="#a85a08">r(x<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="100" y="86" font-size="12" text-anchor="middle" fill="#075e7a">the forward message</text>
+  <line x1="16" y1="420" x2="884" y2="420" stroke="#d0d7de"/>
+  <circle cx="32" cy="441" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="445" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="441" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="445" font-size="12" fill="#57606a">action</text>
+  <rect x="185.3" y="435" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="206.3" y="445" font-size="12" fill="#57606a">learned factor</text>
+  <rect x="318.5" y="435" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="339.5" y="445" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="483.2" y="435" width="12" height="12" fill="#d9730d" stroke="#d9730d" stroke-width="1.5"/>
+  <text x="504.2" y="445" font-size="12" fill="#57606a">(1, v): value</text>
+  <circle cx="616.1" cy="441" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="631.1" y="445" font-size="12" fill="#57606a">parameter</text>
+</svg>

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The trajectories of the iLQR iterations</title>
+  <desc id="desc">The state at steps zero to four for four iterations. The first trajectory stays at three. After one pass it drops to 0.3 at the last step, overshooting; after two passes it is close to the converged trajectory, which ends at 0.41.</desc>
+  <rect x="0.5" y="0.5" width="759" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="70" y="50" width="430" height="270" fill="none" stroke="#d0d7de"/>
+  <line x1="70.0" y1="50" x2="70.0" y2="320" stroke="#eaeef2"/>
+  <line x1="177.5" y1="50" x2="177.5" y2="320" stroke="#eaeef2"/>
+  <line x1="285.0" y1="50" x2="285.0" y2="320" stroke="#eaeef2"/>
+  <line x1="392.5" y1="50" x2="392.5" y2="320" stroke="#eaeef2"/>
+  <line x1="500.0" y1="50" x2="500.0" y2="320" stroke="#eaeef2"/>
+  <line x1="70" y1="320.0" x2="500" y2="320.0" stroke="#eaeef2"/>
+  <line x1="70" y1="235.6" x2="500" y2="235.6" stroke="#eaeef2"/>
+  <line x1="70" y1="151.2" x2="500" y2="151.2" stroke="#eaeef2"/>
+  <line x1="70" y1="66.9" x2="500" y2="66.9" stroke="#eaeef2"/>
+  <polyline points="70.0,66.9 177.5,66.9 285.0,66.9 392.5,66.9 500.0,66.9" fill="none" stroke="#8c959f" stroke-width="2.5"/>
+  <circle cx="70.0" cy="66.9" r="3.5" fill="#8c959f"/>
+  <circle cx="177.5" cy="66.9" r="3.5" fill="#8c959f"/>
+  <circle cx="285.0" cy="66.9" r="3.5" fill="#8c959f"/>
+  <circle cx="392.5" cy="66.9" r="3.5" fill="#8c959f"/>
+  <circle cx="500.0" cy="66.9" r="3.5" fill="#8c959f"/>
+  <line x1="525" y1="86" x2="555" y2="86" stroke="#8c959f" stroke-width="2.5"/>
+  <polyline points="70.0,66.9 177.5,147.2 285.0,219.0 392.5,271.0 500.0,294.8" fill="none" stroke="#d9730d" stroke-width="2.5"/>
+  <circle cx="70.0" cy="66.9" r="3.5" fill="#d9730d"/>
+  <circle cx="177.5" cy="147.2" r="3.5" fill="#d9730d"/>
+  <circle cx="285.0" cy="219.0" r="3.5" fill="#d9730d"/>
+  <circle cx="392.5" cy="271.0" r="3.5" fill="#d9730d"/>
+  <circle cx="500.0" cy="294.8" r="3.5" fill="#d9730d"/>
+  <line x1="525" y1="114" x2="555" y2="114" stroke="#d9730d" stroke-width="2.5"/>
+  <polyline points="70.0,66.9 177.5,136.0 285.0,201.5 392.5,257.1 500.0,286.8" fill="none" stroke="#1e7b34" stroke-width="2.5"/>
+  <circle cx="70.0" cy="66.9" r="3.5" fill="#1e7b34"/>
+  <circle cx="177.5" cy="136.0" r="3.5" fill="#1e7b34"/>
+  <circle cx="285.0" cy="201.5" r="3.5" fill="#1e7b34"/>
+  <circle cx="392.5" cy="257.1" r="3.5" fill="#1e7b34"/>
+  <circle cx="500.0" cy="286.8" r="3.5" fill="#1e7b34"/>
+  <line x1="525" y1="142" x2="555" y2="142" stroke="#1e7b34" stroke-width="2.5"/>
+  <polyline points="70.0,66.9 177.5,138.9 285.0,204.1 392.5,256.2 500.0,285.4" fill="none" stroke="#1a4fa0" stroke-width="2.5"/>
+  <circle cx="70.0" cy="66.9" r="3.5" fill="#1a4fa0"/>
+  <circle cx="177.5" cy="138.9" r="3.5" fill="#1a4fa0"/>
+  <circle cx="285.0" cy="204.1" r="3.5" fill="#1a4fa0"/>
+  <circle cx="392.5" cy="256.2" r="3.5" fill="#1a4fa0"/>
+  <circle cx="500.0" cy="285.4" r="3.5" fill="#1a4fa0"/>
+  <line x1="525" y1="170" x2="555" y2="170" stroke="#1a4fa0" stroke-width="2.5"/>
+  <text x="70.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">0</text>
+  <text x="177.5" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">1</text>
+  <text x="285.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">2</text>
+  <text x="392.5" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">3</text>
+  <text x="500.0" y="336.0" font-size="11" text-anchor="middle" fill="#57606a">4</text>
+  <text x="64.0" y="324.0" font-size="11" text-anchor="end" fill="#57606a">0</text>
+  <text x="64.0" y="239.625" font-size="11" text-anchor="end" fill="#57606a">1</text>
+  <text x="64.0" y="155.25" font-size="11" text-anchor="end" fill="#57606a">2</text>
+  <text x="64.0" y="70.875" font-size="11" text-anchor="end" fill="#57606a">3</text>
+  <text x="285.0" y="354" font-size="12" text-anchor="middle" fill="#57606a">step t</text>
+  <text x="70" y="40" font-size="12" text-anchor="start" fill="#57606a">state x<tspan dy="3.6" font-size="8.6">t</tspan><tspan dy="-3.6" font-size="8.6">​</tspan></text>
+  <text x="562" y="90" font-size="12" text-anchor="start" fill="#24292f">start: do nothing</text>
+  <text x="562" y="118" font-size="12" text-anchor="start" fill="#24292f">after 1 pass</text>
+  <text x="562" y="146" font-size="12" text-anchor="start" fill="#24292f">after 2 passes</text>
+  <text x="562" y="174" font-size="12" text-anchor="start" fill="#24292f">converged, after 13 passes</text>
+
+</svg>

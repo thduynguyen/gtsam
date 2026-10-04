@@ -1,0 +1,99 @@
+/* Style overrides for the semiring book (see myst.yml, site.options.style). */
+
+/* A wider text column. The book theme lays the page out on a grid whose text
+   column is six tracks of at most 10ch, about 570px. The rules below repeat
+   the theme's grids with wider text tracks, fixed room for the left sidebar
+   and the outline on the right, and less empty space between them and the
+   text. */
+@media (min-width: 768px) {
+  .article-grid {
+    grid-template-columns:
+      [screen-start] 0.25rem
+      [screen-inset-start page-start page-inset-start body-outset-start] 1fr
+      [body-start gutter-left-start] 1rem
+      [body-inset-start] minmax(2ch, 14ch)
+      [middle-start] minmax(2ch, 14ch)
+      [gutter-left-end] minmax(2ch, 14ch) minmax(2ch, 14ch)
+      [gutter-right-start] minmax(2ch, 14ch)
+      [middle-end] minmax(2ch, 14ch)
+      [body-inset-end] 1rem
+      [body-end gutter-right-end] 1fr
+      [body-outset-end page-inset-end page-end screen-inset-end] 0.25rem
+      [screen-end];
+  }
+}
+
+@media (min-width: 1024px) {
+  .article-grid {
+    grid-template-columns:
+      [screen-start] 0.25rem
+      [screen-inset-start page-start] 1rem
+      [page-inset-start body-outset-start] 1fr
+      [body-start gutter-left-start] 1rem
+      [body-inset-start] minmax(8ch, 14ch)
+      [middle-start] minmax(8ch, 14ch)
+      [gutter-left-end] minmax(8ch, 14ch) minmax(8ch, 14ch)
+      [gutter-right-start] minmax(8ch, 14ch)
+      [middle-end] minmax(8ch, 14ch)
+      [body-inset-end] 1rem
+      [body-end gutter-right-end] 3rem
+      [body-outset-end] minmax(10rem, 12rem)
+      [page-inset-end] 1rem
+      [page-end] 1fr
+      [screen-inset-end] 0.25rem
+      [screen-end];
+  }
+}
+
+/* The left sidebar is laid out on the same grid, under its own class. */
+@media (min-width: 1280px) {
+  .article-grid,
+  .xl\:article-grid {
+    grid-template-columns:
+      [screen-start] 0.25rem
+      [screen-inset-start] 1fr
+      [page-start] 3rem
+      [page-inset-start] 13rem
+      [body-outset-start] 1rem
+      [body-start gutter-left-start] 1rem
+      [body-inset-start] minmax(8ch, 14ch)
+      [middle-start] minmax(8ch, 14ch)
+      [gutter-left-end] minmax(8ch, 14ch) minmax(8ch, 14ch)
+      [gutter-right-start] minmax(8ch, 14ch)
+      [middle-end] minmax(8ch, 14ch)
+      [body-inset-end] 1rem
+      [body-end gutter-right-end] 1.5rem
+      [body-outset-end] minmax(10rem, 12rem)
+      [page-inset-end] 1rem
+      [page-end] 1fr
+      [screen-inset-end] 0.25rem
+      [screen-end];
+  }
+}
+
+/* Keep a formula in a table cell on one line, e.g. p(s' | s, a). Not on a
+   phone, where the tables would then be wider than the screen. */
+@media (min-width: 768px) {
+  table .katex {
+    white-space: nowrap;
+  }
+}
+
+/* The work-in-progress notice under the title of every page: bold and red. */
+.in-progress,
+.in-progress p,
+.in-progress strong {
+  color: #cf222e;
+  font-weight: 700;
+}
+html.dark .in-progress,
+html.dark .in-progress p,
+html.dark .in-progress strong {
+  color: #ff7b72;
+}
+
+/* The site-wide copyright footer (footer.md). */
+footer.footer p {
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+}

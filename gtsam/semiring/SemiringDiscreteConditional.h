@@ -70,6 +70,22 @@ class GTSAM_EXPORT SemiringDiscreteConditional : public SemiringConditional {
   /// The surprise table v - E[v | parents].
   DecisionTreeFactor surprise() const { return table().value(); }
 
+  /**
+   * The greedy choice: for every parent assignment, probability one on the
+   * frontal assignment with the largest surprise, shared equally among ties.
+   * When the frontal variable is an action, this is the greedy policy.
+   */
+  DiscreteConditional greedy() const;
+
+  /**
+   * The conditional reweighted toward high surprise,
+   *   q(x | S) proportional to p(x | S) exp(tilt * surprise(x, S)).
+   * When the frontal variable is an action and tilt = 1 / temperature, this is
+   * the soft, or softmax, policy. After elimination with the tilted rule of
+   * the same tilt it is already normalized.
+   */
+  DiscreteConditional tilted(double tilt) const;
+
   using Base::evaluate;
 
   /// Evaluate both channels for an assignment, as the pair (p, surprise).
@@ -78,6 +94,10 @@ class GTSAM_EXPORT SemiringDiscreteConditional : public SemiringConditional {
   }
 
   /// @}
+
+ private:
+  /// Weights on the keys of this conditional, normalized over the frontals.
+  DiscreteConditional normalized(const DecisionTreeFactor& weights) const;
 };
 
 /// traits

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">Planning in a learned model</title>
+  <desc id="desc">A short chain of two moves starting from the real current state. Its dynamics and reward factors are learned, and a learned value factor closes the chain at its end. The actions are chosen by a maximum, the first action is applied, and the plan is made again from the next real state.</desc>
+  <rect x="0.5" y="0.5" width="899" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="40" y="40" width="820" height="300" rx="10" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="250" y1="140" x2="100" y2="140" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="140" x2="250" y2="270" stroke="#57606a" stroke-width="2"/>
+  <line x1="250" y1="140" x2="400" y2="140" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="270" x2="100" y2="140" stroke="#57606a" stroke-width="2"/>
+  <line x1="100" y1="270" x2="250" y2="270" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="140" x2="400" y2="140" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="140" x2="550" y2="270" stroke="#57606a" stroke-width="2"/>
+  <line x1="550" y1="140" x2="700" y2="140" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="270" x2="400" y2="140" stroke="#57606a" stroke-width="2"/>
+  <line x1="400" y1="270" x2="550" y2="270" stroke="#57606a" stroke-width="2"/>
+  <line x1="800" y1="140" x2="700" y2="140" stroke="#57606a" stroke-width="2"/>
+  <rect x="242.0" y="132.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="92.0" y="262.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="542.0" y="132.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="392.0" y="262.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="792.0" y="132.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <circle cx="100" cy="140" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="100" y="146" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="400" cy="140" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="146" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="700" cy="140" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="700" y="146" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="250" cy="270" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="250" y="276" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="550" cy="270" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="550" y="276" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">u<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <text x="250" y="124" font-size="13" text-anchor="middle" fill="#075e7a">learned dynamics</text>
+  <text x="100" y="298" font-size="13" text-anchor="middle" fill="#075e7a">reward</text>
+  <text x="250" y="316" font-size="12" text-anchor="middle" fill="#cf222e" font-weight="bold">max</text>
+  <text x="550" y="124" font-size="13" text-anchor="middle" fill="#075e7a">learned dynamics</text>
+  <text x="400" y="298" font-size="13" text-anchor="middle" fill="#075e7a">reward</text>
+  <text x="550" y="316" font-size="12" text-anchor="middle" fill="#cf222e" font-weight="bold">max</text>
+  <text x="800" y="168" font-size="13" text-anchor="middle" fill="#075e7a">learned value V(x<tspan dy="3.9" font-size="9.4">2</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>)</text>
+  <text x="100" y="96" font-size="12" text-anchor="middle" fill="#24292f">the real state, now</text>
+  <text x="50" y="58" font-size="12" text-anchor="start" fill="#57606a" font-weight="bold">Stage 1 in the model: plan h moves ahead, apply u<tspan dy="3.6" font-size="8.6">0</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>, observe the real x<tspan dy="3.6" font-size="8.6">1</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>, plan again</text>
+  <line x1="16" y1="350" x2="884" y2="350" stroke="#d0d7de"/>
+  <circle cx="32" cy="371" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="375" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="371" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="375" font-size="12" fill="#57606a">action</text>
+  <rect x="185.3" y="365" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="206.3" y="375" font-size="12" fill="#57606a">learned factor</text>
+</svg>

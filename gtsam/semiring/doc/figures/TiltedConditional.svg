@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 400" width="1010" height="400" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">Eliminating the action by soft maximum</title>
+  <desc id="desc">On the left, the bucket of the action: the policy factor, joined to the parameter theta, and a learned value factor holding Q. On the right, the result of eliminating the action by soft maximum: a value factor on the state holding the soft maximum of Q, and a conditional on the action whose value channel is the soft advantage. Reweighting the policy by the exponential of the soft advantage divided by the temperature gives the tilted policy q.</desc>
+  <rect x="0.5" y="0.5" width="1009" height="399" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="205" y1="185" x2="110" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="205" y1="185" x2="300" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="205" y1="185" x2="110" y2="300" stroke="#57606a" stroke-width="2"/>
+  <line x1="300" y1="120" x2="110" y2="120" stroke="#57606a" stroke-width="2"/>
+  <line x1="300" y1="120" x2="300" y2="250" stroke="#57606a" stroke-width="2"/>
+  <line x1="470" y1="120" x2="560" y2="120" stroke="#57606a" stroke-width="2"/>
+  <path d="M 582.3 135.2 Q 655.0 185.0 718.6 228.5" fill="none" stroke="#8c959f" stroke-width="2"/><polygon points="727.7,234.8 716.1,232.3 721.2,224.8" fill="#8c959f"/>
+  <path d="M 410.0 190.0 Q 440.0 190.0 459.0 190.0" fill="none" stroke="#57606a" stroke-width="2"/><polygon points="470.0,190.0 459.0,194.5 459.0,185.5" fill="#57606a"/>
+  <rect x="197.0" y="177.0" width="16" height="16" fill="#24292f" stroke="#24292f" stroke-width="2"/>
+  <rect x="292.0" y="112.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="462.0" y="112.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <circle cx="300" cy="250" r="33" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="6 4"/>
+  <circle cx="110" cy="120" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="110" y="126" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s</text>
+  <circle cx="300" cy="250" r="24" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/><text x="300" y="256" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">a</text>
+  <circle cx="110" cy="300" r="24" fill="#eadcff" stroke="#6639ba" stroke-width="2"/><text x="110" y="306" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">θ</text>
+  <circle cx="560" cy="120" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="560" y="126" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">s</text>
+  <circle cx="750" cy="250" r="24" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="4 3"/><text x="750" y="256" font-size="18" font-style="italic" text-anchor="middle" fill="#8c959f">a</text>
+  <text x="221" y="175" font-size="13" text-anchor="start" fill="#24292f">π<tspan dy="3.9" font-size="9.4">θ</tspan><tspan dy="-3.9" font-size="9.4">​</tspan>(a | s)</text>
+  <text x="300" y="104" font-size="13" text-anchor="middle" fill="#075e7a">(1, Q̂(s, a))</text>
+  <text x="205" y="60" font-size="12" text-anchor="middle" fill="#57606a" font-weight="bold">the bucket of the action</text>
+  <text x="470" y="104" font-size="13" text-anchor="middle" fill="#075e7a">(1, soft max of Q̂)</text>
+  <text x="640" y="60" font-size="12" text-anchor="middle" fill="#57606a" font-weight="bold">after eliminating it by soft maximum</text>
+  <text x="690" y="170" font-size="12" text-anchor="start" fill="#24292f">conditional:</text>
+  <text x="690" y="188" font-size="12" text-anchor="start" fill="#24292f">(π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(a | s), Q̂ − soft max)</text>
+  <text x="560" y="300" font-size="12" text-anchor="start" fill="#cf222e" font-weight="bold">tilted policy  q(a | s) = π<tspan dy="3.6" font-size="8.6">θ</tspan><tspan dy="-3.6" font-size="8.6">​</tspan>(a | s) · exp(soft advantage / η)</text>
+  <line x1="16" y1="350" x2="994" y2="350" stroke="#d0d7de"/>
+  <circle cx="32" cy="371" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="375" font-size="12" fill="#57606a">state</text>
+  <circle cx="108.5" cy="371" r="8" fill="#dff3e4" stroke="#1e7b34" stroke-width="2"/>
+  <text x="123.5" y="375" font-size="12" fill="#57606a">action</text>
+  <circle cx="191.3" cy="371" r="8" fill="#eadcff" stroke="#6639ba" stroke-width="2"/>
+  <text x="206.3" y="375" font-size="12" fill="#57606a">parameter</text>
+  <rect x="287.0" y="365" width="12" height="12" fill="#24292f" stroke="#24292f" stroke-width="1.5"/>
+  <text x="308.0" y="375" font-size="12" fill="#57606a">(p, 0): probability</text>
+  <rect x="451.7" y="365" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="472.7" y="375" font-size="12" fill="#57606a">learned factor</text>
+  <circle cx="590.9" cy="371" r="8" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="605.9" y="375" font-size="12" fill="#57606a">being eliminated</text>
+  <circle cx="736.7" cy="371" r="8" fill="#f3f4f6" stroke="#8c959f" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="751.7" y="375" font-size="12" fill="#57606a">eliminated; arrows: its conditional</text>
+</svg>

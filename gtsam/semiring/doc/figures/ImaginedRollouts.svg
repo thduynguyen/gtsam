@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="900" height="380" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">Short imagined rollouts from real states</title>
+  <desc id="desc">A chain of real states joined by real transitions from the buffer. From two of the real states, a short chain of two imagined states branches off, joined by learned dynamics factors.</desc>
+  <rect x="0.5" y="0.5" width="899" height="379" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <line x1="195" y1="90" x2="90" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="195" y1="90" x2="300" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="405" y1="90" x2="300" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="405" y1="90" x2="510" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="615" y1="90" x2="510" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="615" y1="90" x2="720" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="140" y1="160" x2="90" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="140" y1="160" x2="220" y2="230" stroke="#57606a" stroke-width="2"/>
+  <line x1="310" y1="230" x2="220" y2="230" stroke="#57606a" stroke-width="2"/>
+  <line x1="310" y1="230" x2="400" y2="230" stroke="#57606a" stroke-width="2"/>
+  <line x1="560" y1="160" x2="510" y2="90" stroke="#57606a" stroke-width="2"/>
+  <line x1="560" y1="160" x2="640" y2="230" stroke="#57606a" stroke-width="2"/>
+  <line x1="730" y1="230" x2="640" y2="230" stroke="#57606a" stroke-width="2"/>
+  <line x1="730" y1="230" x2="820" y2="230" stroke="#57606a" stroke-width="2"/>
+  <rect x="187.0" y="82.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="397.0" y="82.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="607.0" y="82.0" width="16" height="16" fill="#ffffff" stroke="#24292f" stroke-width="2"/>
+  <rect x="132.0" y="152.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="302.0" y="222.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="552.0" y="152.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <rect x="722.0" y="222.0" width="16" height="16" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="2"/>
+  <circle cx="90" cy="90" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="90" y="96" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">0</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="300" cy="90" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="300" y="96" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">1</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="510" cy="90" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="510" y="96" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">2</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="720" cy="90" r="24" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="720" y="96" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x<tspan dy="5.4" font-size="13.0">3</tspan><tspan dy="-5.4" font-size="13.0">​</tspan></text>
+  <circle cx="220" cy="230" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="220" y="236" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x̂</text>
+  <circle cx="400" cy="230" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="400" y="236" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x̂</text>
+  <circle cx="640" cy="230" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="640" y="236" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x̂</text>
+  <circle cx="820" cy="230" r="20" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/><text x="820" y="236" font-size="18" font-style="italic" text-anchor="middle" fill="#24292f">x̂</text>
+  <text x="810" y="95" font-size="22" text-anchor="middle" fill="#57606a">…</text>
+  <text x="405" y="46" font-size="12" text-anchor="middle" fill="#24292f">real transitions, stored in the buffer</text>
+  <text x="445" y="290" font-size="12" text-anchor="middle" fill="#075e7a">imagined: h = 2 steps of the learned model, started from a real state</text>
+  <line x1="16" y1="330" x2="884" y2="330" stroke="#d0d7de"/>
+  <circle cx="32" cy="351" r="8" fill="#ddebff" stroke="#1a4fa0" stroke-width="2"/>
+  <text x="47" y="355" font-size="12" fill="#57606a">state</text>
+  <rect x="102.5" y="345" width="12" height="12" fill="#ffffff" stroke="#24292f" stroke-width="1.5"/>
+  <text x="123.5" y="355" font-size="12" fill="#57606a">factor known only through samples</text>
+  <rect x="355.4" y="345" width="12" height="12" fill="#0a7ea4" stroke="#0a7ea4" stroke-width="1.5"/>
+  <text x="376.4" y="355" font-size="12" fill="#57606a">learned factor</text>
+</svg>

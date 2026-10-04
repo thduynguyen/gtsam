@@ -47,6 +47,17 @@ namespace gtsam {
  * Normalization constants of the Gaussian factors are not tracked, as
  * elsewhere in GTSAM; they do not affect expected values.
  *
+ * A variable can also be eliminated by a maximum or by a tilted mean of the
+ * value, see SemiringSum:
+ *  - Maximum: for a variable that no Gaussian factor involves, e.g., an action
+ *    without a policy. The value must be strictly concave in it. The
+ *    conditional is the maximizer, a deterministic linear function of the
+ *    separator, and its value channel is the regret. For linear dynamics and
+ *    quadratic rewards this is one step of the Riccati recursion.
+ *  - Tilted: for a variable with a Gaussian density. The conditional is
+ *    unchanged and the value is its tilted mean, which is again a quadratic.
+ *    It exists only if the tilt is not too strong for the noise.
+ *
  * @ingroup semiring
  */
 class GTSAM_EXPORT SemiringGaussianFactor : public SemiringFactor {
@@ -120,17 +131,32 @@ class GTSAM_EXPORT SemiringGaussianFactor : public SemiringFactor {
   SemiringFactor::shared_ptr multiply(
       const SemiringFactor& other) const override;
 
+  using SemiringFactor::eliminate;
+
   /**
-   * Eliminate the frontal variables: Gaussian elimination on the probability
-   * channel, and the expectation of the value under the resulting conditional.
-   * Every frontal variable must appear in the probability channel.
+   * Eliminate the frontal variables with the given rule.
+   *
+   * For the average and the tilted mean: Gaussian elimination on the
+   * probability channel, and the mean or tilted mean of the value under the
+   * resulting conditional. Every frontal variable must appear in the
+   * probability channel. Throws std::invalid_argument if the tilt is too
+   * strong for the tilted mean to be finite.
+   *
+   * For the maximum: no frontal variable may appear in the probability
+   * channel, and the value must be strictly concave in the frontal variables,
+   * else std::invalid_argument is thrown.
    */
-  EliminationResult eliminate(const Ordering& frontalKeys) const override;
+  EliminationResult eliminate(const Ordering& frontalKeys,
+                              const SemiringSum& sum) const override;
 
   /// Expected value under the Gaussian density on all variables.
   double expectation() const override;
 
   /// @}
+
+ private:
+  /// Eliminate variables without a density by maximizing the value over them.
+  EliminationResult eliminateByMaximum(const Ordering& frontalKeys) const;
 };
 
 /// traits

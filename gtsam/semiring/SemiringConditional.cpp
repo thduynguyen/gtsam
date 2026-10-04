@@ -48,8 +48,8 @@ SemiringFactor::shared_ptr SemiringConditional::multiply(
 
 /* ************************************************************************* */
 SemiringFactor::EliminationResult SemiringConditional::eliminate(
-    const Ordering& frontalKeys) const {
-  return factor_->eliminate(frontalKeys);
+    const Ordering& frontalKeys, const SemiringSum& sum) const {
+  return factor_->eliminate(frontalKeys, sum);
 }
 
 /* ************************************************************************* */
