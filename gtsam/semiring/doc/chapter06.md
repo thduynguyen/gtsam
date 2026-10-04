@@ -444,7 +444,8 @@ with other letters:
 | coupling matrix | $B$ | $G^\top$ |
 | gain | $K_t = (C_u + B^\top P B)^{-1} B^\top P F$ | $L_t = \Sigma\, G^\top (\Sigma_y + G\, \Sigma\, G^\top)^{-1}$ |
 
-The notebook runs the *control* recursion on the exchanged matrices
+The notebook runs the backward elimination of Section 3, the *control*
+recursion, on the exchanged matrices
 $F^\top, G^\top, \Sigma_w, \Sigma_y, \Sigma_0$ and obtains the filter's
 covariances $1,\; 0.833,\; 0.8125$. This is the duality of estimation and
 control found by Kalman (1960); see the [references](#chapter06-references).
@@ -550,49 +551,90 @@ independent computation.
 
 | Quantity | Computed by | Checked against |
 |---|---|---|
-| $K_t$, $P_t$, $\beta_t$, $J^* = -9.25$ | the Riccati formulas, in numpy | the reference numbers of the line |
-| the same | elimination with the module: average over $x'$, maximum over $u$ | the row above |
-| $P = 1.618$, $K = 0.618$ | unrolling 12 moves | the golden ratio, the solution of $P^2 = P + 1$ |
+| $K_t$, $P_t$, $\beta_t$, $J^* = -9.25$ | elimination with the module: average over $x'$, maximum over $u$ | the reference numbers of the line |
+| the same | the Riccati formulas, written out in numpy | the row above |
+| $P = 1.618$, $K = 0.618$ | repeating one elimination step 12 times | the golden ratio, the solution of $P^2 = P + 1$ |
+| discounted $P = 1.5884$, $K = 0.5884$, $\beta = 7.148$ | repeating the step with the future value scaled by $\gamma$, until it stops changing | the fixed-point formula for $\beta$ |
 | filter means and variances | forward elimination of a `GaussianFactorGraph` | the Kalman formulas |
-| filter covariances $1,\; 0.833,\; 0.8125$ | the control recursion on the exchanged matrices | the Kalman formulas |
+| filter covariances $1,\; 0.833,\; 0.8125$ | backward elimination, as for the controller, on the exchanged matrices | the forward elimination of the row above |
 | LQG return $-9.70625$ | elimination of the closed loop with the module | the price formula; a simulation |
 
 ## 9. Implementation
 
-The backward pass with the module. There is no built-in maximum, so the gain
-is read from the quadratic $Q_t$ and the best policy is put back as a hard
-constraint, as in Chapter 4, Section 6. The helper `gaussian` lifts a
-`JacobianFactor` to $(p, 0)$, `penalty` lifts the cost $z^2$ of one variable
-to $(1, -z^2)$, and `quadratic` reads a value channel as a matrix and a
-constant:
+**The backward pass.** The graph is the line of Chapter 1 without its policy
+factors. A `SemiringRules` object gives the actions the maximum; the states
+keep the default, the average. The helper `gaussian` lifts a `JacobianFactor`
+to $(p, 0)$ and `penalty` lifts the cost $z^2$ of one variable to
+$(1, -z^2)$:
 
 ```python
-gains = {}
-value = penalty(X(2))                              # (1, V_2)
+graph = SemiringFactorGraph()
+graph.push_back(gaussian(X(0), I, mu_0, variance(1.0)))            # the start
+for t in range(2):
+    graph.push_back(
+        gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero, variance(0.5)))
+    graph.push_back(penalty(X(t)))
+    graph.push_back(penalty(U(t)))
+graph.push_back(penalty(X(2)))
+
+rules = SemiringRules()
+rules.setAll([U(0), U(1)], SemiringSum.Maximum())
+backward = ordering(X(2), U(1), X(1), U(0), X(0))
+
+graph.expectation(backward, rules)                    # -9.25, the best J
+bayesNet = graph.eliminateSequential(backward, rules)
+bayesNet.at(1).conditional().S()                      # K_1 = 0.5
+bayesNet.at(3).conditional().S()                      # K_0 = 0.6
+```
+
+The conditional of an action is the control law $u_t + K_t x_t = 0$, a
+`GaussianConditional` with a constrained noise model, and the gain is its
+block on the parent. Its value channel, `surprise()`, is the regret
+$-(u + K_t x)^\top H_{uu} (u + K_t x)$ of Section 3.
+
+**One step at a time.** The same pass with the factor interface reads $P_t$
+and $\beta_t$ from the new factor on $x_t$. `quadratic` reads a value channel
+as a matrix and a constant:
+
+```python
+value = penalty(X(2))                                  # (1, V_2)
 for t in reversed(range(2)):
     # Eliminate the next state by average.
     step = gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero, variance(0.5))
     phi = step.multiply(value).sum(ordering(X(t + 1)))
     # Multiply with the rewards: values add, giving (1, Q_t).
     bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
-    # Maximize over u: solve H_uu u = -H_ux x for the gain.
-    H, _ = quadratic(bucket, U(t), X(t))           # Q_t = z' H z + c
-    gains[t] = H[0, 1] / H[0, 0]                   # 0.5 at t = 1, 0.6 at t = 0
-    # The best policy u = -K x as a factor, then eliminate u.
-    best = gaussian(U(t), I, X(t), gains[t] * I, zero,
-                    noiseModel.Constrained.All(1))
-    value = best.multiply(bucket).sum(ordering(U(t)))  # (1, V_t)
-
-prior = gaussian(X(0), I, np.array([2.0]), variance(1.0))
-prior.multiply(value).expectation()                # -9.25
+    # Eliminate the action by maximum.
+    conditional, value = bucket.eliminate(ordering(U(t)), SemiringSum.Maximum())
+    M, c = quadratic(value, X(t))                      # V_t = -(P_t x^2 + beta_t)
 ```
 
-The test `test_best_policy_is_riccati` in
-`python/gtsam/tests/test_SemiringFactorGraph.py` checks these numbers.
+**The fixed point** of Section 5 repeats this step on one set of factors. The
+value of the new factor is read as $(M, c)$ and put back on the next state,
+scaled by $\gamma$ for the discounted problem, until it stops changing.
 
-The closed loop of Section 7 is a `SemiringFactorGraph` like that of
+The tests `test_riccati_by_rules` in
+`python/gtsam/tests/test_SemiringFactorGraph.py` and
+`SemiringFactorGraph.Riccati` in `gtsam/semiring/tests/testSemiringSum.cpp`
+check these numbers.
+
+**The filter** is an ordinary `GaussianFactorGraph` holding the prior, the
+readings and the moves. Eliminating the states forward in time leaves the
+estimate of the latest state in the last conditional:
+
+```python
+graph = GaussianFactorGraph()
+graph.add(JacobianFactor(X(0), I, mu_0, variance(1.0)))               # prior
+graph.add(JacobianFactor(X(0), I, np.array([y0]), variance(0.5)))     # reading
+graph.add(JacobianFactor(X(1), I, X(0), -I, np.array([u0]), variance(0.5)))
+graph.add(JacobianFactor(X(1), I, np.array([y1]), variance(0.5)))
+estimate = graph.eliminateSequential(ordering(X(0), X(1))).at(1)      # of x1
+```
+
+**The closed loop** of Section 7 is a `SemiringFactorGraph` like that of
 Chapter 1, Section 10, with two additions: an observation factor per step,
-and the policy as a constraint on the readings.
+and the policy as a constraint on the readings. It is eliminated by average,
+in an order that runs backward in time.
 
 ```python
 # The reading y_t = x_t + noise, as a probability factor.
@@ -601,6 +643,8 @@ graph.push_back(gaussian(Y(t), I, X(t), -I, zero, variance(0.5)))
 # u0 = -K0 x_hat_0, with x_hat_0 = (1 - L0) mu_0 + L0 y0.
 graph.push_back(gaussian(U(0), I, Y(0), K0 * L0 * I,
                          -K0 * (1 - L0) * mu_0, noiseModel.Constrained.All(1)))
+
+graph.expectation(ordering(X(2), U(1), Y(1), X(1), U(0), Y(0), X(0)))  # -9.70625
 ```
 
 The [companion notebook](chapter06_examples.ipynb) has the full graph.

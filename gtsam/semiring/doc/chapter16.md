@@ -262,9 +262,11 @@ recursion.
 $K_1 = 0.5$, with $J^* = -9.25$. The last row of the table above shows both
 entries of the gradient equal to zero there. At the other two points the
 formula agrees with finite differences of $J$ to five digits. The expected
-returns of the three rows are also computed with the module, with the policy
-entered as a hard constraint, and `graph.expectation()` returns the same
-three numbers.
+returns of the three rows are computed with the module, with the policy
+entered as a hard constraint: once by the backward pass of Section 7 and once
+by eliminating the whole graph in one call, with the same three numbers. With
+the maximum rule at the actions the module returns the gains $(0.6,\; 0.5)$
+themselves.
 
 **The test, on the endless line.** DDPG is built for problems without a last
 step. So take the line with no last move, the discount $\gamma = 0.9$ of
@@ -277,15 +279,19 @@ $$H_{uu} = 1 + \gamma P, \qquad H_{ux} = \gamma P, \qquad H_{xx} = 1 + \gamma P,
 \qquad
 P = H_{xx} - \frac{H_{ux}^2}{H_{uu}}, \qquad K^* = \frac{H_{ux}}{H_{uu}}.$$
 
-Its solution is the exact reference for the rest of the chapter:
+The notebook finds this fixed point by repeating one elimination step with
+the module, the next state by average and the action by maximum. Its solution
+is the exact reference for the rest of the chapter:
 
 $$P^* = 1.588, \qquad K^* = 0.588, \qquad J^* = -15.09,$$
 
 $$Q^*(x, u) = -\big(2.430\, u^2 + 2 \cdot 1.430\, u\, x + 2.430\, x^2 + 7.148\big).$$
 
-For any gain $K$ the two messages are again in closed form. The value
-satisfies $P = 1 + K^2 + \gamma\, (1 - K)^2 P$, and the forward message is
-the discounted sum of the second moments of the state:
+For any gain $K$ the two messages are again in closed form, and the notebook
+computes both by the same repeated elimination, with the policy factor and
+the average rule. The value satisfies
+$P = 1 + K^2 + \gamma\, (1 - K)^2 P$, and the forward message is the
+discounted sum of the second moments of the state:
 
 $$P = \frac{1 + K^2}{1 - \gamma\, (1 - K)^2},
 \qquad
@@ -435,36 +441,82 @@ little bias to repair. The repairs matter when the critic is a network.
 
 ## 7. Implementation
 
-Stage 1 with exact messages on the two-move line, from the notebook:
+Stage 1 with exact messages on the two-move line is a backward pass of
+eliminations with the module. The deterministic policy is a hard constraint
+$u + K x = 0$, a `JacobianFactor` with a constrained noise model. The blocks
+of $Q_t$ are read from the bucket of the action *before* the policy factor is
+multiplied in:
 
 ```python
+def policy(t, K, sigma_e=0.0):
+    """u = -K x + e: a density, or a hard constraint if there is no noise."""
+    model = variance(sigma_e) if sigma_e > 0 else noiseModel.Constrained.All(1)
+    return gaussian(U(t), I, X(t), K * I, zero, model)
+
 def stage1(gains, sigma_e=0.0):
-    P, beta = 1.0, 0.0                       # V_2(x) = -x^2
+    future = penalty(X(2))                   # (1, V_2), with V_2(x) = -x^2
     H = {}
     for t in [1, 0]:
-        K = gains[t]
-        H_uu, H_ux, H_xx = 1 + P, P, 1 + P   # blocks of Q_t(x, u)
-        H[t] = (H_uu, H_ux)
-        beta = beta + P * SIGMA_W + H_uu * sigma_e
-        P = H_xx - 2 * H_ux * K + H_uu * K ** 2
-    m = {0: MU_0 ** 2 + SIGMA_0}             # forward: E[x_t^2]
-    m[1] = (1 - gains[0]) ** 2 * m[0] + sigma_e + SIGMA_W
-    return -(P * m[0] + beta), H, m
+        # Eliminate the next state by average; add the rewards: (1, Q_t).
+        phi = dynamics(t).multiply(future).sum(ordering(X(t + 1)))
+        bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
+        H[t] = blocks(bucket, t)[:2]         # H_uu and H_ux of Q_t
+        # Eliminate the action by average under the policy: (1, V_t).
+        future = policy(t, gains[t], sigma_e).multiply(bucket).sum(
+            ordering(U(t)))
+    J = prior.multiply(future).expectation()
+    m = {t: second_moment(gains, t, sigma_e) for t in range(2)}
+    return J, H, m
 
 def deterministic_gradient(gains):
     _, H, m = stage1(gains)
     return [2 * (H[t][1] - H[t][0] * gains[t]) * m[t] for t in range(2)]
 ```
 
-The same expected return with the module. The deterministic policy is a
-`JacobianFactor` with a constrained noise model:
+The forward message $m_t = \mathbb{E}[x_t^2]$ is itself an expectation, so it
+is computed by elimination too: a graph with the prior, the policy and the
+dynamics up to step $t$, and the single value factor $(1,\; x_t^2)$.
 
 ```python
-graph.push_back(gaussian(U(t), I, X(t), gains[t] * I, zero,
-                         noiseModel.Constrained.All(1)))   # u + K x = 0
-...
-graph.expectation()   # -9.375 for K = (0.5, 0.5); -9.25 for K = (0.6, 0.5)
+def second_moment(gains, t, sigma_e=0.0):
+    graph = SemiringFactorGraph()
+    graph.push_back(prior)
+    for k in range(t):
+        graph.push_back(policy(k, gains[k], sigma_e))
+        graph.push_back(dynamics(k))
+    graph.push_back(square(X(t)))            # the value x_t^2
+    return graph.expectation()
 ```
+
+The whole graph in one call gives the same expected return,
+`graph.expectation(backward)`: $-9.375$ for $K = (0.5, 0.5)$ and $-9.25$ for
+$K = (0.6, 0.5)$. Without the policy factors and with the maximum rule at the
+actions, the same graph returns the Riccati gains $(0.6,\; 0.5)$ in its
+conditionals (Chapter 6).
+
+On the endless line every step is the same, so one set of factors is
+eliminated repeatedly, with the value of the next state scaled by $\gamma$:
+
+```python
+def action_bucket(P, beta, reward=stage_reward):
+    """(1, Q): the reward now, plus gamma times the average over the next
+    state of its value -(P x'^2 + beta)."""
+    future = quadratic(X(1), gamma * P, gamma * beta)
+    return reward.multiply(transition.multiply(future).sum(ordering(X(1))))
+
+P, beta = 1.0, 0.0
+for _ in range(1000):                        # the discounted Riccati recursion
+    conditional, new_value = action_bucket(P, beta).eliminate(
+        ordering(U(0)), SemiringSum.Maximum())
+    P, beta = read(new_value)
+K_star = conditional.conditional().S()[0, 0]  # the conditional is u + K x = 0
+```
+
+For a given gain the same step is repeated with the policy factor and the
+average rule, which gives $P$ of that gain. The discounted second moment is
+obtained from the same routine with $x^2$ in place of the reward, by the
+identity of Chapter 3, Section 5: the forward message times a function is the
+start distribution times the backward message of that function.
 
 The two updates of the small DDPG, on a minibatch `(b_x, b_u, b_r, b_next)`
 of stored transitions:

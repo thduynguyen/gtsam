@@ -3,17 +3,20 @@
 #
 # This notebook runs the examples of
 # [Chapter 9](https://thduynguyen.github.io/gtsam/chapter09): iLQR and DDP on
-# a robot with a weak motor, the same problem as a MAP trajectory optimization
-# with GTSAM's Levenberg-Marquardt optimizer, and model predictive control
-# under noise.
+# a robot with a weak motor, with the backward pass done by the
+# `gtsam/semiring` module; the same problem as a MAP trajectory optimization
+# with GTSAM's Levenberg-Marquardt optimizer; and model predictive control
+# under noise. The rollouts of the nonlinear robot are plain numpy.
 
 # %%
 import numpy as np
 from scipy.optimize import least_squares, minimize
 
 import gtsam
-from gtsam import CustomFactor, HessianFactor, JacobianFactor, Ordering
-from gtsam import SemiringGaussianFactor, VectorValues, noiseModel
+from gtsam import CustomFactor, GaussianFactorGraph, HessianFactor
+from gtsam import JacobianFactor, Ordering, SemiringFactorGraph
+from gtsam import SemiringGaussianFactor, SemiringRules, SemiringSum
+from gtsam import VectorValues, noiseModel
 from gtsam.symbol_shorthand import U, X
 
 np.set_printoptions(precision=4, suppress=True)
@@ -63,13 +66,14 @@ assert np.isclose(total_reward(np.zeros(T), x_start), -45.0)
 #
 # Around the current trajectory the dynamics factor is replaced by its
 # linearization, a linear-Gaussian factor. The rewards are already quadratic.
-# The backward pass is then the elimination of Chapter 6: average over the
-# next state, maximize over the action. The maximum is put back as a
-# deterministic policy factor, as in Chapter 4.
+# The backward pass is then the elimination of Chapter 6: the next state is
+# summed out by the average and the action by the maximum. The conditional
+# that the maximum leaves on an action is the local policy.
 
 # %%
 I = np.eye(1)
 zero = np.zeros(1)
+maximum = SemiringSum.Maximum()
 
 
 def noise_model(variance):
@@ -89,40 +93,67 @@ def penalty(key):
     return SemiringGaussianFactor.Cost(HessianFactor(key, 2 * I, zero, 0.0))
 
 
-def ordering(key):
-    """An ordering holding one key."""
+def ordering(*keys):
+    """An ordering of the given keys."""
     result = Ordering()
-    result.push_back(key)
+    for key in keys:
+        result.push_back(key)
     return result
 
 
-def stage1(states, controls, noise):
+def linearized(t, states, controls, noise):
+    """The dynamics factor of move t, linearized around the trajectory.
+
+    x' = x + B u + constant, with B = df/du at the current control.
+    """
+    B = f_u(controls[t])
+    constant = states[t + 1] - states[t] - B * controls[t]
+    return gaussian(X(t + 1), I, X(t), -I, U(t), -B * I,
+                    np.array([constant]), noise_model(noise))
+
+
+def stage1(states, controls, noise=0.0, ddp=False):
     """One backward pass on the graph linearized around a trajectory.
 
     Returns the gains K_t and offsets o_t of the best local policy
-    u = -K_t x + o_t, and the value factor (1, V_0) left on the first state.
+    u = -K_t x + o_t, the value factor (1, V_0) left on the first state, and
+    the curvatures P_t of the values V_t.
     """
     moves = len(controls)
     gains, offsets = np.zeros(moves), np.zeros(moves)
+    curvatures = np.ones(moves + 1)
     value = penalty(X(moves))  # (1, V_T)
     for t in reversed(range(moves)):
-        # Linearized dynamics: x' = x + B u + constant, with B = df/du.
-        B = f_u(controls[t])
-        constant = states[t + 1] - states[t] - B * controls[t]
-        dynamics = gaussian(X(t + 1), I, X(t), -I, U(t), -B * I,
-                            np.array([constant]), noise_model(noise))
         # Eliminate the next state by average.
+        dynamics = linearized(t, states, controls, noise)
         phi = dynamics.multiply(value).sum(ordering(X(t + 1)))
         bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
-        # Eliminate the action by max: the vertex of the quadratic Q_t in u.
-        Q = bucket.value()  # value = 1/2 z'Gz - g'z + f/2, z = (keys)
-        keys, G, g = list(Q.keys()), Q.information(), np.ravel(Q.linearTerm())
-        u, x = keys.index(U(t)), keys.index(X(t))
-        gains[t], offsets[t] = G[u, x] / G[u, u], g[u] / G[u, u]
-        best = gaussian(U(t), I, X(t), gains[t] * I, np.array([offsets[t]]),
-                        noiseModel.Constrained.All(1))
-        value = best.multiply(bucket).sum(ordering(U(t)))  # (1, V_t)
-    return gains, offsets, value
+        if ddp:  # DDP adds the curvature of the dynamics, as one more factor
+            bucket = bucket.multiply(
+                dynamics_curvature(t, value, states, controls))
+        # Eliminate the action by maximum. Its conditional is u + K x = o.
+        conditional, value = bucket.eliminate(ordering(U(t)), maximum)
+        policy = conditional.conditional()
+        gains[t], offsets[t] = policy.S()[0, 0], policy.d()[0]
+        curvatures[t] = -value.value().information()[0, 0] / 2
+    return gains, offsets, value, curvatures
+
+
+def dynamics_curvature(t, next_value, states, controls):
+    """The second-order term of DDP for move t, as a value factor on u_t.
+
+    The value of the next state changes by V'(x') f_uu (u - u_bar)^2 / 2 when
+    the dynamics are expanded to second order in the control.
+    """
+    quadratic = next_value.value()  # V_{t+1} = 1/2 G x^2 - g x + f/2
+    gradient = (quadratic.information()[0, 0] * states[t + 1]
+                - np.ravel(quadratic.linearTerm())[0])
+    f_uu = -2 * np.tanh(controls[t]) * f_u(controls[t])
+    c, u_bar = float(gradient * f_uu), float(controls[t])
+    # A HessianFactor with (G, g, f) = (c, c u_bar, c u_bar^2) has error
+    # c (u - u_bar)^2 / 2, and Reward lifts it to a value of that error.
+    return SemiringGaussianFactor.Reward(HessianFactor(
+        U(t), c * I, np.array([c * u_bar]), c * u_bar ** 2))
 
 
 def value_at(value, x0):
@@ -134,12 +165,36 @@ def value_at(value, x0):
 
 controls = np.zeros(T)
 states = rollout(controls, x_start)
-gains, offsets, value = stage1(states, controls, noise=0.0)
+gains, offsets, value, _ = stage1(states, controls)
 print("first backward pass, around the do-nothing trajectory")
 print("gains K_t  =", gains)
 print("offsets o_t =", offsets)
+print("planned changes =", offsets - gains * states[:-1] - controls)
 print("local model's value at the start:", value_at(value, x_start))
 assert np.allclose(gains, [0.6176, 0.6154, 0.6, 0.5], atol=1e-4)
+assert np.allclose(offsets - gains * states[:-1] - controls,
+                   [-1.8529, -1.8462, -1.8, -1.5], atol=1e-4)
+assert np.isclose(value_at(value, x_start), -14.559, atol=1e-3)
+
+# %% [markdown]
+# The same pass as one graph: all the linearized factors, a rule per
+# variable, and one call. The Bayes net holds the local policy of every move.
+
+# %%
+graph, rules, backward = SemiringFactorGraph(), SemiringRules(), []
+for t in range(T):
+    graph.push_back(linearized(t, states, controls, 0.0))
+    graph.push_back(penalty(X(t)))
+    graph.push_back(penalty(U(t)))
+    rules.set(U(t), maximum)
+    backward = [X(t + 1), U(t)] + backward
+graph.push_back(penalty(X(T)))
+# The first state has no prior here, so it is left in the graph.
+bayes_net, _ = graph.eliminatePartialSequential(ordering(*backward), rules)
+graph_gains = np.array([bayes_net.at(2 * (T - 1 - t) + 1).conditional().S()[0, 0]
+                        for t in range(T)])
+print("gains from one elimination of the whole graph:", graph_gains)
+assert np.allclose(graph_gains, gains)
 
 # %% [markdown]
 # ## Stage 2: roll out, search along the step, relinearize (Section 3)
@@ -185,8 +240,7 @@ def ilqr(x0, moves, backward, verbose=False, tolerance=1e-8):
     return controls, history
 
 
-controls, history = ilqr(
-    x_start, T, lambda s, c: stage1(s, c, noise=0.0), verbose=True)
+controls, history = ilqr(x_start, T, stage1, verbose=True)
 states = rollout(controls, x_start)
 print("controls:", controls)
 print("states:  ", states)
@@ -203,11 +257,25 @@ assert len(history) == 13
 ilqr_controls, ilqr_states, ilqr_history = controls, states, history
 
 # %% [markdown]
-# ## The same backward pass in numpy, and DDP (Sections 2 and 4)
+# ## DDP (Section 4)
 #
-# In deviations from the current trajectory, the pass carries the gradient
-# and the curvature $P_t$ of the value. DDP adds the curvature of the
-# dynamics to $H_{uu}$.
+# DDP is the same backward pass with one more value factor per move, the
+# curvature of the dynamics. It needs fewer passes.
+
+# %%
+print("DDP:")
+ddp_controls, ddp_history = ilqr(
+    x_start, T, lambda s, c: stage1(s, c, ddp=True), verbose=True)
+assert np.allclose(ddp_controls, ilqr_controls, atol=1e-4)
+print("backward passes:", len(ddp_history))
+assert len(ddp_history) == 6
+
+# %% [markdown]
+# ## An independent check of the backward pass, in numpy (Sections 2 and 4)
+#
+# The formulas of the chapter, in deviations from the current trajectory: the
+# pass carries the gradient and the curvature $P_t$ of the value. The module
+# must agree with them, for iLQR and for DDP.
 
 
 # %%
@@ -232,29 +300,19 @@ def backward_numpy(states, controls, ddp=False):
     return gains, offsets, P
 
 
-# The first pass, around the do-nothing trajectory, in deviation form.
-start_states = rollout(np.zeros(T), x_start)
-first = backward_numpy(start_states, np.zeros(T))
-print("first pass: slopes B_t        =", f_u(np.zeros(T)))
-print("            gains K_t         =", first[0])
-print("            planned changes   =",
-      first[1] - first[0] * start_states[:-1])
-assert np.allclose(first[1] - first[0] * start_states[:-1],
-                   [-1.8529, -1.8462, -1.8, -1.5], atol=1e-4)
-
-# The module and numpy agree on the local policy.
-module = stage1(ilqr_states, ilqr_controls, noise=0.0)
-by_hand = backward_numpy(ilqr_states, ilqr_controls)
-assert np.allclose(module[0], by_hand[0]) and np.allclose(module[1], by_hand[1])
-print("gains at the solution:     ", by_hand[0])
-print("curvatures P_t of the value:", by_hand[2])
-
-print("\nDDP:")
-ddp_controls, ddp_history = ilqr(
-    x_start, T, lambda s, c: backward_numpy(s, c, ddp=True), verbose=True)
-assert np.allclose(ddp_controls, ilqr_controls, atol=1e-4)
-print("backward passes:", len(ddp_history))
-assert len(ddp_history) == 6
+for trajectory in [(rollout(np.zeros(T), x_start), np.zeros(T)),
+                   (ilqr_states, ilqr_controls),
+                   (rollout(ilqr_controls / 2, x_start), ilqr_controls / 2)]:
+    for ddp in [False, True]:
+        module = stage1(*trajectory, ddp=ddp)
+        formulas = backward_numpy(*trajectory, ddp=ddp)
+        assert np.allclose(module[0], formulas[0])  # gains
+        assert np.allclose(module[1], formulas[1])  # offsets
+        assert np.allclose(module[3], formulas[2])  # curvatures
+gains_at_solution, _, _, curvatures = stage1(ilqr_states, ilqr_controls)
+print("slopes B_t at the start:    ", f_u(np.zeros(T)))
+print("gains at the solution:      ", gains_at_solution)
+print("curvatures P_t of the value:", curvatures)
 
 # %% [markdown]
 # ## An exact special case: the line (Section 7)
@@ -265,28 +323,30 @@ assert len(ddp_history) == 6
 
 
 # %%
-def stage1_line(noise):
-    """The backward pass of stage1 for the line: x' = x + u + noise."""
-    gains = np.zeros(2)
-    value = penalty(X(2))
-    for t in reversed(range(2)):
-        dynamics = gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
-                            noise_model(noise))
-        phi = dynamics.multiply(value).sum(ordering(X(t + 1)))
-        bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
-        Q = bucket.value()
-        keys, G = list(Q.keys()), Q.information()
-        gains[t] = G[keys.index(U(t)), keys.index(X(t))] / G[
-            keys.index(U(t)), keys.index(U(t))]
-        best = gaussian(U(t), I, X(t), gains[t] * I, zero,
-                        noiseModel.Constrained.All(1))
-        value = best.multiply(bucket).sum(ordering(U(t)))
-    return gains, value
+def line(gains=None, slip_variance=0.5):
+    """The factor graph of the line; with gains, the policy u = -K_t x."""
+    graph = SemiringFactorGraph()
+    graph.push_back(gaussian(X(0), I, np.array([2.0]), noise_model(1.0)))
+    for t in range(2):
+        if gains is not None:  # the hard constraint u + K x = 0
+            graph.push_back(gaussian(U(t), I, X(t), gains[t] * I, zero,
+                                     noiseModel.Constrained.All(1)))
+        graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                                 noise_model(slip_variance)))
+        graph.push_back(penalty(X(t)))
+        graph.push_back(penalty(U(t)))
+    graph.push_back(penalty(X(2)))
+    return graph
 
 
-line_gains, line_value = stage1_line(noise=0.5)
-prior = gaussian(X(0), I, np.array([2.0]), noise_model(1.0))
-J_star = prior.multiply(line_value).expectation()
+line_backward = ordering(X(2), U(1), X(1), U(0), X(0))
+line_rules = SemiringRules()
+line_rules.setAll([U(0), U(1)], maximum)
+
+J_star = line().expectation(line_backward, line_rules)
+bayes_net = line().eliminateSequential(line_backward, line_rules)
+line_gains = np.array([bayes_net.at(3).conditional().S()[0, 0],
+                       bayes_net.at(1).conditional().S()[0, 0]])
 print("gains on the line:", line_gains, " J* =", J_star)
 assert np.allclose(line_gains, [0.6, 0.5]) and np.isclose(J_star, -9.25)
 
@@ -317,7 +377,7 @@ def simulate(policy):
 
 
 # The local model's own prediction: the noise adds a trace term per move.
-local_gains, local_offsets, local_value = stage1(
+local_gains, local_offsets, local_value, _ = stage1(
     ilqr_states, ilqr_controls, noise)
 predicted = value_at(local_value, x_start)
 print("return predicted by the local model:", predicted)
@@ -325,7 +385,7 @@ print("return predicted by the local model:", predicted)
 # MPC: the first control of a fresh plan, tabulated over the state.
 grid = np.linspace(-3.0, 6.0, 181)
 mpc_table = np.array([
-    [ilqr(x, T - t, backward_numpy)[0][0] for x in grid] for t in range(T)])
+    [ilqr(x, T - t, stage1)[0][0] for x in grid] for t in range(T)])
 
 results = {
     "open loop": simulate(lambda t, x: np.full(samples, ilqr_controls[t])),
@@ -443,22 +503,41 @@ assert np.isclose(mean, -21.80, atol=0.05)
 # %% [markdown]
 # ## The optimism of MAP, exactly, on the line (Section 5)
 #
-# On the line everything is in closed form. MAP treats the slip $w$ as a
-# second control with cost $w^2 / (2 \Sigma_w)$, which here equals $w^2$. The
-# best split of a total move $m = u + w$ is half each, so the robot commands
-# only half of the move it plans.
+# On the line MAP is a linear least-squares problem, an ordinary
+# `GaussianFactorGraph`: each penalty $z^2$ is a factor with error $z^2$, and
+# each dynamics factor is a soft constraint with the variance of the slip.
+# MAP treats the slip $w$ as a second control with cost $w^2 / (2 \Sigma_w)$,
+# which here equals $w^2$, so the robot commands only half of the move it
+# plans.
 
 # %%
 slip_variance = 0.5
-P = 1.0  # curvature of MAP's value at the last state
-map_gains = np.zeros(2)
-for t in reversed(range(2)):
-    # Minimize u^2 + w^2/(2 Sigma_w) + P (x + u + w)^2 over u and w.
-    H = np.array([[1 + P, P], [P, 1 / (2 * slip_variance) + P]])
-    solution = np.linalg.solve(H, [P, P])  # (u, w) = -solution * x
-    map_gains[t] = solution[0]
-    P = 1 + P - P * (solution[0] + solution[1])
-map_belief = -P * 2.0 ** 2  # what MAP expects from x0 = 2
+
+
+def map_line(x0=None):
+    """The MAP graph of the line, with the first state fixed at x0 if given."""
+    graph = GaussianFactorGraph()
+    if x0 is not None:
+        graph.add(JacobianFactor(X(0), I, np.array([x0]),
+                                 noiseModel.Constrained.All(1)))
+    for t in range(2):
+        graph.add(JacobianFactor(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                                 noise_model(slip_variance)))
+        for key in [X(t), U(t)]:
+            graph.add(HessianFactor(key, 2 * I, zero, 0.0))  # error z^2
+    graph.add(HessianFactor(X(2), 2 * I, zero, 0.0))
+    return graph
+
+
+# Eliminating backward leaves a conditional on each action given its state.
+bayes_net, _ = map_line().eliminatePartialSequential(
+    ordering(X(2), U(1), X(1), U(0)))
+map_gains = np.array([
+    (bayes_net.at(position).S() / bayes_net.at(position).R()).item()
+    for position in [3, 1]])
+# What MAP expects from x0 = 2: minus the error of its best plan.
+plan = map_line(2.0).optimize()
+map_belief = -map_line(2.0).error(plan)
 print("MAP gains on the line:", map_gains, " Riccati gains:", line_gains)
 print("MAP's optimum from x0 = 2:", map_belief)
 # For comparison, with P_0 = 1.6 and beta_0 = 1.25 from the Riccati recursion:
@@ -469,17 +548,7 @@ assert map_belief > -1.6 * 4 > -(1.6 * 4 + 1.25)
 
 def evaluate_line(gains):
     """Exact expected return of u = -K_t x on the line, with the module."""
-    graph = gtsam.SemiringFactorGraph()
-    graph.push_back(gaussian(X(0), I, np.array([2.0]), noise_model(1.0)))
-    for t in range(2):
-        graph.push_back(gaussian(U(t), I, X(t), gains[t] * I, zero,
-                                 noiseModel.Constrained.All(1)))
-        graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
-                                 noise_model(slip_variance)))
-        graph.push_back(penalty(X(t)))
-        graph.push_back(penalty(U(t)))
-    graph.push_back(penalty(X(2)))
-    return graph.expectation()
+    return line(gains).expectation(line_backward)
 
 
 print("expected return with the Riccati gains:", evaluate_line(line_gains))
@@ -501,7 +570,7 @@ for iteration in range(3):
     print(f"after {iteration} passes: controls {controls}")
     print(f"                states   {states}, "
           f"return {total_reward(controls, x_start):.4f}")
-    gains, offsets, _ = backward_numpy(states, controls)
+    gains, offsets = stage1(states, controls)[:2]
     step = 1.0 if iteration == 0 else 0.5
     controls = forward(states, controls, gains, offsets, step, x_start)
 print("final:       states", ilqr_states)

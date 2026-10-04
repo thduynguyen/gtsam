@@ -342,9 +342,11 @@ $$\Big(1,\;\; J,\;\; 0,\;\; \frac{\partial J}{\partial \theta_i}\Big).$$
 On the track at the coin flip, the notebook gets $(1,\; 1.4,\; 0,\; 0.15)$ for
 $\theta_0$, $(1,\; 1.4,\; 0,\; 1.0)$ for $\theta_1$ and
 $(1,\; 1.4,\; 0,\; 0.35)$ for $\theta_2$: the gradient of Section 3, from a
-single pass each. The elimination routine is the generic one of
-[Chapter 2](chapter02.md); only the four small functions that define the
-semiring are new.
+single pass each. The module does not implement entries with four numbers,
+so the notebook runs this one computation with a short elimination routine in
+numpy: multiply the factors of a bucket, sum over the variable, put the new
+factor back. The semiring enters through four small functions that lift a
+probability, lift a reward, multiply, and add.
 
 This is the **second-order expectation semiring** of Li and Eisner (2009).
 The laws that elimination needs hold for the same reason as in Chapter 1: the

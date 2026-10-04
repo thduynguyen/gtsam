@@ -78,7 +78,8 @@ table. In $Q$ the next state has already been eliminated.
 
 **The exact answers.** The dynamics table of the endless track is used in the
 notebook for two things only: to draw samples, and to compute the exact
-values that the samples are checked against. From Chapters 3 and 4:
+values that the samples are checked against, by elimination with the module
+(Section 7). From Chapters 3 and 4:
 
 | cell | $Q(s, L)$, coin flip | $Q(s, R)$, coin flip | $Q^*(s, L)$ | $Q^*(s, R)$ |
 |---|---|---|---|---|
@@ -311,8 +312,8 @@ of the forward message of $\pi$.
 policy to evaluate, $\pi$, move Right with probability $0.9$ in every cell.
 The weights are $\rho = 0.1 / 0.5 = 0.2$ for Left and
 $\rho = 0.9 / 0.5 = 1.8$ for Right. The notebook computes the *average* of
-each target exactly, with the true $Q$ of $\pi$ in the target, so that the
-differences below are not sampling noise:
+each target exactly, by elimination, with the true $Q$ of $\pi$ in the
+target, so that the differences below are not sampling noise:
 
 | cell, action | exact $Q$ of $\pi$ | one-step target | two-step target, no weight | two-step target, with $\rho$ |
 |---|---|---|---|---|
@@ -475,10 +476,48 @@ for sweep in range(200):
     Q = fit_table(batch, targets)   # the mean target of each pair (s, a)
 ```
 
-The module is not used in this chapter: it eliminates known factors exactly,
-and here the dynamics factor is not known. Its role is the reference: the
-exact tables that these estimates are compared with are the results of the
-eliminations of Chapters 3 and 4.
+The learning updates do not use the module: it eliminates known factors
+exactly, and here the dynamics factor is not known. Its role is the
+reference. Every exact table that the estimates are compared with is computed
+by elimination, on one step of the endless chain with the termination state
+of Chapter 3:
+
+```python
+def action_values(V):
+    """The bucket of the action without a policy factor: (1, Q)."""
+    return move_reward * (transition * value([later], V)).sum(ordering(S(1)))
+
+def exact_V(policy):                       # evaluate a policy (Chapter 3)
+    V = np.zeros(4)
+    while True:
+        bucket = policy_factor(policy) * action_values(V)
+        new_V = table(bucket.sum(ordering(A(0)), SemiringSum.Average()).value(),
+                      [now])
+        if np.abs(new_V - V).max() < 1e-13:
+            return new_V
+        V = new_V
+
+Q_coin = read_Q(action_values(exact_V(coin_flip)))   # Q of the coin flip
+
+V = np.zeros(4)                            # value iteration (Chapter 4)
+for sweep in range(500):
+    bucket = action_values(V)              # bucket.value() is Q after the sweep
+    V = table(bucket.sum(ordering(A(0)), SemiringSum.Maximum()).value(), [now])
+```
+
+Three things are read from the same step:
+
+- **$Q$ of a policy and $Q^*$.** The action is summed out by the average
+  under the policy, or by the maximum, until the value stops changing. The
+  table $Q$ is the value of the action's bucket *before* the policy factor is
+  multiplied in, so it has an entry for every action, including those the
+  policy never takes.
+- **The discounted visitation $d$** of Section 4, by eliminating forward in
+  time: the current state and action are summed out, and the marginal of the
+  next state is carried on.
+- **The averaged targets** of Section 4. The importance weight is one more
+  factor on $(s', a')$. Multiplied with the factor of the data policy it
+  gives the factor of $\pi$, which is the identity displayed there.
 
 ## 8. What breaks
 

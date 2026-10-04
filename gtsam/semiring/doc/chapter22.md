@@ -174,8 +174,10 @@ it:
 | 1 | $0.46$ | $(0.065,\; 0.609,\; 0.326)$ |
 | 2 | $0.41$ | $(0,\; 0.146,\; 0.854)$ |
 
-The notebook computes the same beliefs with the module, as the marginal of
-$s_1$ in a `SemiringFactorGraph` of four probability factors.
+The notebook computes these tables with the module. With the reading kept as
+a variable $y_1$ of the graph, eliminating the states forward leaves the
+conditional of $s_1$ given $y_1$, which is the belief for every reading at
+once, and then the marginal of $y_1$, which is the middle column.
 
 :::{dropdown} Here the probability channel does real work
 In Chapters 1 to 5 the probability channel of every new factor was 1, because
@@ -250,7 +252,10 @@ so $V_t$ is not a table.
 
 ## 4. The lost robot, solved exactly
 
-With two moves the belief equation can be evaluated directly.
+With two moves the elimination of Section 3 is small enough to run. The
+notebook builds the graph with the readings as variables and eliminates it
+with the module in the forced order, the states by average and the two
+actions by maximum. The tables below are what it leaves behind.
 
 **The last move.** After the last move only the final reward remains, so the
 action values $Q^*_1(s, a)$ of the fully observed problem are the right ones.
@@ -293,7 +298,8 @@ In cell 2 the robot is at the charger with two moves to go. Holding position
 against the wall costs 3 per move, so it is better to drift Left for free and
 come back at the last move.
 
-**The exact test.** The notebook checks this number by brute force. A
+**The exact test.** The notebook checks this number by brute force, in plain
+numpy and independently of the module. A
 deterministic policy that sees only the readings is a table for the first
 move, one entry per $y_0$, and a table for the last move, one entry per pair
 $(y_0, y_1)$. There are $2^3 \cdot 2^9 = 4096$ such policies. Evaluating each
@@ -301,7 +307,15 @@ by summing over all states and readings, the best has $J = 2.69$.
 
 Two more checks tie the chapter to Chapter 4. With the rewards and the start
 of the original track, the fully observed pass gives $6.1$ and the blind
-policy $6$, the numbers found there.
+policy $6$, the numbers found there. On the graph the three levels of
+knowledge are three elimination orders of the same factors, with the same
+rules:
+
+| The robot | Elimination order | Lost robot | Track |
+|---|---|---|---|
+| sees the cell | $s_2, a_1, s_1, a_0, s_0$ | $3.2$ | $6.1$ |
+| sees only the readings | $s_2, s_1, s_0, a_1, y_1, a_0, y_0$ | $2.69$ | $6$ |
+| sees nothing | $s_2, s_1, s_0, a_1, a_0$ | $2.2$ | $6$ |
 
 ## 5. QMDP: a shortcut, and where it errs
 
@@ -407,6 +421,18 @@ $$J = -9.25 - 0.456 = -9.706.$$
 
 A simulation of 400,000 episodes with a fixed seed gives $-9.714 \pm 0.012$.
 
+The notebook also obtains the result from the graph alone, by the elimination
+of Section 3 with Gaussian factors: the states by average, each action by
+maximum, each reading by average. The conditional it leaves on the last
+action is
+
+$$u_1 = -0.125 - 0.1875\, u_0 - 0.125\, y_0 - 0.3125\, y_1,$$
+
+which is $-K_1\, \hat x_1$ with the Kalman estimate written out, and the one
+on the first action is $u_0 = -0.4 - 0.4\, y_0 = -K_0\, \hat x_0$. Neither the
+filter nor the Riccati recursion was run separately. The number left at the
+root is $-9.70625$.
+
 | | Lost robot | Line with a noisy sensor |
 |---|---|---|
 | the belief | a vector of probabilities | a Gaussian: mean and variance |
@@ -416,38 +442,75 @@ A simulation of 400,000 episodes with a fixed seed gives $-9.714 \pm 0.012$.
 
 ## 7. Implementation
 
-The filter and the exact belief pass, from the notebook:
+The readings are variables of the graph, joined to their states by sensor
+factors. There are no policy factors. With the helpers of Chapter 1,
+Section 10:
 
 ```python
-def update(predicted, y):
-    """One step of the filter: multiply by the sensor factor, normalize."""
-    joint = predicted * sensor[:, y]
-    total = joint.sum()
-    return total, joint / total if total > 0 else joint
-
-for y0 in range(3):
-    p_y0, belief0 = update(prior, y0)                # belief after y0
-    for a0 in [L, R]:
-        total = belief0 @ move_reward[:, a0]         # expected reward now
-        predicted = belief0 @ dynamics[:, a0, :]     # predict
-        for y1 in range(3):
-            p_y1, belief1 = update(predicted, y1)    # belief after y1
-            total += p_y1 * (belief1 @ Q1).max()     # one max per belief
+graph = SemiringFactorGraph()
+graph.push_back(probability([state(0)], prior))
+for t in range(2):
+    graph.push_back(probability([state(t), reading(t)], sensor))
+    keys = [state(t), action(t)]
+    graph.push_back(probability(keys + [state(t + 1)], dynamics))
+    graph.push_back(value(keys, move_reward))
+graph.push_back(value([state(2)], final_reward))
 ```
 
-The belief with the module. The readings and the action are fixed, so every
-factor is a table on states only:
+**The best policy that sees only the readings.** The actions get the maximum
+rule, and the order is the one of Section 3:
+
+```python
+rules = SemiringRules()
+rules.setAll([A(0), A(1)], SemiringSum.Maximum())
+sensed = ordering(S(2), S(1), S(0), A(1), Y(1), A(0), Y(0))
+
+graph.expectation(sensed, rules)                    # 2.69
+bayesNet = graph.eliminateSequential(sensed, rules)
+bayesNet.at(5).greedy()   # the first move, a table on (y0, a0)
+bayesNet.at(3).greedy()   # the last move, a table on (y0, a0, y1, a1)
+```
+
+Changing only the order gives the other two robots: `S(2), A(1), S(1), A(0),
+S(0)` without the sensor factors for the robot that sees its cell, and
+`S(2), S(1), S(0), A(1), A(0)` for the blind one.
+
+**The belief.** Eliminating the states forward, with the reading still a
+variable, leaves the belief as a conditional:
 
 ```python
 graph = SemiringFactorGraph()
 graph.push_back(probability([state(0)], prior))
 graph.push_back(probability([state(0)], sensor[:, y0]))          # y0 fixed
 graph.push_back(probability([state(0), state(1)], dynamics[:, a0, :]))
-graph.push_back(probability([state(1)], sensor[:, y1]))          # y1 fixed
-marginal = graph.eliminateMultifrontal().marginalFactor(S(1))
-belief = table(marginal.probability(), [state(1)])
-belief / belief.sum()
+graph.push_back(probability([state(1), reading(1)], sensor))
+bayesNet = graph.eliminateSequential(ordering(S(0), S(1), Y(1)))
+bayesNet.at(1).probability()   # the belief p(s1 | y1), for every reading
+bayesNet.at(2).probability()   # the probability of each reading
 ```
+
+**QMDP.** The fully observed $Q^*_0$ enters as a value factor on
+$(s_0, a_0)$; summing out $s_0$ weights it by the belief, and the maximum
+over $a_0$ picks the move:
+
+```python
+bucket = (probability([state(0)], prior) *
+          probability([state(0), reading(0)], sensor) *
+          value([state(0), action(0)], Q0)).sum(ordering(S(0)))
+conditional, _ = bucket.eliminate(ordering(A(0)), SemiringSum.Maximum())
+conditional.greedy()           # the QMDP move for each reading
+```
+
+Its return, $2.615$, is one more elimination of the first graph, with that
+table added as a policy factor on $(y_0, a_0)$ and the maximum kept at the
+last action only.
+
+**The line.** The same order with Gaussian factors gives the control laws of
+Section 6. One step needs a hand: after the last reading is averaged out, the
+Gaussian factor that is left, $p(y_0)$, still lists $u_0$ among its keys with
+zero information, and the module's maximum refuses a variable that a Gaussian
+factor mentions. The notebook takes that maximum on the value channel alone
+and multiplies $p(y_0)$ back in.
 
 ## 8. What breaks, and what still maps
 
@@ -476,7 +539,7 @@ belief / belief.sum()
   readings, $\pi_\theta(a_t \mid y_{0:t})$, it is an ordinary probability
   factor, every variable is a chance node, and Stage 1 is the exact
   elimination of Chapter 1 on a larger graph. The brute-force check of
-  Section 4 is that elimination, done 4096 times.
+  Section 4 is that evaluation, done 4096 times.
 - **The policy gradient.** The derivation of Chapter 5, Section 3, used only
   the fact that the policy factors are the only factors that depend on
   $\theta$. That still holds, so the gradient is still the expected product

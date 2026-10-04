@@ -433,7 +433,7 @@ plus a constant.
 ## 6. Exact special cases
 
 **The EM loop with a free table and exact messages.** Stage 1 evaluates the
-policy by the linear system of Chapter 3 and tilts it; Stage 2 sets
+policy by the elimination of Chapter 3 and tilts it; Stage 2 sets
 $\pi_{k+1} = q$. By Section 2 no iteration can lower the value of any state.
 Starting from the coin flip:
 
@@ -461,8 +461,8 @@ longer applies. In this example $J$ still increases at every iteration:
 **The soft fixed point, two ways.** For $\eta = 1$, soft value iteration
 gives $V_\eta = (1.762,\; 3.603,\; 6.321)$. The two alternating steps of
 SAC, done exactly, reach the same point: evaluate the current policy with
-the KL term included in the reward, by a linear system, then replace the
-policy by the tilted reference.
+the KL term included as one more reward factor, by elimination, then replace
+the policy by the tilted reference.
 
 **The other checks of the notebook:**
 
@@ -477,29 +477,42 @@ policy by the tilted reference.
 
 ## 7. Implementation
 
-The E-step is two lines. `logsumexp` computes the soft maximum without
-overflow at small temperatures:
+The E-step is one elimination with the module. The bucket of the action holds
+the pair $(\pi, Q)$, and the action is summed out with the rule
+`SemiringSum.SoftMaximum(eta)`. The value of the new factor is the soft
+maximum, the value channel of the conditional is the soft advantage, and
+`tilted` returns the conditional reweighted by it, the policy $q$:
 
 ```python
-def soft_max(policy, Q, eta):
-    """eta log sum_a pi(a|s) exp(Q(s,a) / eta)."""
-    return eta * logsumexp(Q / eta, b=policy, axis=1)
+def soft_eliminate(policy, Q, eta):
+    bucket = SemiringDiscreteFactor(
+        DecisionTreeFactor([now, move], policy.ravel()),    # p = pi(a | s)
+        DecisionTreeFactor([now, move], Q.ravel()))         # v = Q(s, a)
+    conditional, new_factor = bucket.eliminate(
+        ordering(A(0)), SemiringSum.SoftMaximum(eta))
+    return conditional, table(new_factor.value(), [now])    # the soft maximum
 
-def tilt(policy, Q, eta):
-    """The tilted policy q = pi exp((Q - soft max) / eta)."""
-    return policy * np.exp((Q - soft_max(policy, Q, eta)[:, None]) / eta)
+conditional, soft_V = soft_eliminate(policy, Q, eta)
+conditional.surprise()              # the soft advantage Q - soft_V
+q = conditional.tilted(1 / eta)     # the tilted policy, rows sum to one
 ```
 
-The EM loop with a free table and exact messages:
+The module computes the tilted mean relative to its largest value, so it does
+not overflow at small temperatures.
+
+The EM loop with a free table and exact messages. `evaluate` is the
+elimination of Chapter 3, repeated on one step of the endless chain until the
+value stops changing:
 
 ```python
 policy = coin_flip.copy()
 for k in range(80):
-    V, Q, d = evaluate(policy)       # stage 1: evaluate (Chapter 3) ...
+    V, Q = evaluate(policy)          # stage 1: evaluate (Chapter 3) ...
     policy = tilt(policy, Q, eta)    # ... and tilt; stage 2: the fit is exact
 ```
 
 The M-step from samples, for a table: weighted counts of the actions taken.
+This part is plain numpy, since it works on samples:
 
 ```python
 A_hat = Q_hat - (policy * Q_hat).sum(axis=1, keepdims=True)
@@ -508,18 +521,28 @@ np.add.at(weighted, (s, a), np.exp(A_hat[s, a] / eta))   # weights exp(A/eta)
 policy = weighted / weighted.sum(axis=1, keepdims=True)
 ```
 
-Soft value iteration, the exact computation behind SAC:
+Soft value iteration, the exact computation behind SAC, is the step of
+Chapter 4 with one word changed, the rule at the action:
 
 ```python
-V = np.zeros(3)
-for sweep in range(3000):
-    Q = reward + gamma * dynamics @ V     # eliminate s' by average
-    V = soft_max(reference, Q, eta)       # eliminate a by soft maximum
+soft = SemiringSum.SoftMaximum(eta)
+V = np.zeros(4)                      # three cells and the state "ended"
+for sweep in range(sweeps):
+    # Eliminate s' by average: the bucket of the action, (1, Q).
+    bucket = move_reward * (transition * value([later], V)).sum(ordering(S(1)))
+    # Eliminate a by soft maximum, with the reference policy as weights.
+    conditional, new_factor = (policy_factor(reference) * bucket).eliminate(
+        ordering(A(0)), soft)
+    V = table(new_factor.value(), [now])
+policy = conditional.tilted(1 / eta)   # the soft-optimal policy
 ```
 
-The module implements the expectation semiring, so the soft maximum is done
-in numpy here. The evaluation part of Stage 1 is the elimination of Chapter 3
-and can be done with the module as shown there.
+Two more factors appear in the notebook's checks. The price of leaving the
+reference policy, $-\eta \log(\pi / \pi_{\text{ref}})$, is a value factor on
+$(s, a)$: its average under the policy is $-\eta$ times the KL divergence, so
+the soft value of a policy is an ordinary evaluation with one more reward
+factor. And the entropy convention of SAC is the KL convention plus the
+constant value factor $\eta \log 2$ on every step.
 
 ## 8. What breaks
 

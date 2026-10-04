@@ -104,6 +104,13 @@ DiscreteKeys unionKeys(const DecisionTreeFactor& a,
   }
   DiscreteKeys keys;
   for (const auto& [key, cardinality] : cardinalities) {
+    // A decision tree has no branch for a variable with a single value, and
+    // tables on such a variable are read back wrongly.
+    if (cardinality < 2) {
+      throw std::invalid_argument(
+          "SemiringDiscreteFactor: key " + DefaultKeyFormatter(key) +
+          " has fewer than two values; leave it out of the factor");
+    }
     keys.emplace_back(key, cardinality);
   }
   return keys;

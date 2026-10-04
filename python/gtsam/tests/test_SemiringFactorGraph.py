@@ -735,6 +735,11 @@ class TestSemiringLineExample(GtsamTestCase):
         graph.push_back(self.penalty(X(2)))
         ordering = make_ordering(X(2), U(1), X(1), U(0), X(0))
         self.assertAlmostEqual(graph.expectation(ordering), -9.375)
+        # A hard constraint has infinite information; the result must not
+        # depend on the elimination order.
+        self.assertAlmostEqual(graph.expectation(), -9.375)
+        forward = make_ordering(X(0), U(0), X(1), U(1), X(2))
+        self.assertAlmostEqual(graph.expectation(forward), -9.375)
 
     def test_trajectory_surprises(self):
         """Surprises along one trajectory add up to its return minus J."""

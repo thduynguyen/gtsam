@@ -385,16 +385,6 @@ the forward message times a local term times the backward message.
 
 ## 6. Implementation
 
-In numpy, the whole chapter is a few lines:
-
-```python
-P_pi = np.einsum("sa,sat->st", policy, dynamics)   # P_pi(s, s')
-r_pi = (policy * reward).sum(axis=1)               # r_pi(s)
-V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)      # backward message
-d = np.linalg.solve((np.eye(3) - gamma * P_pi).T, prior)  # forward message
-J = prior @ V                                      # equals d @ r_pi
-```
-
 With the module, a discounted problem is a `SemiringFactorGraph` whose state
 has one extra value, as in Section 2. The helper functions `probability` and
 `value` lift tables to $(p, 0)$ and $(1, r)$ as in Chapter 1, Section 10:
@@ -419,6 +409,59 @@ graph.expectation()   # J for a chain cut after `moves` moves
 ```
 
 For 20 moves it returns $0.236$, the value in the table of Section 3.
+
+**The fixed point** does not need a long graph. Every step has the same three
+factors, so one step is eliminated again and again, and the value of the new
+factor is fed back in as the value of the next state. `table` reads a
+`DecisionTreeFactor` into an array, and `ordering` wraps keys:
+
+```python
+now, move, later = state(0), action(0), state(1)
+policy_factor = probability([now, move], ended_policy)
+step = probability([now, move, later], ended_dynamics)
+step_reward = value([now, move], ended_reward)
+
+V = np.zeros(4)                    # the backward message, as an array
+while True:
+    # Eliminate the next state, then the action.
+    bucket = policy_factor * step_reward * (
+        step * value([later], V)).sum(ordering(S(1)))
+    conditional, new_factor = bucket.eliminate(ordering(A(0)))
+    new_V = table(new_factor.value(), [now])
+    if np.abs(new_V - V).max() < 1e-13:
+        break
+    V = new_V
+```
+
+The loop stops after 269 sweeps, with the values of Section 4. On leaving it,
+`bucket.value()` is the table $Q(s, a)$ and `conditional.surprise()` is the
+advantage $A(s, a)$.
+
+**The forward message** is the same loop in the other direction: multiply the
+marginal of the current state with the policy and the dynamics, and sum out
+the current state and the action. In the chain with the state $\varnothing$,
+the marginal of a cell at step $t$ is $\gamma^t d_t(s)$, so adding the
+marginals of all steps gives the discounted visitation $d$:
+
+```python
+d, marginal = np.zeros(3), ended_prior
+while marginal[:3].sum() > 1e-14:  # until no probability of running is left
+    d += marginal[:3]
+    joint = probability([now], marginal) * policy_factor * step
+    marginal = table(joint.sum(ordering(S(0), A(0))).probability(), [later])
+```
+
+For the first steps the notebook checks these marginals against
+`bayesTree.marginalFactor(key)` on an unrolled graph.
+
+**A check by linear algebra.** The two fixed points are also the solutions of
+the linear systems of Sections 4 and 5, and the notebook solves them directly
+to confirm the numbers above:
+
+```python
+V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)       # backward message
+d = np.linalg.solve((np.eye(3) - gamma * P_pi).T, prior)  # forward message
+```
 
 ## 7. What breaks
 

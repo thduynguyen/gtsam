@@ -436,7 +436,8 @@ robot alone would pay $m^2$. The robot commands half of the move it plans
 and expects the slip to supply the other half.
 
 Repeating the backward pass of Chapter 6 with this cheaper move gives the
-gains of the MAP plan:
+gains of the MAP plan. The notebook reads them from the conditionals of MAP's
+own graph, an ordinary `GaussianFactorGraph` eliminated backward:
 
 | | gain at step 0 | gain at step 1 | expected return, $x_0 \sim N(2, 1)$ |
 |---|---|---|---|
@@ -501,8 +502,9 @@ risk-seeking control. The notebook does not implement AICO.
 
 **The line.** If the dynamics are linear, the linearization is exact
 whatever the current trajectory, so Stage 1 is the pass of Chapter 6 itself.
-Running the Stage 1 of the notebook on the line of Chapter 1
-($x' = x + u + w$, two moves) gives, in a single pass,
+Eliminating the graph of the line of Chapter 1 ($x' = x + u + w$, two moves)
+with the same two rules, the average at the states and the maximum at the
+actions, gives, in a single pass,
 
 $$K_0 = 0.6, \qquad K_1 = 0.5, \qquad J^* = -9.25 \;\;\text{for } x_0 \sim N(2, 1),$$
 
@@ -518,7 +520,7 @@ and $0.5$.
 
 | Quantity | Computed by | Checked against |
 |---|---|---|
-| the gains and planned changes of Stage 1 | the module, with `SemiringGaussianFactor` | the formulas of Section 2, in numpy |
+| the gains, offsets and value curvatures of Stage 1, for iLQR and for DDP | the module: the average over the next state, the maximum over the action | the formulas of Sections 2 and 3, in numpy, on three trajectories |
 | the controls and the return of iLQR | 13 passes | DDP; a general-purpose optimizer on the four controls |
 | the MAP plan for $\Sigma_w = 10^{-6}$ | GTSAM's Levenberg-Marquardt | the controls of iLQR |
 
@@ -526,13 +528,14 @@ and $0.5$.
 
 Stage 1 with the module. The helpers `gaussian` and `penalty` lift a
 `JacobianFactor` to $(p, 0)$ and the penalty $z^2$ to the reward
-$(1, -z^2)$, as in Chapter 1, Section 10. As in Chapter 4, the module has no
-built-in maximum, so the best action is read from the quadratic $Q_t$ and put
-back as a deterministic policy factor.
+$(1, -z^2)$, as in Chapter 1, Section 10. The next state is summed out by the
+average, the default rule, and the action by `SemiringSum.Maximum()`. The
+conditional that the maximum leaves on the action is the local policy, the
+hard constraint $u + K_t\, x = o_t$.
 
 ```python
-def stage1(states, controls, noise):
-    """One backward pass on the graph linearized around a trajectory."""
+def stage1(states, controls, noise=0.0):
+    # One backward pass on the graph linearized around a trajectory.
     moves = len(controls)
     gains, offsets = np.zeros(moves), np.zeros(moves)
     value = penalty(X(moves))  # (1, V_T)
@@ -545,27 +548,34 @@ def stage1(states, controls, noise):
         # Eliminate the next state by average.
         phi = dynamics.multiply(value).sum(ordering(X(t + 1)))
         bucket = penalty(X(t)).multiply(penalty(U(t))).multiply(phi)
-        # Eliminate the action by max: the vertex of the quadratic Q_t in u.
-        Q = bucket.value()  # value = 1/2 z'Gz - g'z + f/2, z = (keys)
-        keys, G, g = list(Q.keys()), Q.information(), np.ravel(Q.linearTerm())
-        u, x = keys.index(U(t)), keys.index(X(t))
-        gains[t], offsets[t] = G[u, x] / G[u, u], g[u] / G[u, u]
-        best = gaussian(U(t), I, X(t), gains[t] * I, np.array([offsets[t]]),
-                        noiseModel.Constrained.All(1))
-        value = best.multiply(bucket).sum(ordering(U(t)))  # (1, V_t)
-    return gains, offsets, value
+        # Eliminate the action by maximum. Its conditional is u + K x = o.
+        conditional, value = bucket.eliminate(ordering(U(t)),
+                                              SemiringSum.Maximum())
+        policy = conditional.conditional()
+        gains[t], offsets[t] = policy.S()[0, 0], policy.d()[0]
+    return gains, offsets, value  # value is (1, V_0)
 ```
+
+The same pass can be written as one graph and one call: push all the
+linearized factors into a `SemiringFactorGraph`, give the actions the maximum
+in a `SemiringRules` object, and call `eliminatePartialSequential` with the
+backward ordering. The Bayes net then holds the local policy of every move.
 
 The factors are written in the variables themselves, not in deviations, so
 the policy comes out as $u = -K_t\, x + o_t$ with an offset
 $o_t = \bar u_t + \Delta\bar u_t + K_t\, \bar x_t$. The linear terms of the
 `HessianFactor` carry what Section 2 wrote as gradients.
 
-Stage 2 is a rollout and a loop:
+DDP is the same function with one more factor in the bucket of the action:
+the curvature of the dynamics, a quadratic in $u_t$ lifted with
+`SemiringGaussianFactor.Reward`.
+
+Stage 2 is a rollout and a loop, in plain numpy, since it runs the nonlinear
+robot:
 
 ```python
 def forward(states, controls, gains, offsets, step, x0):
-    """Roll out the local policy, with the planned change scaled by step."""
+    # Roll out the local policy, with the planned change scaled by step.
     x, new_controls = x0, np.zeros(len(controls))
     for t in range(len(controls)):
         change = offsets[t] - gains[t] * states[t] - controls[t]
@@ -590,6 +600,10 @@ for t in range(moves):
 graph.add(gtsam.PriorFactorVector(X(moves), zero, cost))
 result = gtsam.LevenbergMarquardtOptimizer(graph, initial, parameters).optimize()
 ```
+
+What stays in numpy: the rollouts and the simulated runs of the nonlinear
+robot, and the formulas of Section 2, as an independent check of the module's
+backward pass.
 
 ## 8. What breaks
 

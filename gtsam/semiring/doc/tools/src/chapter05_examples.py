@@ -2,9 +2,11 @@
 # # Chapter 5 examples: gradients by elimination
 #
 # This notebook runs the examples of
-# [Chapter 5](https://thduynguyen.github.io/gtsam/chapter05): the gradient of
-# the expected return with respect to the parameters of a policy, computed in
-# three ways that must agree, and the two-stage loop that uses it.
+# [Chapter 5](https://thduynguyen.github.io/gtsam/chapter05) with the
+# `gtsam/semiring` module: the gradient of the expected return with respect to
+# the parameters of a policy, computed in three ways that must agree, and the
+# two-stage loop that uses it. The second-order semiring of Section 4 is the
+# one computation the module does not implement; it runs in numpy.
 
 # %%
 import numpy as np
@@ -14,38 +16,87 @@ from gtsam.symbol_shorthand import A, S
 
 np.set_printoptions(precision=4, suppress=True)
 
-# %% [markdown]
-# ## One decision (Section 2)
-#
-# The robot picks Left with probability $\sigma(\theta)$. Left is worth
-# $Q(L) = 8$ on average and Right $Q(R) = 2$.
 
-
-# %%
 def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
 
-Q_one = np.array([8.0, 2.0])  # Q(L), Q(R)
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+# %% [markdown]
+# ## One decision (Section 2)
+#
+# The robot picks Left with probability $\sigma(\theta)$. Left costs 1, the
+# outcome is good with probability 0.9 after Left and 0.2 after Right, and a
+# good outcome pays 10. Elimination gives $J$, and the conditional of the
+# action holds the policy and the advantage.
+
+# %%
+ACTION, OUTCOME = (A(0), 2), (S(0), 2)  # Left / Right, good / bad
+
+
+def one_decision(theta):
+    """The factor graph of the one-decision problem."""
+    left = sigmoid(theta)
+    graph = SemiringFactorGraph()
+    graph.push_back(probability([ACTION], [left, 1 - left]))
+    graph.push_back(value([ACTION], [-1.0, 0.0]))
+    graph.push_back(probability([ACTION, OUTCOME], [[0.9, 0.1], [0.2, 0.8]]))
+    graph.push_back(value([OUTCOME], [10.0, 0.0]))
+    return graph
+
+
 theta_one = np.log(0.6 / 0.4)  # so that pi(L) = 0.6
-
-
-def J_one(theta):
-    pi = np.array([sigmoid(theta), 1 - sigmoid(theta)])
-    return pi @ Q_one
-
-
-pi = np.array([sigmoid(theta_one), 1 - sigmoid(theta_one)])
+graph = one_decision(theta_one)
+J_one = graph.expectation()
+conditional = graph.eliminateSequential(ordering(S(0), A(0))).at(1)
+pi = table(conditional.probability(), [ACTION])  # the policy
+advantage_one = table(conditional.surprise(), [ACTION])  # A(a) = Q(a) - J
+Q_one = advantage_one + J_one
 dpi = pi[0] * pi[1] * np.array([1.0, -1.0])  # derivative of pi(L), pi(R)
-V_one = pi @ Q_one
-print("pi =", pi, " J =", V_one)
+print("pi =", pi, " J =", J_one)
+print("Q =", Q_one, " advantage =", advantage_one)
 print("sum of dpi * Q         :", dpi @ Q_one)
-print("sum of dpi * advantage :", dpi @ (Q_one - V_one))
-print("E[dlog pi * advantage] :", pi @ (dpi / pi * (Q_one - V_one)))
+print("sum of dpi * advantage :", dpi @ advantage_one)
+print("E[dlog pi * advantage] :", pi @ (dpi / pi * advantage_one))
 h = 1e-6
-numeric = (J_one(theta_one + h) - J_one(theta_one - h)) / (2 * h)
+numeric = (one_decision(theta_one + h).expectation() -
+           one_decision(theta_one - h).expectation()) / (2 * h)
 print("finite difference      :", numeric)
+assert np.isclose(J_one, 5.6) and np.allclose(Q_one, [8, 2])
+assert np.allclose(advantage_one, [2.4, -3.6])
 assert np.isclose(dpi @ Q_one, 1.44) and np.isclose(numeric, 1.44)
+assert np.isclose(dpi @ advantage_one, 1.44)
+assert np.isclose(pi @ (dpi / pi * advantage_one), 1.44)
 
 # %% [markdown]
 # ## The track with a parametric policy (Section 1)
@@ -90,29 +141,6 @@ state = lambda t: (S(t), 3)  # (key, cardinality)
 action = lambda t: (A(t), 2)
 
 
-def probability(keys, table):
-    """Lift a probability table to (p, 0)."""
-    return SemiringDiscreteFactor(
-        DecisionTreeFactor(keys, np.ravel(table).tolist()))
-
-
-def value(keys, table):
-    """Lift a reward table to (1, r)."""
-    return SemiringDiscreteFactor.Reward(
-        DecisionTreeFactor(keys, np.ravel(table).tolist()))
-
-
-def table(factor, keys):
-    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
-    result = np.zeros([cardinality for _, cardinality in keys])
-    for index in np.ndindex(*result.shape):
-        values = DiscreteValues()
-        for (key, _), index_of_key in zip(keys, index):
-            values[key] = index_of_key
-        result[index] = factor(values)
-    return result
-
-
 def build(theta):
     graph = SemiringFactorGraph()
     graph.push_back(probability([state(0)], prior))
@@ -128,10 +156,8 @@ def build(theta):
 def stage1(theta):
     """Evaluate the policy: J, the advantages A_t and the visitations d_t."""
     graph = build(theta)
-    ordering = Ordering()
-    for key in [S(2), A(1), S(1), A(0), S(0)]:
-        ordering.push_back(key)
-    bayes_net = graph.eliminateSequential(ordering)
+    backward = ordering(S(2), A(1), S(1), A(0), S(0))
+    bayes_net = graph.eliminateSequential(backward)
     # The conditionals of a_1 and a_0 are at positions 1 and 3.
     advantage = {1: table(bayes_net.at(1).surprise(), [state(1), action(1)]),
                  0: table(bayes_net.at(3).surprise(), [state(0), action(0)])}
@@ -175,8 +201,11 @@ assert np.allclose(g, [0.15, 1.0, 0.35]) and np.allclose(numeric, g)
 # ## The same gradient in one backward pass: the second-order semiring (Section 4)
 #
 # Each entry carries four numbers $(p, w, \dot p, \dot w)$: the pair of
-# Chapter 1 and its derivative with respect to one parameter. The elimination
-# routine is the generic one of Chapter 2.
+# Chapter 1 and its derivative with respect to one parameter. The module does
+# not implement entries of this kind, so this section, and only this one, runs
+# a short elimination routine in numpy: multiply the factors of a bucket, sum
+# over the variable, put the new factor back. Its result is checked against
+# the gradient that the module gave above.
 
 
 # %%
@@ -286,27 +315,24 @@ print("Fisher matrix =\n", F)
 print("natural gradient =", np.linalg.solve(F, g))
 assert np.allclose(np.diag(F), [0.25, 0.2, 0.05])
 
-# Brute force: the covariance of the score of the trajectory distribution.
+# A check over all trajectories. The product of all factors is one table with
+# the probability and the return of every trajectory; the score of a
+# trajectory is the sum of the scores of its two policy factors.
+trajectory_keys = [state(0), action(0), state(1), action(1), state(2)]
+joint = build(theta).product()
+p_tau = table(joint.probability(), trajectory_keys)
+R_tau = table(joint.value(), trajectory_keys)
 pi, dpi = policy_table(theta), policy_derivative(theta)
 brute_F, brute_g = np.zeros((3, 3)), np.zeros(3)
-for s0 in range(3):
-    for a0 in range(2):
-        for s1 in range(3):
-            for a1 in range(2):
-                for s2 in range(3):
-                    p = (prior[s0] * pi[s0, a0] * dynamics[s0, a0, s1] *
-                         pi[s1, a1] * dynamics[s1, a1, s2])
-                    if p == 0:
-                        continue
-                    score = np.zeros(3)
-                    score[s0] += dpi[s0, a0] / pi[s0, a0]
-                    score[s1] += dpi[s1, a1] / pi[s1, a1]
-                    ret = (move_reward[s0, a0] + move_reward[s1, a1] +
-                           final_reward[s2])
-                    brute_F += p * np.outer(score, score)
-                    brute_g += p * score * ret
-print("brute-force E[score score^T] =\n", brute_F)
-print("brute-force E[score * R] =", brute_g)
+for s0, a0, s1, a1, s2 in np.argwhere(p_tau > 0):
+    score = np.zeros(3)
+    score[s0] += dpi[s0, a0] / pi[s0, a0]
+    score[s1] += dpi[s1, a1] / pi[s1, a1]
+    p = p_tau[s0, a0, s1, a1, s2]
+    brute_F += p * np.outer(score, score)
+    brute_g += p * score * R_tau[s0, a0, s1, a1, s2]
+print("E[score score^T] over all trajectories =\n", brute_F)
+print("E[score * R] over all trajectories =", brute_g)
 assert np.allclose(brute_F, F) and np.allclose(brute_g, g)
 
 # %% [markdown]

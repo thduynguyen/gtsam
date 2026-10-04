@@ -3,12 +3,17 @@
 #
 # This notebook runs the examples of
 # [Chapter 19](https://thduynguyen.github.io/gtsam/chapter19): a small version
-# of PILCO in numpy. The dynamics factor is a Gaussian process, the forward
-# message is kept Gaussian by moment matching, and the expected return is then
-# a closed-form function of the policy parameter.
+# of PILCO. The dynamics factor is a Gaussian process, the forward message is
+# kept Gaussian by moment matching, and the expected return is then a
+# closed-form function of the policy parameter. The Gaussian process and the
+# moment matching are in numpy; the exact reference they are tested against,
+# on linear dynamics, is an elimination with the `gtsam/semiring` module.
 
 # %%
 import numpy as np
+from gtsam import HessianFactor, JacobianFactor, Ordering, noiseModel
+from gtsam import SemiringFactorGraph, SemiringGaussianFactor
+from gtsam.symbol_shorthand import U, X
 from scipy.optimize import minimize, minimize_scalar
 
 np.set_printoptions(precision=3, suppress=True)
@@ -213,6 +218,65 @@ J_line, messages_line = stage1(linear_moments(1.0, 1.0, 0.5), 0.5, moves=2)
 print("the line, linear model:  J =", J_line)
 print("forward messages (mean, variance):\n", messages_line)
 assert np.isclose(J_line, -9.375)
+
+# %% [markdown]
+# The reference is the same line as a semiring factor graph, eliminated by
+# the module. Its expectation is the exact return. The exact forward message
+# on $x_t$ is read from the same graph without its rewards: the mean and the
+# second moment of $x_t$ are the expectations of the "rewards" $x_t$ and
+# $x_t^2$.
+
+# %%
+I = np.eye(1)
+zero = np.zeros(1)
+
+
+def gaussian(*args):
+    """Lift a Gaussian factor to (p, 0)."""
+    return SemiringGaussianFactor(JacobianFactor(*args))
+
+
+def reward(key, G, g):
+    """Lift the quadratic 0.5 G z^2 - g z on one variable to (1, value)."""
+    return SemiringGaussianFactor.Reward(
+        HessianFactor(key, G * I, np.array([g]), 0.0))
+
+
+def line(gain, rewards):
+    """The two-move line under u = -gain * x, with the given reward factors."""
+    graph = SemiringFactorGraph()
+    graph.push_back(gaussian(X(0), I, np.array([START_MEAN]),
+                             noiseModel.Isotropic.Variance(1, START_VARIANCE)))
+    for t in range(2):
+        graph.push_back(gaussian(U(t), I, X(t), gain * I, zero,
+                                 noiseModel.Constrained.All(1)))
+        graph.push_back(gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                                 noiseModel.Isotropic.Variance(1, 0.5)))
+    for factor in rewards:
+        graph.push_back(factor)
+    return graph
+
+
+backward = Ordering()
+for key in [X(2), U(1), X(1), U(0), X(0)]:
+    backward.push_back(key)
+
+# The return: the rewards -(x^2 + u^2) per move and -x^2 at the end.
+penalties = [reward(key, -2.0, 0.0) for key in [X(0), U(0), X(1), U(1), X(2)]]
+J_module = line(0.5, penalties).expectation(backward)
+print("the line, by elimination:  J =", J_module)
+assert np.isclose(J_module, -9.375) and np.isclose(J_line, J_module)
+
+# The forward messages: E[x_t] and E[x_t^2] as expectations of rewards.
+messages_module = []
+for t in range(3):
+    mean = line(0.5, [reward(X(t), 0.0, -1.0)]).expectation(backward)
+    second = line(0.5, [reward(X(t), 2.0, 0.0)]).expectation(backward)
+    messages_module.append((mean, second - mean ** 2))
+print("forward messages by elimination (mean, variance):\n",
+      np.array(messages_module))
+assert np.allclose(messages_module, [[2, 1], [1, 0.75], [0.5, 0.6875]])
+assert np.allclose(messages_line, messages_module)
 
 # The same with a Gaussian process learned from 300 transitions of the line.
 # This is no longer exact: the model itself has an error.

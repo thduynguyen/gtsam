@@ -3,9 +3,11 @@
 #
 # This notebook runs the examples of
 # [Chapter 7](https://thduynguyen.github.io/gtsam/chapter07) on the robot on a
-# line: a linear-Gaussian policy is evaluated by elimination (Stage 1), and
-# its gain is improved by gradient, natural-gradient, damped and trust-region
-# steps (Stage 2), the last also with GTSAM's own optimizers.
+# line, with GTSAM: a linear-Gaussian policy is evaluated by elimination of a
+# semiring factor graph (Stage 1), and its gain is improved by gradient,
+# natural-gradient, damped and trust-region steps (Stage 2), the last also
+# with GTSAM's own optimizers. The Lyapunov formulas and a simulation appear
+# in numpy only as independent checks.
 
 # %%
 import numpy as np
@@ -68,8 +70,25 @@ def build(K, policy_variance=Sigma_e):
     return graph
 
 
-print("J for K = (0.5, 0.5):", build([0.5, 0.5]).expectation())
-assert np.isclose(build([0.5, 0.5]).expectation(), -9.825)
+def quadratic(factor, *keys):
+    """The value channel as (M, c): v(z) = z' M z + c, z ordered as keys."""
+    value = factor.value()
+    position = [list(value.keys()).index(key) for key in keys]
+    augmented = value.augmentedInformation()
+    M = 0.5 * augmented[np.ix_(position, position)]
+    return M, 0.5 * augmented[-1, -1]
+
+
+backward = ordering(X(2), U(1), X(1), U(0), X(0))  # backward in time
+
+
+def evaluate(K, policy_variance=Sigma_e):
+    """The expected return J of the gains K, by one elimination."""
+    return build(K, policy_variance).expectation(backward)
+
+
+print("J for K = (0.5, 0.5):", evaluate([0.5, 0.5]))
+assert np.isclose(evaluate([0.5, 0.5]), -9.825)
 
 # %% [markdown]
 # ## Stage 1: backward and forward messages by elimination (Section 2)
@@ -84,8 +103,7 @@ assert np.isclose(build([0.5, 0.5]).expectation(), -9.825)
 def stage1(K):
     """J, the blocks (H_uu, H_ux) of each advantage, and E[x_t^2]."""
     graph = build(K)
-    bayes_net = graph.eliminateSequential(
-        ordering(X(2), U(1), X(1), U(0), X(0)))
+    bayes_net = graph.eliminateSequential(backward)
     blocks = {}
     for t, position in [(1, 1), (0, 3)]:  # the conditionals of u_1 and u_0
         surprise = bayes_net.at(position).surprise()
@@ -99,7 +117,7 @@ def stage1(K):
         mean = (marginal.d() / marginal.R()).item()
         var = (1 / marginal.R() ** 2).item()
         second_moment[t] = mean ** 2 + var
-    return graph.expectation(), blocks, second_moment
+    return graph.expectation(backward), blocks, second_moment
 
 
 J, blocks, second_moment = stage1([0.5, 0.5])
@@ -111,7 +129,57 @@ assert np.isclose(second_moment[0], 5.0)
 assert np.isclose(second_moment[1], 1.85)
 
 # %% [markdown]
-# The same messages from the Lyapunov recursion, in numpy.
+# The value functions $V_t(x) = -(P_t x^2 + \beta_t)$ are the values of the
+# new factors that elimination leaves on each state, and the marginals of the
+# states are Gaussians with mean $\mu_t$ and variance $\Sigma_t$.
+
+
+# %%
+def value_functions(K):
+    """P_t and beta_t, one elimination at a time with the factor interface."""
+    P, beta = {2: 1.0}, {2: 0.0}
+    value = penalty(X(2))  # (1, V_2)
+    for t in [1, 0]:
+        step = gaussian(X(t + 1), I, X(t), -I, U(t), -I, zero,
+                        variance(Sigma_w))
+        policy = gaussian(U(t), I, X(t), K[t] * I, zero, variance(Sigma_e))
+        # Eliminate the next state, then the action, both by average.
+        phi = step.multiply(value).sum(ordering(X(t + 1)))
+        bucket = policy.multiply(penalty(X(t))).multiply(
+            penalty(U(t))).multiply(phi)
+        value = bucket.sum(ordering(U(t)))  # (1, V_t)
+        M, c = quadratic(value, X(t))
+        P[t], beta[t] = -M.item(), float(-c)
+    return P, beta
+
+
+def marginals(K):
+    """The mean and the variance of each state: the forward messages."""
+    bayes_tree = build(K).eliminateMultifrontal()
+    result = {}
+    for t in range(3):
+        marginal = bayes_tree.marginalFactor(X(t)).conditional()
+        result[t] = ((marginal.d() / marginal.R()).item(),
+                     (1 / marginal.R() ** 2).item())
+    return result
+
+
+P, beta = value_functions([0.5, 0.5])
+forward = marginals([0.5, 0.5])
+for t in range(3):
+    print(f"t = {t}: P = {P[t]:.4f}, beta = {beta[t]:.4f}")
+for t in range(3):
+    print(f"x_{t}: mean {forward[t][0]:.4f}, variance {forward[t][1]:.4f}, "
+          f"E[x^2] = {forward[t][0] ** 2 + forward[t][1]:.4f}")
+assert np.isclose(P[1], 1.5) and np.isclose(P[0], 1.625)
+assert np.isclose(beta[1], 0.7) and np.isclose(beta[0], 1.7)
+assert np.allclose([forward[t][0] for t in range(3)], [2, 1, 0.5])
+assert np.allclose([forward[t][1] for t in range(3)], [1, 0.85, 0.8125])
+# J = -(P_0 E[x_0^2] + beta_0).
+assert np.isclose(-(P[0] * 5.0 + beta[0]), J)
+
+# %% [markdown]
+# An independent check: the Lyapunov recursion of the chapter, written out.
 
 
 # %%
@@ -132,11 +200,14 @@ def J_formula(K):
     return -(P[0] * m[0] + beta[0])
 
 
-P, beta, m = lyapunov([0.5, 0.5])
-print("P =", P, "\nbeta =", beta, "\nE[x^2] =", m)
-assert np.isclose(P[1], 1.5) and np.isclose(P[0], 1.625)
-assert np.isclose(beta[1], 0.7) and np.isclose(beta[0], 1.7)
+P_formula, beta_formula, m_formula = lyapunov([0.5, 0.5])
+for t in range(3):
+    assert np.isclose(P[t], P_formula[t]) and np.isclose(beta[t], beta_formula[t])
+    assert np.isclose(forward[t][0] ** 2 + forward[t][1], m_formula[t])
+for t in range(2):  # H_uu = C_u + B' P B and H_ux = B' P F, with P of t + 1
+    assert np.allclose(blocks[t], (1 + P_formula[t + 1], P_formula[t + 1]))
 assert np.isclose(J_formula([0.5, 0.5]), -9.825)
+print("the formulas agree with the elimination")
 
 # %% [markdown]
 # ## The gradient: forward message times local term times backward message (Section 3)
@@ -152,8 +223,7 @@ def gradient(K, blocks, second_moment):
 
 def finite_differences(K, h=1e-5):
     K = np.asarray(K, float)
-    return np.array([(build(K + h * e).expectation() -
-                      build(K - h * e).expectation()) / (2 * h)
+    return np.array([(evaluate(K + h * e) - evaluate(K - h * e)) / (2 * h)
                      for e in np.eye(2)])
 
 
@@ -234,7 +304,7 @@ def trust_region_step(K, J, g, F, D_max=0.5):
     halved until the expected return improves."""
     direction = np.linalg.solve(F, g)
     step = np.sqrt(2 * D_max / (g @ direction)) * direction
-    while build(K + step).expectation() < J and np.abs(step).max() > 1e-12:
+    while evaluate(K + step) < J and np.abs(step).max() > 1e-12:
         step = step / 2
     return step
 
@@ -254,11 +324,13 @@ for name, history in histories.items():
 
 # %% [markdown]
 # The step size of the plain gradient must be tuned: with 0.1 in place of
-# 0.03 the iteration diverges.
+# 0.03 the iteration diverges. The gains reach $10^{20}$ within six steps, so
+# this one loop uses the Lyapunov formulas above, which are plain arithmetic
+# and tolerate such numbers.
 
 # %%
 K, diverging = np.zeros(2), []
-for _ in range(6):  # with the Lyapunov formulas, which tolerate huge gains
+for _ in range(6):
     P, beta, m = lyapunov(K)
     diverging.append(J_formula(K))
     K = K + 0.1 * np.array([2 * (P[t + 1] - (1 + P[t + 1]) * K[t]) * m[t]
@@ -290,18 +362,18 @@ assert np.allclose(K, [0.6, 0.5])
 # %%
 K_final = histories["natural gradient"][-1][1]
 print("gains:", K_final)
-print("J with jitter:   ", build(K_final).expectation())
-print("J without jitter:", build(K_final, policy_variance=0).expectation())
-assert np.isclose(build([0.6, 0.5]).expectation(), -9.70)
-assert np.isclose(build([0.6, 0.5], policy_variance=0).expectation(), -9.25)
+print("J with jitter:   ", evaluate(K_final))
+print("J without jitter:", evaluate(K_final, policy_variance=0))
+assert np.isclose(evaluate([0.6, 0.5]), -9.70)
+assert np.isclose(evaluate([0.6, 0.5], policy_variance=0), -9.25)
 
 # %% [markdown]
 # A shared gain: one $K$ for both moves. Its gradient is the sum of the two
 # per-step gradients. The best shared gain is computed independently, by a
-# scalar search on the formula for $J$.
+# scalar search on $J(K, K)$, each value by one elimination.
 
 # %%
-best = minimize_scalar(lambda k: -J_formula([k, k]), bounds=(0, 1),
+best = minimize_scalar(lambda k: -evaluate([k, k]), bounds=(0, 1),
                        method="bounded", options={"xatol": 1e-10})
 print(f"best shared gain by scalar search: K = {best.x:.5f}, "
       f"J = {-best.fun:.5f}")
@@ -366,6 +438,6 @@ for name, optimizer_class, params in [
     params.setErrorTol(1e-12)
     params.setMaxIterations(100)
     result, iterations = optimize(optimizer_class, params)
-    print(f"{name:20s} K = {result}, J = {build(result).expectation():.5f}, "
+    print(f"{name:20s} K = {result}, J = {evaluate(result):.5f}, "
           f"{iterations} iterations, {len(evaluations)} eliminations")
     assert np.allclose(result, [0.6, 0.5], atol=1e-3)

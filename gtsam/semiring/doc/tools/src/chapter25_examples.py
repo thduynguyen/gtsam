@@ -2,19 +2,30 @@
 # # Chapter 25 examples: distributional RL
 #
 # This notebook runs the examples of
-# [Chapter 25](https://thduynguyen.github.io/gtsam/chapter25). The elimination
-# routine of Chapter 2 is run with a semiring whose entries are whole
-# distributions of the return, on the track of Chapter 1. Then the
-# distributional Bellman equation is iterated on the endless track of
-# Chapter 3, on a fixed grid of returns as in C51.
+# [Chapter 25](https://thduynguyen.github.io/gtsam/chapter25). Variable
+# elimination is run with a semiring whose entries are whole distributions of
+# the return, on the track of Chapter 1. Then the distributional Bellman
+# equation is iterated on the endless track of Chapter 3, on a fixed grid of
+# returns as in C51.
+#
+# The `gtsam/semiring` module has no rule for entries that are distributions,
+# so the convolution semiring and the second-moment semiring run in a short
+# numpy routine. Everything they are checked against runs on the module: the
+# mean, the tilted means, the best return, the value factor, and the
+# distribution itself, on a graph where the accumulated reward is one more
+# variable. The backup on the grid is a product and a sum of factors as well.
 
 # %%
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor, SemiringFactorGraph
+from gtsam import SemiringRules, SemiringSum
+from gtsam.symbol_shorthand import A, C, S
 
 np.set_printoptions(precision=4, suppress=True)
 
 # %% [markdown]
-# ## The track of Chapter 1 and the elimination routine of Chapter 2
+# ## The track of Chapter 1, as a graph of the module
 
 # %%
 L, R = 0, 1
@@ -27,6 +38,69 @@ dynamics[2, L], dynamics[2, R] = [0, 0.8, 0.2], [0, 0, 1]
 move_reward = np.array([[0.0, -1.0]] * 3)  # r(s, a)
 final_reward = np.array([0.0, 0.0, 10.0])  # r(s2)
 
+state = lambda t: (S(t), 3)  # (key, cardinality)
+action = lambda t: (A(t), 2)
+
+
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+def everywhere(rule):
+    """The same rule for every variable of the track."""
+    rules = SemiringRules()
+    rules.setAll([S(0), A(0), S(1), A(1), S(2)], rule)
+    return rules
+
+
+graph = SemiringFactorGraph()
+graph.push_back(probability([state(0)], prior))
+for t in range(2):
+    keys = [state(t), action(t)]
+    graph.push_back(probability(keys, policy))
+    graph.push_back(probability(keys + [state(t + 1)], dynamics))
+    graph.push_back(value(keys, move_reward))
+graph.push_back(value([state(2)], final_reward))
+backward = ordering(S(2), A(1), S(1), A(0), S(0))
+print("expected return, by the module:", graph.expectation(backward))
+assert np.isclose(graph.expectation(backward), 1.4)
+
+# %% [markdown]
+# ## An elimination routine that takes any semiring
+#
+# The module's rules are the average, the maximum and the tilted mean, on
+# entries that are pairs. An entry of this chapter is a whole distribution, so
+# the same factors are eliminated here by a routine in numpy, which takes the
+# semiring as an argument.
+
+# %%
 terms = [
     ("probability", ("s0",), prior),
     ("probability", ("s0", "a0"), policy),
@@ -127,27 +201,60 @@ for z, h in zip(Z, distribution):
 print("total probability:", distribution.sum())
 print("mean:", distribution @ Z)
 assert np.isclose(distribution.sum(), 1) and np.isclose(distribution @ Z, 1.4)
+assert np.allclose(distribution[np.isin(Z, [-2, -1, 0, 8, 9])],
+                   [0.05, 0.46, 0.25, 0.20, 0.04])
 
 # %% [markdown]
-# A check by enumerating the 24 possible trajectories.
+# A check against all trajectories. The product of all factors of the module's
+# graph is one table with the probability and the return of every trajectory.
 
 # %%
-brute = np.zeros(len(Z))
-count = 0
-for s0 in range(3):
-    for a0 in range(2):
-        for s1 in range(3):
-            for a1 in range(2):
-                for s2 in range(3):
-                    p = (prior[s0] * policy[s0, a0] * dynamics[s0, a0, s1] *
-                         policy[s1, a1] * dynamics[s1, a1, s2])
-                    if p > 0:
-                        count += 1
-                        ret = int(move_reward[s0, a0] + move_reward[s1, a1] +
-                                  final_reward[s2])
-                        brute[ret - Z[0]] += p
-print("possible trajectories:", count)
-assert count == 24 and np.allclose(brute, distribution)
+joint = graph.product()
+keys = [state(0), action(0), state(1), action(1), state(2)]
+p = table(joint.probability(), keys).ravel()
+returns = table(joint.value(), keys).ravel()
+brute = np.array([p[np.isclose(returns, z)].sum() for z in Z])
+print("possible trajectories:", (p > 0).sum())
+assert (p > 0).sum() == 24 and np.allclose(brute, distribution)
+
+# %% [markdown]
+# ## The same distribution from the module: the return as a variable
+#
+# A second check, by elimination. Add one variable per step for the reward
+# accumulated so far, `C(t)`, with 13 values, and replace every reward factor
+# by a probability factor that is 1 when the accumulated reward after the step
+# is the one before plus the reward, and 0 otherwise. The graph then has
+# probabilities only, and the marginal of the last of these variables is the
+# distribution of the return. The masses $h(z)$ of an entry of the convolution
+# semiring are the dependence of a factor on this variable.
+
+# %%
+count = lambda t: (C(t), len(Z))
+
+
+def adds(reward):
+    """The factor on (c, ..., c') that is 1 when c' = c + reward(...)."""
+    after = Z[:, None] + np.ravel(reward)[None, :]
+    return (after[:, :, None] == Z).reshape(
+        (len(Z),) + np.shape(reward) + (len(Z),)).astype(float)
+
+
+counted = SemiringFactorGraph()
+counted.push_back(probability([state(0)], prior))
+counted.push_back(probability([count(0)], Z == 0))  # nothing accumulated yet
+for t in range(2):
+    keys = [state(t), action(t)]
+    counted.push_back(probability(keys, policy))
+    counted.push_back(probability(keys + [state(t + 1)], dynamics))
+    counted.push_back(probability([count(t)] + keys + [count(t + 1)],
+                                  adds(move_reward)))
+counted.push_back(probability([count(2), state(2), count(3)],
+                              adds(final_reward)))
+_, remaining = counted.eliminatePartialSequential(
+    ordering(S(0), A(0), C(0), S(1), A(1), C(1), S(2), C(2)))
+marginal = table(remaining.product().probability(), [count(3)])
+print("marginal of the accumulated reward:", marginal)
+assert np.allclose(marginal, distribution)
 
 # %% [markdown]
 # ## The other semirings are summaries of this one (Section 3)
@@ -159,14 +266,27 @@ assert count == 24 and np.allclose(brute, distribution)
 # %%
 p, w = distribution.sum(), distribution @ Z
 print("(p, w) =", (p, w), " value w / p =", w / p)
+# The expectation semiring: the pair at the root of the module's elimination.
+assert np.allclose(graph.product().sum(backward).evaluate(DiscreteValues()),
+                   (p, w))
+# The tilted semiring: the module with the tilted rule at every variable.
 for kappa, expected in [(-0.5, -0.2768), (0.5, 5.4251), (2.0, 7.6490)]:
     m = distribution @ np.exp(kappa * Z)
     tilted = np.log(m / p) / kappa
     print(f"kappa = {kappa:4.1f}: tilted mean {tilted:.4f}")
     assert np.isclose(tilted, expected, atol=1e-4)
+    assert np.isclose(tilted, graph.expectation(
+        backward, everywhere(SemiringSum.Tilted(kappa))))
+# Max-sum: the module with the maximum at every variable.
+largest = Z[distribution > 0].max()
+print("largest possible return:", largest)
+assert largest == 9 and np.isclose(
+    graph.expectation(backward, everywhere(SemiringSum.Maximum())), largest)
 
 variance = distribution @ Z ** 2 - (distribution @ Z) ** 2
 print("variance:", variance, " standard deviation:", np.sqrt(variance))
+assert np.isclose(variance, 14.74) and np.isclose(np.sqrt(variance), 3.84,
+                                                  atol=5e-3)
 
 
 class SecondMoment:
@@ -194,7 +314,7 @@ class SecondMoment:
 p, w, w2 = [float(c) for c in eliminate(SecondMoment, terms, order)]
 print("second-moment semiring: (p, w, w2) =", (p, w, w2),
       " variance =", w2 - w ** 2)
-assert np.isclose(w2 - w ** 2, variance)
+assert np.isclose(w2 - w ** 2, variance) and np.isclose(w2, 16.7)
 
 # The map from a distribution to its moments turns a convolution into the
 # product of the expectation semiring.
@@ -226,13 +346,16 @@ def cvar(values, probabilities, level):
 for level in [1.0, 0.5, 0.25, 0.1]:
     print(f"CVaR at level {level:4.2f}: {cvar(Z, distribution, level):.4f}")
 print("P(R >= 8):", distribution[Z >= 8].sum())
-assert np.isclose(cvar(Z, distribution, 1.0), 1.4)
+assert np.allclose([cvar(Z, distribution, level)
+                    for level in [1.0, 0.5, 0.25, 0.1]],
+                   [1.4, -1.1, -1.2, -1.5])
 
 # %% [markdown]
 # ## The value factor now holds a distribution per state (Section 4)
 #
 # Stopping the elimination before $s_1$ leaves a factor on $s_1$: for each
-# cell, the distribution of the reward still to come with one move left.
+# cell, the distribution of the reward still to come with one move left. Its
+# means are the value factor $V_1$ that the module leaves on $s_1$.
 
 # %%
 factors = eliminate(Convolution, terms, order, keep=("s1",))
@@ -242,7 +365,15 @@ for cell in range(3):
     support = {int(z): round(float(h), 3)
                for z, h in zip(Z, to_go[cell]) if h > 0}
     print(f"cell {cell}: {support}, mean {to_go[cell] @ Z:.2f}")
-assert np.allclose(to_go @ Z, [-0.5, 3.5, 5.5])  # V_1 of Chapter 1
+
+keys = [state(1), action(1)]
+last_move = (probability(keys, policy) * value(keys, move_reward) *
+             probability(keys + [state(2)], dynamics) *
+             value([state(2)], final_reward))
+V_1 = table(last_move.sum(ordering(S(2), A(1))).value(), [state(1)])
+print("V_1 by the module:", V_1)
+assert np.allclose(V_1, [-0.5, 3.5, 5.5])  # V_1 of Chapter 1
+assert np.allclose(to_go @ Z, V_1)
 
 # %% [markdown]
 # ## The distributional Bellman equation on a grid (Section 5)
@@ -252,6 +383,13 @@ assert np.allclose(to_go @ Z, [-0.5, 3.5, 5.5])  # V_1 of Chapter 1
 # probabilities on a fixed grid, as in C51. One backup shifts and shrinks the
 # grid of the next state, $r + \gamma z$, and projects the result back onto
 # the grid.
+#
+# The position on the grid is one more variable, as the accumulated reward
+# was above. The projection is then a factor on (cell, action, next grid
+# value, grid value): the share of a mass at the next grid value that lands on
+# each grid value. One backup multiplies it with the policy factor, the
+# dynamics factor and the distributions of the next cell, and sums out the
+# action, the next cell and the next grid value.
 
 # %%
 gamma = 0.9
@@ -272,24 +410,52 @@ def project(values, probabilities):
     return result
 
 
+cell, move, next_cell = (S(0), 3), (A(0), 2), (S(1), 3)
+atom, next_atom = (C(0), len(atoms)), (C(1), len(atoms))
+policy_factor = probability([cell, move], policy)
+step = probability([cell, move, next_cell], dynamics)
+
+# The projection as a factor: where a unit mass at each next grid value lands.
+projection = np.array([[[project(reward[s, a] + gamma * atoms[j:j + 1],
+                                 np.ones(1)) for j in range(len(atoms))]
+                        for a in range(2)] for s in range(3)])
+# The action can be summed out once, before the sweeps.
+operator = (policy_factor * step * probability(
+    [cell, move, next_atom, atom], projection)).sum(ordering(A(0)))
+
 categorical = np.zeros((3, len(atoms)))
 categorical[:, np.argmin(np.abs(atoms))] = 1  # start: the return is 0
 for sweep in range(300):
-    updated = np.zeros_like(categorical)
-    for s in range(3):
-        for a in range(2):
-            for n in range(3):
-                weight = policy[s, a] * dynamics[s, a, n]
-                if weight > 0:
-                    updated[s] += weight * project(
-                        reward[s, a] + gamma * atoms, categorical[n])
-    categorical = updated
+    bucket = operator * probability([next_cell, next_atom], categorical)
+    categorical = table(bucket.sum(ordering(S(1), C(1))).probability(),
+                        [cell, atom])
 means = categorical @ atoms
 deviations = np.sqrt(categorical @ atoms ** 2 - means ** 2)
+
+# V of Chapter 3, by the module: the backup of the mean, until it stops moving.
+step_reward = value([cell, move], reward)
+V = np.zeros(3)
+for sweep in range(300):
+    bucket = policy_factor * step_reward * (
+        step * value([next_cell], gamma * V)).sum(ordering(S(1)))
+    V = table(bucket.sum(ordering(A(0))).value(), [cell])
 print("means of the grid distributions:", means)
-print("V of Chapter 3:                  [-0.2248  1.1017  4.1231]")
+print("V of Chapter 3:                 ", V)
 print("standard deviations:", deviations)
-assert np.allclose(means, [-0.2248, 1.1017, 4.1231], atol=1e-3)
+assert np.allclose(V, [-0.2248, 1.1017, 4.1231], atol=1e-4)
+assert np.allclose(means, V, atol=1e-3)
+assert np.allclose(deviations, [2.05, 2.48, 2.41], atol=5e-3)
+
+# One backup of the module against the formula of the chapter, in numpy.
+updated = np.zeros_like(categorical)
+for s in range(3):
+    for a in range(2):
+        for n in range(3):
+            updated[s] += policy[s, a] * dynamics[s, a, n] * project(
+                reward[s, a] + gamma * atoms, categorical[n])
+bucket = operator * probability([next_cell, next_atom], categorical)
+assert np.allclose(updated, table(
+    bucket.sum(ordering(S(1), C(1))).probability(), [cell, atom]))
 
 # %% [markdown]
 # A check by simulation with a fixed seed, from cell 1. The discounted return

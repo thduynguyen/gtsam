@@ -9,14 +9,17 @@
 
 # %%
 import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor
+from gtsam.symbol_shorthand import U, X
 
 np.set_printoptions(precision=4, suppress=True)
 
 # %% [markdown]
 # ## The endless track, as a simulator (Section 1)
 #
-# The algorithm only calls `step`. The tables are used to compute the exact
-# values that the estimates are compared with.
+# The algorithm only calls `step`. The tables are used again as semiring
+# factors, to compute the exact values that the estimates are compared with.
 
 # %%
 L, R = 0, 1
@@ -54,15 +57,132 @@ def run(steps, rng, s=0):
         out[:, 3].astype(int)
 
 
+# %% [markdown]
+# ## The exact reference, with the module
+#
+# The endless track as semiring factors, with the discount as the termination
+# outcome of Chapter 3: a fourth state, "ended". The exact value of a policy
+# is obtained by composing moves: the factor of $n$ moves, multiplied with a
+# copy of itself on the following states and with the state in between summed
+# out, is the factor of $2n$ moves.
+
+# %%
+ENDED = 3
+now, move, later = (X(0), 4), (U(0), 2), (X(1), 4)  # (key, cardinality)
+
+
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+def with_ended(cells, fill=0.0):
+    """Add the row of the state "ended" to a table over the three cells."""
+    cells = np.asarray(cells, float)
+    return np.concatenate([cells, np.full((1,) + cells.shape[1:], fill)])
+
+
+def step_factor(discount=gamma):
+    """The dynamics of one move; the episode continues with prob. `discount`."""
+    ended = np.zeros((4, 2, 4))
+    ended[:3, :, :3] = discount * dynamics  # continue
+    ended[:3, :, ENDED] = 1 - discount  # end
+    ended[ENDED, :, ENDED] = 1  # stay ended
+    return probability([now, move, later], ended)
+
+
+def one_move(policy, rewards=reward, discount=gamma):
+    """One move under a policy, as a factor on (s, s'): the action summed out."""
+    bucket = (probability([now, move], with_ended(policy, 0.5)) *
+              value([now, move], with_ended(rewards)) * step_factor(discount))
+    return bucket.sum(ordering(U(0)))
+
+
+def relabel(factor, old_keys, new_keys):
+    """The same factor on other variables."""
+    return SemiringDiscreteFactor.FromChannels(
+        DecisionTreeFactor(
+            new_keys, table(factor.probability(), old_keys).ravel().tolist()),
+        DecisionTreeFactor(
+            new_keys, table(factor.weightedValue(), old_keys).ravel().tolist()))
+
+
+def compose(moves, doublings):
+    """Compose a factor on (X(0), X(1)) with itself, `doublings` times.
+
+    Each doubling multiplies the factor with a copy of itself on the
+    following states and sums out the state in between, which doubles the
+    number of moves. Returns the factor and the key of its last state.
+    """
+    for i in range(1, doublings + 1):
+        middle, end = (X(i), 4), (X(i + 1), 4)
+        copy = relabel(moves, [now, middle], [middle, end])
+        moves = (moves * copy).sum(ordering(X(i)))  # now on (X(0), X(i + 1))
+    return moves, (X(doublings + 1), 4)
+
+
+def evaluate(policy, rewards=reward, discount=gamma):
+    """V of the endless chain under a policy: 1024 moves, by ten doublings."""
+    moves, end = compose(one_move(policy, rewards, discount), 10)
+    return table(moves.sum(ordering(end[0])).value(), [now])[:3]
+
+
+def action_values(V, rewards=reward, discount=gamma, baseline=None):
+    """Q(s, a) = r(s, a) + discount * E[V(s')] (minus a baseline on s, if any).
+
+    It is the value of the bucket of the action, without a policy factor.
+    """
+    bucket = value([now, move], with_ended(rewards)) * (
+        step_factor(discount) * value([later], with_ended(V))).sum(
+            ordering(X(1)))
+    if baseline is not None:
+        bucket = value([now], with_ended(-np.asarray(baseline))) * bucket
+    return table(bucket.value(), [now, move])[:3]
+
+
+def backup(V, policy, rewards=reward, discount=gamma):
+    """One elimination step by the average: the next state, then the action."""
+    bucket = (probability([now, move], with_ended(policy, 0.5)) *
+              value([now, move], with_ended(rewards)) *
+              (step_factor(discount) * value([later], with_ended(V))).sum(
+                  ordering(X(1))))
+    return table(bucket.sum(ordering(U(0))).value(), [now])[:3]
+
+
 # The exact backward message of Chapter 3, for comparison.
-P_pi = np.einsum("sa,sat->st", policy, dynamics)
-r_pi = (policy * reward).sum(axis=1)
-V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
-Q = reward + gamma * dynamics @ V
+V = evaluate(policy)
+Q = action_values(V)
 A = Q - V[:, None]
 print("exact V =", V)
 print("exact A =\n", A)
 assert np.allclose(V, [-0.2248, 1.1017, 4.1231], atol=1e-4)
+assert np.allclose(backup(V, policy), V)  # the fixed point of one step
 
 # %% [markdown]
 # ## TD(0): local consistency on samples (Section 2)
@@ -105,7 +225,8 @@ for cell in range(3):
 #
 # The $n$-step target uses $n$ sampled rewards and then the estimate. For an
 # imperfect estimate $\hat V = 0.5\, V$, its bias shrinks like $\gamma^n$ and
-# its spread grows with $n$. Start in cell 1.
+# its spread grows with $n$. Start in cell 1. The exact bias is the error of
+# the estimate carried back $n$ moves: $n$ elimination steps without rewards.
 
 # %%
 V_half = 0.5 * V  # a critic that is half right
@@ -134,7 +255,10 @@ print("exact V(1) =", V[1])
 for n in [1, 2, 5, 10, 60]:
     target = (rewards[:, :n] * discounts[:n]).sum(axis=1) + \
         gamma ** n * V_half[states[:, n]]
-    exact_bias = gamma ** n * (np.linalg.matrix_power(P_pi, n) @ error)[1]
+    carried = error
+    for _ in range(n):
+        carried = backup(carried, policy, rewards=np.zeros((3, 2)))
+    exact_bias = carried[1]
     print(f"n = {n:2d}: mean {target.mean():.3f}  bias {target.mean() - V[1]:+.3f}"
           f"  (exact bias {exact_bias:+.3f})  standard deviation {target.std():.3f}")
     if n == 1:
@@ -149,11 +273,21 @@ for n in [1, 2, 5, 10, 60]:
 # exactly, and the spread is measured on samples.
 
 # %%
+def expected_gae(lam, critic):
+    """The exact mean of the GAE estimate A_hat(s, a), for a given critic.
+
+    It is itself an elimination: the reward of a step is its expected TD
+    residual, and the chain continues with probability gamma * lambda.
+    """
+    residual = action_values(critic, baseline=critic)  # r + g E[V'] - V
+    V_lam = evaluate(policy, residual, discount=gamma * lam)
+    return action_values(V_lam, residual, discount=gamma * lam)
+
+
 def gap_bias(lam, cell):
     """Exact bias of A_hat(cell, R) - A_hat(cell, L) for the critic V_half."""
-    mix = np.eye(3) - lam * np.linalg.solve(
-        np.eye(3) - gamma * lam * P_pi, (np.eye(3) - gamma * P_pi))
-    return gamma * (dynamics[cell, R] - dynamics[cell, L]) @ mix @ error
+    estimate = expected_gae(lam, V_half)
+    return (estimate[cell, R] - estimate[cell, L]) - (A[cell, R] - A[cell, L])
 
 
 rng = np.random.default_rng(2)
@@ -175,6 +309,8 @@ for lam in [0.0, 0.5, 0.9, 0.95, 1.0]:
           f"standard deviation of A_hat(1, R) {estimate[R].std():.3f}")
     assert abs(sampled_gap - (A[1, R] - A[1, L]) - gap_bias(lam, 1)) < 0.15
 assert abs(gap_bias(1.0, 1)) < 1e-12
+assert np.isclose(gap_bias(0.0, 1), -1.565, atol=1e-3)
+assert np.isclose(gap_bias(0.9, 1), -0.305, atol=1e-3)
 assert gae_table[0.0][1] < gae_table[1.0][1]
 
 # %% [markdown]
@@ -209,8 +345,15 @@ assert np.allclose(V_trace, V, atol=0.1)
 
 # %%
 features = np.array([[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]])  # one row per cell
-# The coin flip visits the three cells equally often in the long run.
-stationary = np.linalg.matrix_power(P_pi, 200)[0]
+# The cell-to-cell table P_pi and the expected reward r_pi of the coin flip:
+# the two channels of the factor of one move, without the discount.
+undiscounted = one_move(policy, discount=1.0)
+P_pi = table(undiscounted.probability(), [now, later])[:3, :3]
+r_pi = table(undiscounted.sum(ordering(X(1))).value(), [now])[:3]
+# The coin flip visits the three cells equally often in the long run: the
+# probability channel of 256 undiscounted moves, from any start.
+many_moves, end = compose(undiscounted, 8)
+stationary = table(many_moves.probability(), [now, end])[0, :3]
 print("long-run visit frequencies:", stationary)
 D = np.diag(stationary)
 

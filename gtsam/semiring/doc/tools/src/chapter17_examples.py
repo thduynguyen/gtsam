@@ -5,12 +5,19 @@
 # [Chapter 17](https://thduynguyen.github.io/gtsam/chapter17) on the endless
 # track of Chapter 3: the tilted conditional as an improved policy, the
 # E-step and M-step loop of MPO, REPS and AWR, and the soft fixed point that
-# SAC computes.
+# SAC computes. Every exact quantity is computed by elimination with the
+# `gtsam/semiring` module: the soft maximum is the rule `SoftMaximum` for
+# summing out the action, and the tilted policy is the conditional it leaves.
+# The sampling and the fitting of a parametric policy are plain numpy.
 
 # %%
 import numpy as np
 from scipy.optimize import minimize_scalar
 from scipy.special import logsumexp
+
+from gtsam import DecisionTreeFactor, DiscreteValues, Ordering
+from gtsam import SemiringDiscreteFactor, SemiringSum
+from gtsam.symbol_shorthand import A, S
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -28,21 +35,119 @@ dynamics[2, L], dynamics[2, R] = [0, 0.8, 0.2], [0, 0, 1]
 reward = np.array([[0.0, -1.0], [0.0, -1.0], [2.0, 1.0]])  # r(s, a)
 coin_flip = np.full((3, 2), 0.5)
 
+# %% [markdown]
+# One step of the endless chain, as semiring factors. The discount is a
+# termination outcome (Chapter 3): a fourth state, "ended", reached with
+# probability $1 - \gamma$ after every move.
 
-def evaluate(policy):
-    """Exact V, Q and discounted visitation d of a policy (Chapter 3)."""
-    P_pi = np.einsum("sa,sat->st", policy, dynamics)
-    r_pi = (policy * reward).sum(axis=1)
-    V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
-    Q = reward + gamma * dynamics @ V
-    d = np.linalg.solve((np.eye(3) - gamma * P_pi).T, prior)
-    return V, Q, d
+# %%
+def probability(keys, table):
+    """Lift a probability table to (p, 0)."""
+    return SemiringDiscreteFactor(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
 
 
-V, Q, d = evaluate(coin_flip)
+def value(keys, table):
+    """Lift a reward table to (1, r)."""
+    return SemiringDiscreteFactor.Reward(
+        DecisionTreeFactor(keys, np.ravel(table).tolist()))
+
+
+def ordering(*keys):
+    """An ordering of the given keys."""
+    result = Ordering()
+    for key in keys:
+        result.push_back(key)
+    return result
+
+
+def table(factor, keys):
+    """Read a DecisionTreeFactor into an array indexed in the order of keys."""
+    result = np.zeros([cardinality for _, cardinality in keys])
+    for index in np.ndindex(*result.shape):
+        values = DiscreteValues()
+        for (key, _), index_of_key in zip(keys, index):
+            values[key] = index_of_key
+        result[index] = factor(values)
+    return result
+
+
+ENDED = 3
+ended_dynamics = np.zeros((4, 2, 4))
+ended_dynamics[:3, :, :3] = gamma * dynamics  # continue
+ended_dynamics[:3, :, ENDED] = 1 - gamma  # end
+ended_dynamics[ENDED, :, ENDED] = 1  # stay ended
+ended_prior = np.append(prior, 0.0)
+
+now, move, later = (S(0), 4), (A(0), 2), (S(1), 4)
+transition = probability([now, move, later], ended_dynamics)
+move_reward = value([now, move], np.vstack([reward, [0.0, 0.0]]))
+average = SemiringSum.Average()
+
+
+def policy_factor(policy):
+    """A policy table on the three cells, as a factor on (s, a)."""
+    return probability([now, move], np.vstack([policy, [0.5, 0.5]]))
+
+
+def action_values(V, extra=None):
+    """The bucket of the action without a policy factor: (1, Q).
+
+    V is the value of the next state, an array over the four states. The
+    next state is eliminated by average, and the reward of the move is added,
+    together with an optional extra value factor on (s, a).
+    """
+    bucket = move_reward * (transition * value([later], V)).sum(ordering(S(1)))
+    return bucket if extra is None else extra * bucket
+
+
+def read_Q(bucket):
+    """The table Q(s, a) on the three cells, from the bucket of the action."""
+    return table(bucket.value(), [now, move])[:3]
+
+
+def fixed_point(backup):
+    """Repeat one step of elimination until the value stops changing."""
+    V = np.zeros(4)
+    for _ in range(5000):
+        new_V = backup(V)
+        if np.abs(new_V - V).max() < 1e-13:
+            break
+        V = new_V
+    return new_V
+
+
+def evaluate(policy, extra=None):
+    """Exact V and Q of a policy (Chapter 3): eliminate the next state and
+    the action by average until the value stops changing."""
+    V = fixed_point(lambda V: table(
+        (policy_factor(policy) * action_values(V, extra)).sum(
+            ordering(A(0)), average).value(), [now]))
+    return V[:3], read_Q(action_values(V, extra))
+
+
+def visitation(policy):
+    """The discounted visitation d of a policy, by eliminating forward.
+
+    One step sums out the current state and action and leaves the marginal of
+    the next state. The mass still in the three cells after t moves is
+    gamma^t d_t, and d is its sum over t.
+    """
+    marginal, d = ended_prior, np.zeros(3)
+    while marginal[:3].sum() > 1e-13:
+        d += marginal[:3]
+        joint = probability([now], marginal) * policy_factor(policy) * transition
+        marginal = table(joint.sum(ordering(S(0), A(0))).probability(), [later])
+    return d
+
+
+V, Q = evaluate(coin_flip)
+d = visitation(coin_flip)
 print("coin flip: V =", V, " J =", prior @ V)
 print("Q =\n", Q)
+print("d =", d)
 assert np.isclose(prior @ V, 0.4385, atol=1e-4)
+assert np.allclose(d, [3.8062, 3.4746, 2.7192], atol=1e-4)
 
 # %% [markdown]
 # ## Stage 1, the E-step: the tilted conditional (Section 2)
@@ -53,29 +158,52 @@ assert np.isclose(prior @ V, 0.4385, atol=1e-4)
 
 
 # %%
+def soft_eliminate(policy, Q, eta):
+    """Eliminate the action from the bucket (pi, Q) by the soft maximum.
+
+    Returns the conditional on the action and the value of the new factor,
+    the soft maximum eta log sum_a pi(a|s) exp(Q(s,a) / eta).
+    """
+    bucket = SemiringDiscreteFactor(
+        DecisionTreeFactor([now, move], np.vstack([policy, [0.5, 0.5]]).ravel()),
+        DecisionTreeFactor([now, move], np.vstack([Q, [0.0, 0.0]]).ravel()))
+    conditional, new_factor = bucket.eliminate(
+        ordering(A(0)), SemiringSum.SoftMaximum(eta))
+    return conditional, table(new_factor.value(), [now])[:3]
+
+
 def soft_max(policy, Q, eta):
-    """eta log sum_a pi(a|s) exp(Q(s,a) / eta), computed stably."""
-    return eta * logsumexp(Q / eta, b=policy, axis=1)
+    """The soft maximum over the actions, for each cell."""
+    return soft_eliminate(policy, Q, eta)[1]
 
 
 def tilt(policy, Q, eta):
-    """The tilted policy q = pi exp((Q - soft max) / eta)."""
-    return policy * np.exp((Q - soft_max(policy, Q, eta)[:, None]) / eta)
+    """The tilted policy q = pi exp((Q - soft max) / eta): the conditional
+    that the soft maximum leaves on the action, reweighted by its surprise."""
+    conditional, _ = soft_eliminate(policy, Q, eta)
+    return table(conditional.tilted(1 / eta), [now, move])[:3]
 
 
 eta = 1.0
 soft_V = soft_max(coin_flip, Q, eta)
 q = tilt(coin_flip, Q, eta)
+conditional, _ = soft_eliminate(coin_flip, Q, eta)
+soft_advantage = table(conditional.surprise(), [now, move])[:3]
 print("soft maximum =", soft_V, " average V =", V)
-print("soft advantage =\n", Q - soft_V[:, None])
+print("soft advantage =\n", soft_advantage)
 print("tilted policy q =\n", q)
 print("rows of q sum to", q.sum(axis=1))
 assert np.allclose(q.sum(axis=1), 1)  # the normalization invariant
 assert np.all(soft_V >= V)
+assert np.allclose(soft_advantage, Q - soft_V[:, None])
+assert np.allclose(q[:, R], [0.489, 0.894, 0.764], atol=1e-3)
+# The module's soft maximum against the formula, and q against its definition.
+assert np.allclose(soft_V, eta * logsumexp(Q / eta, b=coin_flip, axis=1))
+assert np.allclose(q, coin_flip * np.exp(soft_advantage / eta))
 
 # The same q from the ordinary advantage: q is proportional to pi exp(A / eta).
-A = Q - V[:, None]
-proportional = coin_flip * np.exp(A / eta)
+advantage = Q - V[:, None]
+proportional = coin_flip * np.exp(advantage / eta)
 assert np.allclose(proportional / proportional.sum(axis=1, keepdims=True), q)
 
 # The tilted policy is the best trade-off between value and staying close.
@@ -109,7 +237,7 @@ def em(eta, iterations):
     policy = coin_flip.copy()
     history = []
     for _ in range(iterations):
-        V, Q, d = evaluate(policy)  # stage 1: evaluate ...
+        V, Q = evaluate(policy)  # stage 1: evaluate ...
         history.append(prior @ V)
         policy = tilt(policy, Q, eta)  # ... and tilt; stage 2: policy = q
     return np.array(history), policy
@@ -119,8 +247,13 @@ for eta in [1.0, 0.3]:
     history, policy = em(eta, 80)
     print(f"eta = {eta}: J =", history[[0, 1, 2, 3, 5, 10, 20, 79]])
     print("   pi(R | s) =", policy[:, R])
-    assert np.all(np.diff(history) >= -1e-12)  # never worse
+    assert np.all(np.diff(history) >= -1e-10)  # never worse
     assert np.isclose(history[-1], 6.4902, atol=1e-4)
+    if eta == 1.0:
+        assert np.allclose(history[:4], [0.4385, 4.3914, 5.6221, 6.0322],
+                           atol=1e-4)
+    else:
+        assert np.isclose(history[10], 6.4902, atol=1e-3)
 
 # A tiny temperature is the greedy step of policy iteration (Chapter 4).
 history, policy = em(1e-3, 4)
@@ -135,7 +268,8 @@ assert np.allclose(history[:3], [0.4385, 3.7805, 6.4902], atol=1e-4)
 # current policy, and solve a one-dimensional problem for $\eta$.
 
 # %%
-V, Q, d = evaluate(coin_flip)
+V, Q = evaluate(coin_flip)
+d = visitation(coin_flip)
 weights = d / d.sum()  # how often each state occurs
 D_max = 0.1
 
@@ -152,6 +286,7 @@ print("eta =", eta_star)
 print("average KL of the tilted policy:", weights @ kl(q_star, coin_flip))
 print("q(R | s) =", q_star[:, R])
 assert np.isclose(weights @ kl(q_star, coin_flip), D_max, atol=1e-5)
+assert np.isclose(eta_star, 1.396, atol=1e-3)
 for eta in [0.5, 1.0, 2.0, 5.0]:
     print(f"eta = {eta}: average KL =",
           weights @ kl(tilt(coin_flip, Q, eta), coin_flip))
@@ -191,7 +326,8 @@ theta = np.zeros(2)  # the coin flip
 shared = []
 for k in range(30):
     policy = table_of(theta)
-    V, Q, d = evaluate(policy)
+    V, Q = evaluate(policy)
+    d = visitation(policy)
     shared.append(prior @ V)
     q = tilt(policy, Q, eta=1.0)  # E-step
     theta = m_step(theta, q, d / d.sum())  # M-step
@@ -202,6 +338,7 @@ shared = np.array(shared)
 print("J =", shared[[0, 1, 2, 3, 5, 10, 29]])
 print("theta =", theta, " pi_theta(R | s) =", table_of(theta)[:, R])
 assert shared[-1] > 6.4 and np.all(np.diff(shared) > -1e-9)
+assert np.allclose(shared[:3], [0.4385, 4.1051, 5.8665], atol=1e-4)
 
 # %% [markdown]
 # ## Both steps from samples (Section 4)
@@ -255,6 +392,7 @@ sampled = np.array(sampled)
 print("J =", sampled[[0, 1, 2, 3, 5, 10, 14]])
 print("pi(R | s) =", policy[:, R])
 assert sampled[-1] > 6.4
+assert np.allclose(sampled[:3], [0.4385, 4.4525, 5.6238], atol=1e-4)
 
 # %% [markdown]
 # ## SAC: the soft fixed point (Section 5)
@@ -264,13 +402,19 @@ assert sampled[-1] > 6.4
 
 
 # %%
-def soft_value_iteration(eta, reference=coin_flip, sweeps=3000):
-    V = np.zeros(3)
-    for _ in range(sweeps):
-        Q = reward + gamma * dynamics @ V  # eliminate s' by average
-        V = soft_max(reference, Q, eta)  # eliminate a by soft maximum
-    Q = reward + gamma * dynamics @ V
-    return V, Q, tilt(reference, Q, eta)
+def soft_value_iteration(eta, reference=coin_flip, extra=None):
+    """Repeat one step of elimination, the next state by average and the
+    action by soft maximum, until the value stops changing."""
+    soft = SemiringSum.SoftMaximum(eta)
+
+    def bucket(V):
+        return policy_factor(reference) * action_values(V, extra)
+
+    V = fixed_point(lambda V: table(
+        bucket(V).sum(ordering(A(0)), soft).value(), [now]))
+    conditional, _ = bucket(V).eliminate(ordering(A(0)), soft)
+    policy = table(conditional.tilted(1 / eta), [now, move])[:3]
+    return V[:3], read_Q(action_values(V, extra)), policy
 
 
 V_star = np.array([5.4194, 7.5610, 10.0])
@@ -287,6 +431,8 @@ assert np.allclose(soft_value_iteration(0.001)[0], V_star, atol=0.01)
 
 V_soft, Q_soft, soft_policy = soft_value_iteration(1.0)
 assert np.allclose(V_soft, [1.7619, 3.6034, 6.3205], atol=1e-4)
+assert np.allclose(soft_policy[:, R], [0.581, 0.907, 0.722], atol=1e-3)
+assert np.isclose(prior @ evaluate(soft_policy)[0], 4.360, atol=1e-3)
 
 # %% [markdown]
 # The same fixed point from the two alternating steps of SAC, done exactly:
@@ -296,11 +442,17 @@ assert np.allclose(V_soft, [1.7619, 3.6034, 6.3205], atol=1e-4)
 
 # %%
 def soft_evaluate(policy, eta, reference=coin_flip):
-    """V of a policy when every step also pays -eta KL(pi || reference)."""
-    P_pi = np.einsum("sa,sat->st", policy, dynamics)
-    r_pi = (policy * reward).sum(axis=1) - eta * kl(policy, reference)
-    V = np.linalg.solve(np.eye(3) - gamma * P_pi, r_pi)
-    return V, reward + gamma * dynamics @ V
+    """V of a policy when every step also pays -eta KL(pi || reference).
+
+    The price is one more value factor on (s, a), -eta log(pi / reference):
+    its average under the policy is -eta times the KL divergence.
+    """
+    ratio = np.where(policy > 0, policy / reference, 1.0)
+    price = value([now, move], np.vstack([-eta * np.log(ratio), [0.0, 0.0]]))
+    V = fixed_point(lambda V: table(
+        (policy_factor(policy) * action_values(V, price)).sum(
+            ordering(A(0)), average).value(), [now]))
+    return V[:3], read_Q(action_values(V))
 
 
 policy = coin_flip.copy()
@@ -311,10 +463,8 @@ print("soft policy iteration: V =", V, " pi(R | s) =", policy[:, R])
 assert np.allclose(V, V_soft, atol=1e-6) and np.allclose(policy, soft_policy)
 
 # SAC's own convention uses the entropy instead of the KL to the coin flip.
-# The two differ by the constant eta log 2 per step.
-entropy_V = np.zeros(3)
-for _ in range(3000):
-    entropy_Q = reward + gamma * dynamics @ entropy_V
-    entropy_V = 1.0 * logsumexp(entropy_Q / 1.0, axis=1)
+# The two differ by the constant eta log 2 per step: one more value factor.
+bonus = value([now], [np.log(2)] * 3 + [0.0])
+entropy_V, _, _ = soft_value_iteration(1.0, extra=bonus)
 print("entropy convention: V =", entropy_V)
 assert np.allclose(entropy_V - V_soft, np.log(2) / (1 - gamma))

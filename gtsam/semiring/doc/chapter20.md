@@ -134,16 +134,25 @@ policy.
 | final reward | $x_2$ | the quadratic $-x_2^2$ |
 | agreement, at each step | $x_t, u_t$ | the quadratic $-\tfrac{\zeta}{2} \big(u_t + K_t x_t + \nu_t / \zeta\big)^2$ |
 
-Every factor is a linear constraint or a quadratic. Maximizing their sum is a
-linear least-squares problem, which is to say a `GaussianFactorGraph` in
-GTSAM, solved by elimination. This is the max-sum elimination of
-[Chapter 2](chapter02.md) in its Gaussian form, the one a SLAM optimizer
-performs.
+Every factor is a linear constraint or a quadratic, so the local problem is
+a semiring factor graph of the Gaussian family: the constraints are its
+probability factors and the quadratics its value factors. There is no policy
+factor.
 
-**The sum over the actions** is a maximum. The states are maximized over as
-well, which in general is optimistic (Chapter 4, Section 2). Here it is
-harmless: the local trajectory is the mean trajectory, its dynamics are a
-hard constraint, and there is no luck to be optimistic about.
+**The sum over the actions** is a maximum, and the states are averaged,
+backward in time, as in [Chapter 6](chapter06.md). The backward pass leaves a
+conditional on each action, a control law that is linear in the state, and
+the forward pass, the back-substitution of the conditionals from the start,
+gives the local trajectory.
+
+Because the dynamics are a hard constraint, the average over a state has a
+single outcome, and maximizing over the states as well would give the same
+trajectory. The local problem is then also a linear least-squares problem, a
+plain `GaussianFactorGraph`: the max-sum elimination of
+[Chapter 2](chapter02.md) in its Gaussian form, the one a SLAM optimizer
+performs. In general that is optimistic (Chapter 4, Section 2). Here it is
+harmless: there is no luck to be optimistic about. The notebook checks that
+the two computations agree.
 
 **Without the agreement factors**, each local problem returns the best
 trajectory from its start:
@@ -351,28 +360,47 @@ return, because the loss is quadratic in the error.
 
 ## 6. Implementation
 
-The local step is a Gaussian factor graph, in plain GTSAM. The noise model
-`penalty` gives a factor the error $z^2$, and `hard` is a constraint:
+The local step is a semiring factor graph. `constraint` lifts a Gaussian
+factor to $(p, 0)$ and `cost` lifts a quadratic, given as a `JacobianFactor`,
+to the reward $(1, -\text{error})$. The noise model `penalty` gives a factor
+the error $z^2$, and `hard` is a constraint:
 
 ```python
 hard = noiseModel.Constrained.All(1)
 penalty = noiseModel.Isotropic.Sigma(1, 1 / np.sqrt(2))   # error z^2
 
-def local_step(start, gains, duals, weight, F=1.0, B=1.0):
-    graph = GaussianFactorGraph()
-    graph.add(JacobianFactor(X(0), I, np.array([start]), hard))
+def local_graph(start, gains, duals, weight, F=1.0, B=1.0):
+    graph = SemiringFactorGraph()
+    graph.push_back(constraint(X(0), I, np.array([start]), hard))
     for t in range(MOVES):
         # Dynamics of the mean trajectory: x' - F x - B u = 0.
-        graph.add(JacobianFactor(X(t + 1), I, X(t), -F * I, U(t), -B * I,
-                                 zero, hard))
-        graph.add(JacobianFactor(X(t), I, zero, penalty))   # reward -x^2
-        graph.add(JacobianFactor(U(t), I, zero, penalty))   # reward -u^2
+        graph.push_back(constraint(X(t + 1), I, X(t), -F * I, U(t), -B * I,
+                                   zero, hard))
+        graph.push_back(cost(X(t), I, zero, penalty))        # reward -x^2
+        graph.push_back(cost(U(t), I, zero, penalty))        # reward -u^2
         # Agreement: (weight / 2) (u + K x + nu / weight)^2.
-        graph.add(JacobianFactor(
+        graph.push_back(cost(
             U(t), I, X(t), gains[t] * I, np.array([-duals[t] / weight]),
             noiseModel.Isotropic.Sigma(1, 1 / np.sqrt(weight))))
-    graph.add(JacobianFactor(X(MOVES), I, zero, penalty))   # reward -x_2^2
-    solution = graph.optimize()
+    graph.push_back(cost(X(MOVES), I, zero, penalty))        # reward -x_2^2
+    return graph
+```
+
+The backward pass eliminates the actions by maximum and the states by
+average. The forward pass collects the Gaussian conditionals and
+back-substitutes:
+
+```python
+MAXIMUM_AT_ACTIONS = SemiringRules()
+MAXIMUM_AT_ACTIONS.setAll([U(0), U(1)], SemiringSum.Maximum())
+
+def local_step(start, gains, duals, weight, F=1.0, B=1.0):
+    graph = local_graph(start, gains, duals, weight, F, B)
+    bayes_net = graph.eliminateSequential(BACKWARD, MAXIMUM_AT_ACTIONS)
+    conditionals = GaussianBayesNet()
+    for i in range(bayes_net.size()):
+        conditionals.push_back(bayes_net.at(i).conditional())
+    solution = conditionals.optimize()          # the local trajectory
     ...
 ```
 
@@ -395,6 +423,12 @@ for k in range(iterations):
     # Dual step: raise the price of the remaining disagreement.
     duals = duals + weight * (actions + gains * positions)
 ```
+
+The exact returns of Section 4 are eliminations too. The cost of a policy on
+the noise-free local problems is the expectation of `local_graph` with the
+policy added as a hard-constraint factor, and its return on the real, noisy
+line is the expectation of the graph of Chapter 1 with the same policy
+factor.
 
 ## 7. What breaks
 

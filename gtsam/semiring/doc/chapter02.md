@@ -38,9 +38,10 @@ $$\psi(x, S) = \bigotimes_i f_i \;\;\text{(multiply)}, \qquad
 \phi(S) = \bigoplus_x \psi(x, S) \;\;\text{(add over } x\text{)}, \qquad
 c(x \mid S) = \psi \oslash \phi \;\;\text{(divide)}.$$
 
-The notebook implements the first two steps in about thirty lines of numpy and
-runs them, unchanged, on the track example of Chapter 1 (three cells, two
-moves, a coin-flip policy) with five semirings.
+The module implements these steps with the rule for the sum as an argument.
+The notebook builds the track example of Chapter 1 (three cells, two moves, a
+coin-flip policy) as one `SemiringFactorGraph` and eliminates it five times,
+in the same order, each time with a different rule.
 
 Each semiring answers a question about the trajectories $\tau$ of the graph.
 Recall from Chapter 1 that $p(\tau)$ is the probability of a trajectory and
@@ -1145,16 +1146,51 @@ Section 8. This is exactly how `SemiringGaussianFactor` is stored: a
 
 ## 7. In the module
 
-- The module implements the **expectation** semiring, in two representations:
-  $(p, w)$ tables for the discrete family and $(\ell, v)$ quadratics for the
-  Gaussian family.
-- The other members of the family are run in the
-  [companion notebook](chapter02_examples.ipynb) by a generic elimination
-  routine in numpy. The routine takes a semiring as an argument: four small
-  functions that lift a probability, lift a reward, multiply, and add.
-- A maximum over action variables only, with an average over the states, is
-  not a single semiring. It is done by hand with the factor interface in
-  [Chapter 4](chapter04.md).
+All members that carry a value share one product, so the module has one
+factor type per representation and takes the **rule for the sum** as an
+argument of elimination.
+
+| Rule | In the module | Sums out a variable by |
+|---|---|---|
+| expectation | `SemiringSum.Average()`, the default | the average of the values |
+| max-sum | `SemiringSum.Maximum()` | the largest value among the possible outcomes |
+| tilted | `SemiringSum.Tilted(kappa)` | the tilted mean |
+| soft maximum | `SemiringSum.SoftMaximum(eta)` | the same, with $\kappa = 1 / \eta$ |
+| sum-product | the probability channel of any of the above | the sum of the probabilities |
+
+A `SemiringRules` object assigns a rule to each variable. Variables without a
+rule are averaged. The track with a tilt of $0.5$ at every variable:
+
+```python
+rules = SemiringRules()
+rules.setAll([S(2), A(1), S(1), A(0), S(0)], SemiringSum.Tilted(0.5))
+graph.expectation(ordering, rules)                 # 5.43
+bayesNet = graph.eliminateSequential(ordering, rules)
+```
+
+One step can also be done by hand, as in the step-by-step note of Section 2:
+
+```python
+conditional, newFactor = bucket.eliminate(ordering, SemiringSum.Maximum())
+conditional.surprise()     # the regret of each choice
+conditional.greedy()       # the choice kept, as a policy
+conditional.tilted(1.0)    # the conditional reweighted by exp(surprise)
+```
+
+Three things to know.
+
+- **Two representations.** The discrete family stores $(p, w)$ tables and the
+  Gaussian family stores $(\ell, v)$ quadratics. Both support all the rules.
+  For Gaussian factors the maximum applies to a variable without a density,
+  and the tilted mean to a variable with one ([Appendix A](appendix_a.md)).
+- **Different rules for different variables.** The cases that matter in
+  control give the states one rule and the actions another. That is no longer
+  a single semiring, and the elimination order must then be given explicitly
+  ([Chapter 4](chapter04.md)).
+- **Joint optimization needs no new code.** It is what GTSAM already does:
+  `DiscreteFactorGraph.optimize()` for tables, and nonlinear least squares for
+  continuous variables. The notebook uses the former to compute the score
+  $7.08$ of Section 2.
 
 ## 8. Where each member is used
 

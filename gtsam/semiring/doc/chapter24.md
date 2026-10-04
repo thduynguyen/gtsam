@@ -340,40 +340,85 @@ what that costs in the one case where the right answer is known.
 
 ## 7. Implementation
 
-A belief is a tuple of four counts, and the exact solution is a recursion
-with a cache, from the notebook:
+The notebook computes every exact number of this chapter with the
+`gtsam/semiring` module, as an elimination with the maximum at the arms and
+the average at the outcomes.
+
+**The parameters, in closed form.** $\theta_p$ is continuous with a Beta
+density, which is neither a table nor a Gaussian, so the module cannot hold
+it. Its elimination is the one step done by formula. It leaves one factor
+over all arms and outcomes, a table with $4^T$ entries. For $T = 5$ the module
+eliminates the rest of that graph, each outcome by average and then its arm
+by maximum, from the last attempt to the first, and finds $3.087$.
+
+**The graph over beliefs.** A variable $\nu_t$ is added for each attempt. It
+takes one value for each set of counts that $t$ attempts can lead to. Each
+attempt has an outcome factor, a reward factor, and a factor that is 1 when
+$\nu_{t+1}$ is $\nu_t$ with the right count increased and 0 otherwise:
 
 ```python
-def mean(belief, arm):
-    """Probability that the next pull of an arm succeeds, given the belief."""
-    successes, failures = belief[2 * arm], belief[2 * arm + 1]
-    return successes / (successes + failures)
+def pull_factors(start, pulls, t, policy=None):
+    """Keys and factors of pull t: outcome, reward and, if given, policy."""
+    beliefs = beliefs_after(start, t)
+    keys = ([(B(t), len(beliefs))] if t > 0 else []) + [pull(t), outcome(t)]
+    success = [[mean(belief, pulled) for pulled in (U, K)]
+               for belief in beliefs]
+    success = np.array(success)
+    factors = [probability(keys, np.stack([1 - success, success], axis=2)),
+               value([outcome(t)], [0, 1])]
+    if policy is not None:
+        factors.append(probability(
+            keys[:-1], [policy(belief, pulls - t) for belief in beliefs]))
+    return keys, factors
 
-def pull(belief, pulls_left, arm, value):
-    """Value of pulling an arm now, then continuing with `value`."""
-    p = mean(belief, arm)                    # average over the outcome
-    return (p * (1 + value(after(belief, arm, True), pulls_left - 1)) +
-            (1 - p) * value(after(belief, arm, False), pulls_left - 1))
+def bandit(start, pulls, policy=None):
+    """The factor graph over beliefs, with or without policy factors."""
+    graph = SemiringFactorGraph()
+    for t in range(pulls):
+        keys, factors = pull_factors(start, pulls, t, policy)
+        for factor in factors:
+            graph.push_back(factor)
+        if t + 1 < pulls:  # which belief comes next
+            count = len(beliefs_after(start, t + 1))
+            graph.push_back(probability(keys + [(B(t + 1), count)],
+                                        np.eye(count)[successors(start, t)]))
+    return graph
+```
 
-@lru_cache(maxsize=None)
-def best(belief, pulls_left):
+The best policy is one elimination, backward in time, with the maximum as
+the rule of every arm:
+
+```python
+at_pulls = SemiringRules()
+at_pulls.setAll([A(t) for t in range(20)], SemiringSum.Maximum())
+
+def belief_order(pulls):
+    """Backward in time: the outcome, then the pull, then the belief before."""
+    return [key for t in reversed(range(pulls))
+            for key in (Y(t), A(t), B(t))][:-1]  # there is no B(0)
+
+def best(start, pulls):
     """Expected number of successes of the best policy."""
-    if pulls_left == 0:
-        return 0.0
-    return max(pull(belief, pulls_left, arm, best) for arm in (U, K))
+    return bandit(start, pulls).expectation(
+        ordering(*belief_order(pulls)), at_pulls)
 ```
 
-Evaluating a heuristic replaces the `max` by an average under its policy:
+Stopping this elimination before the first arm leaves a factor on $a_0$ that
+holds $Q^{(T)}(\nu, U)$ and $Q^{(T)}(\nu, K)$, the table of Section 2. A
+heuristic is evaluated on the same graph with its policy factors
+$\pi(a_t \mid \nu_t)$ added, and no rules: every variable is eliminated by
+average.
 
-```python
-def value(belief, pulls_left):
-    probabilities = policy(belief, pulls_left)       # pi(arm | belief)
-    return sum(probabilities[arm] * pull(belief, pulls_left, arm, value)
-               for arm in (U, K))
-```
+**Twenty attempts.** The factor that says which belief comes next is stored
+as a full table, and for the last of 20 attempts it would have 11 million
+entries. So for 20 attempts the notebook eliminates one attempt at a time. The
+module eliminates the outcome and the arm, and the elimination of
+$\nu_{t+1}$, which reads the value factor at the one belief that can follow,
+is an array lookup. For 5 and 10 attempts both ways give the same numbers.
 
-The cache is what turns the tree of histories into the much smaller graph
-of beliefs: two histories with the same counts share one entry.
+The graph over beliefs is what turns the tree of histories into a much
+smaller graph: two histories with the same counts share one value of
+$\nu_t$.
 
 ## 8. What breaks, and what still maps
 
