@@ -200,6 +200,33 @@ assert np.allclose(correct.max(axis=1), [0, 7, 9])
 assert list(correct.argmax(axis=1)) == [L, R, R]
 
 # %% [markdown]
+# The best trajectory has probability 0.08, and a robot that plays the actions
+# max-sum keeps does poorly on average. (At the first move, cell 1 is a tie
+# between Left and Right for max-sum; Right is the move of the trajectory
+# described in the chapter.)
+
+
+# %%
+def expected_return(first_move, last_move):
+    """Expected return of deterministic moves, one per cell and per move."""
+    cells = np.arange(3)
+    V1 = (reward + dynamics @ final)[cells, last_move]
+    return prior @ (reward + dynamics @ V1)[cells, first_move]
+
+
+kept = bucket_a1.argmax(axis=1)  # Left, Right, Left
+print("probability of the best trajectory:",
+      prior[1] * dynamics[1, R, 2] * dynamics[2, L, 2])
+print("expected return of max-sum's actions:",
+      expected_return(np.array([R, R, R]), kept))
+print("expected return of the best policy:  ",
+      expected_return(np.array([R, R, R]), np.array([L, R, R])))
+assert np.isclose(prior[1] * dynamics[1, R, 2] * dynamics[2, L, 2], 0.08)
+assert np.isclose(expected_return(np.array([R, R, R]), kept), 3.3)
+assert np.isclose(
+    expected_return(np.array([R, R, R]), np.array([L, R, R])), 6.1)
+
+# %% [markdown]
 # ## The tilted family (Section 3)
 #
 # The tilted mean $\frac{1}{\kappa} \log \mathbb{E}[e^{\kappa R}]$ moves from
@@ -237,6 +264,11 @@ coin_p, coin_v = np.array([0.5, 0.5]), np.array([0.0, 10.0])
 for kappa in [-5, -0.5, -0.01, 0.01, 0.5, 5]:
     tilted = np.log(coin_p @ np.exp(kappa * coin_v)) / kappa
     print(f"kappa = {kappa:5.2f}   tilted mean = {tilted:.3f}")
+# The three steps for kappa = 0.5: stretch, average, undo the stretch.
+stretched = np.exp(0.5 * coin_v)
+print("stretched:", stretched, " average:", coin_p @ stretched)
+assert np.allclose(stretched, [1, 148.4], atol=0.05)
+assert np.isclose(coin_p @ stretched, 74.7, atol=0.05)
 assert np.isclose(np.log(coin_p @ np.exp(0.5 * coin_v)) / 0.5, 8.627, atol=1e-3)
 assert np.isclose(np.log(coin_p @ np.exp(-0.5 * coin_v)) / -0.5, 1.373, atol=1e-3)
 
@@ -316,6 +348,11 @@ print("best trajectory (s0, a0, s1, a1, s2):", trajectory,
       " return", ret, " probability", round(p, 3))
 assert np.isclose(best_possible, 9.0)
 assert np.isclose(joint, score) and np.isclose(joint, 8 + np.log(0.4))
+
+# The trajectory that max-sum prefers scores less once its slip is charged.
+slip_score = 9 + np.log(prior[1] * dynamics[1, R, 2] * dynamics[2, L, 2])
+print("score of the trajectory with the slip:", round(slip_score, 2))
+assert np.isclose(slip_score, 6.47, atol=0.005) and slip_score < joint
 
 # %% [markdown]
 # On the line of Chapter 1 (linear dynamics with noise of variance 0.5,

@@ -145,9 +145,9 @@ can occur?
 
 $$\max_{\tau \,:\, p(\tau) > 0} R(\tau)$$
 
-Merge two outcomes by keeping the *better* one, where the expectation
-semiring took their average. The probability can then be dropped, for the
-following reason.
+This family merges two outcomes by keeping the *better* one, while the
+expectation semiring took their average. The probability can then be dropped,
+for the following reason.
 
 **Why the probability disappears.** Start from the pair $(p, v)$ of the
 expectation semiring and change only the value of the sum, from the average to
@@ -160,9 +160,11 @@ $$(p_1, v_1) \otimes (p_2, v_2) = (p_1 p_2,\;\; v_1 + v_2),
 Look at what the value needs from the probability. In the expectation
 semiring the probabilities were the *weights* of the average, so the value
 could not be computed without them. Here neither rule for the value uses
-them: values add, and the larger one is kept. Only one fact about the
-probability still matters: an outcome with $p = 0$ cannot occur, and it must
-not win the maximum.
+them: values add when two factors are multiplied into a joint, and the larger
+one is kept when a variable is marginalized. No probability is involved at
+all during the process, so keeping $p$ in every entry is useless, with one
+exception. One fact about the probability still matters: an outcome with
+$p = 0$ cannot occur, and it must not win the maximum.
 
 That one fact can be stored in the value itself. Give an impossible outcome
 the value $-\infty$: it never wins a maximum, and it stays $-\infty$ whatever
@@ -191,81 +193,113 @@ That trajectory starts in cell 1, moves Right into cell 2, and then moves
 *Left* and slips, which keeps the robot at the charger without paying for a
 move: $R = -1 + 0 + 10 = 9$.
 
-This is **NOT** something the robot can achieve. The maximum was taken over
-every variable, the states as well as the actions, as if the robot could
-choose its start and choose to slip. An agent chooses only its actions.
-[Chapter 4](chapter04.md) takes the maximum over the actions alone, and gets
-$6.1$.
+This trajectory can occur, but the robot **CANNOT** make it occur. It chooses
+only its two moves. The start cell, the success of the first move and the slip
+of the second are decided by chance, and all three go its way with probability
 
-#### Two steps of max-sum elimination, on the track
+$$0.5 \cdot 0.8 \cdot 0.2 = 0.08.$$
+
+The maximum was taken over every variable, the states as well as the actions,
+as if the robot could choose its start and choose to slip. So $9$ is the best
+that *can* happen, not what the robot gets. A robot that plays the actions
+max-sum keeps (Right at the first move; at the last move Left in cells 0 and
+2 and Right in cell 1, as the step-by-step note below shows) collects $3.3$ on
+average. [Chapter 4](chapter04.md) takes the maximum over the actions alone
+and the average over the states, and gets $6.1$.
+
+:::{dropdown} Step by step: two eliminations of max-sum on the track
 
 The first two eliminations of the track show how the number $9$ comes about.
 They are the last move: eliminate the last state $s_2$, then the last action
 $a_1$. In the figures every square is a value. A black square is a lifted
-probability, $0$ or $-\infty$.
+probability: $0$ for a transition that is possible, and $-\infty$ for a next
+state that cannot be reached.
 
 **Starting point.**
 
 ![The last move of the track, before elimination](figures/MaxSumStart.svg)
 
-Three factors are involved. The reward of the move is $r(s_1, a_1)$: $0$ for
-Left and $-1$ for Right. The final reward is $r(s_2) = (0, 0, 10)$ for cells
-0, 1 and 2. The dynamics table of Chapter 1 is lifted to "possible or not",
-below. The coin-flip policy is left out of the figures: both actions are
-possible in every cell, so its lifted table is $0$ everywhere and adds nothing.
+Three factors are involved, each lifted to a value:
 
-| $s_1$ | $a_1$ | $s_2 = 0$ | $s_2 = 1$ | $s_2 = 2$ | in words |
-|---|---|---|---|---|---|
-| 0 | L | $0$ | $-\infty$ | $-\infty$ | the robot stays in cell 0 |
-| 0 | R | $0$ | $0$ | $-\infty$ | it stays, or reaches cell 1 |
-| 1 | L | $0$ | $0$ | $-\infty$ | it reaches cell 0, or stays |
-| 1 | R | $-\infty$ | $0$ | $0$ | it stays, or reaches cell 2 |
-| 2 | L | $-\infty$ | $0$ | $0$ | it reaches cell 1, or stays |
-| 2 | R | $-\infty$ | $-\infty$ | $0$ | it stays in cell 2 |
+$$\begin{aligned}
+\text{dynamics:} \quad & 0 \;\text{ if } p(s_2 \mid s_1, a_1) > 0, \quad -\infty \;\text{ otherwise} \\
+\text{reward of the move:} \quad & r(s_1, a_1) \\
+\text{final reward:} \quad & r(s_2)
+\end{aligned}$$
 
-The probabilities $0.8$ and $0.2$ are gone. A move that succeeds four times
-out of five and a slip that happens one time out of five are both just
-"possible".
+The probabilities $0.8$ and $0.2$ of the dynamics are gone. A move that
+succeeds four times out of five and a slip that happens one time out of five
+are both just "possible". The coin-flip policy is left out: both actions are
+possible in every cell, so its lifted factor is $0$ everywhere and adds
+nothing.
 
 **Step 1: eliminate the last state.** The bucket of $s_2$ holds the lifted
 dynamics and the final reward.
 
-- *Multiply.* In max-sum the product is a sum: add $r(s_2)$ to every entry of
-  the table above. A possible outcome gets the final reward of its cell, and
-  an impossible one stays at $-\infty$.
-- *Add over $s_2$.* In max-sum the sum is a maximum: keep the largest entry of
-  each row. That is the new factor $\phi(s_1, a_1)$, the best final reward
-  among the cells the move can reach.
+*Multiply.* In max-sum the product is a sum, so the two values are added. A
+possible outcome gets the final reward of its cell, and an impossible one
+stays at $-\infty$:
 
-| $s_1$ | $a_1$ | $s_2 = 0$ | $s_2 = 1$ | $s_2 = 2$ | $\phi(s_1, a_1)$: the maximum | for comparison, the average of Chapter 1 |
-|---|---|---|---|---|---|---|
-| 0 | L | $0$ | $-\infty$ | $-\infty$ | $0$ | $0$ |
-| 0 | R | $0$ | $0$ | $-\infty$ | $0$ | $0$ |
-| 1 | L | $0$ | $0$ | $-\infty$ | $0$ | $0$ |
-| 1 | R | $-\infty$ | $0$ | $10$ | $10$ | $8$ |
-| 2 | L | $-\infty$ | $0$ | $10$ | $10$ | $2$ |
-| 2 | R | $-\infty$ | $-\infty$ | $10$ | $10$ | $10$ |
+$$\psi(s_2, s_1, a_1) = \begin{cases}
+r(s_2) & \text{if } p(s_2 \mid s_1, a_1) > 0 \\
+-\infty & \text{otherwise.}
+\end{cases}$$
 
-The last two columns differ in two rows. Moving Right from cell 1 reaches the
-charger four times out of five, and the average says $0.8 \cdot 10 = 8$; the
-maximum says $10$, as if the move always succeeded. Moving Left from cell 2
-leaves the charger four times out of five, and the average says
-$0.2 \cdot 10 = 2$; the maximum says $10$, as if the robot always slipped and
-stayed.
+*Add over $s_2$.* In max-sum the sum is a maximum. The new factor is the best
+final reward among the cells that the move can reach:
+
+$$\phi(s_1, a_1) = \max_{s_2} \psi(s_2, s_1, a_1)
+= \max_{s_2 \,:\, p(s_2 \mid s_1, a_1) > 0} r(s_2).$$
+
+Compare with the same step in the expectation semiring of Chapter 1, which
+gives the *average* final reward:
+
+$$\sum_{s_2} p(s_2 \mid s_1, a_1)\, r(s_2).$$
+
+*Divide.* In max-sum the division is a subtraction. The conditional says, for
+each outcome, how far it falls short of the best one:
+
+$$c(s_2 \mid s_1, a_1) = \psi(s_2, s_1, a_1) - \phi(s_1, a_1).$$
+
+It is $0$ for the outcome that was assumed, and negative or $-\infty$ for the
+others.
+
+*On the track,* with $r(s_2) = 10$ in cell 2 and $0$ elsewhere:
+
+| $s_1$ | $\phi(s_1, L)$ | $\phi(s_1, R)$ | average, Left | average, Right |
+|---|---|---|---|---|
+| 0 | $0$ | $0$ | $0$ | $0$ |
+| 1 | $0$ | $10$ | $0$ | $8$ |
+| 2 | $10$ | $10$ | $2$ | $10$ |
+
+The maximum and the average differ in two entries. Moving Right from cell 1
+reaches the charger four times out of five: the average is
+$0.8 \cdot 10 = 8$, and the maximum is $10$, as if the move always succeeded.
+Moving Left from cell 2 leaves the charger four times out of five: the average
+is $0.2 \cdot 10 = 2$, and the maximum is $10$, as if the robot always slipped
+and stayed.
 
 ![After eliminating the last state by maximum](figures/MaxSumNextState.svg)
-
-The conditional that is left on $s_2$ records which outcome was assumed: for
-each $s_1$ and $a_1$, the cell that attains the maximum.
 
 **Step 2: eliminate the last action.** The bucket of $a_1$ holds the reward of
 the move and the new factor $\phi(s_1, a_1)$.
 
-- *Multiply.* Add them: $r(s_1, a_1) + \phi(s_1, a_1)$.
-- *Add over $a_1$.* Keep the larger of the two actions. That is the new
-  factor $\phi(s_1)$.
+*Multiply.* Add the two values:
 
-| $s_1$ | Left: $r + \phi$ | Right: $r + \phi$ | $\phi(s_1)$: the maximum | the action kept | for comparison, Chapter 4 |
+$$\psi(a_1, s_1) = r(s_1, a_1) + \phi(s_1, a_1).$$
+
+*Add over $a_1$.* Keep the better action:
+
+$$\phi(s_1) = \max_{a_1} \psi(a_1, s_1)
+= \max_{a_1} \big[r(s_1, a_1) + \phi(s_1, a_1)\big].$$
+
+*Divide.* The conditional is the regret of each action:
+
+$$c(a_1 \mid s_1) = \psi(a_1, s_1) - \phi(s_1).$$
+
+*On the track,* with $r(s_1, L) = 0$ and $r(s_1, R) = -1$:
+
+| $s_1$ | $\psi(L, s_1)$ | $\psi(R, s_1)$ | $\phi(s_1)$ | the action kept | for comparison, Chapter 4 |
 |---|---|---|---|---|---|
 | 0 | $0 + 0 = 0$ | $-1 + 0 = -1$ | $0$ | Left | $0$, Left |
 | 1 | $0 + 0 = 0$ | $-1 + 10 = 9$ | $9$ | Right | $7$, Right |
@@ -273,25 +307,189 @@ the move and the new factor $\phi(s_1, a_1)$.
 
 ![After eliminating the last action by maximum](figures/MaxSumAction.svg)
 
-The conditional that is left on $a_1$ holds the action kept in each cell, and
-its value is the regret of the other action: $-1$ in cells 0 and 2, and $-9$
-in cell 1.
+**The two steps together.** Substituting Step 1 into Step 2, max-sum has
+computed, for the last move,
 
-The last column is the correct treatment of a decision, from
-[Chapter 4](chapter04.md): the average over $s_2$ in Step 1, and the maximum
-over $a_1$ in Step 2. Max-sum agrees with it in cell 0 and is too high in
-cells 1 and 2. In cell 2 it even keeps the wrong action: it moves Left, away
-from the charger, because Left is free and it assumes the slip that keeps the
-robot in place.
+$$\phi(s_1) = \max_{a_1}\; \max_{s_2 \,:\, p(s_2 \mid s_1, a_1) > 0}\;
+\big[r(s_1, a_1) + r(s_2)\big].$$
+
+The correct treatment of a decision, from [Chapter 4](chapter04.md), averages
+over the last state and takes the maximum only over the action:
+
+$$V^*_1(s_1) = \max_{a_1}\; \sum_{s_2} p(s_2 \mid s_1, a_1)\;
+\big[r(s_1, a_1) + r(s_2)\big].$$
+
+That is the last column of the table. Max-sum agrees with it in cell 0 and is
+too high in cells 1 and 2. In cell 2 it even keeps the wrong action: it moves
+Left, away from the charger, because Left is free and it assumes the slip that
+keeps the robot in place.
 
 **The remaining steps** repeat the same two operations one move earlier, and
 then take the best start cell. They leave $9$ at the root: start in cell 1,
 move Right and reach cell 2, which Step 2 values at $10$, for $-1 + 10 = 9$.
+:::
 
-GTSAM users know this semiring well, with a different lifting: optimizing all
-the variables of a graph jointly is max-sum elimination. The last subsection
-of this section places trajectory optimization, as it is done with GTSAM, in
-the family, with what that choice gets right and wrong.
+**What max-sum is for.** On the track the robot cannot count on $9$ only
+because its start and its slips are decided by chance. When the problem is
+deterministic, or when the maximum is applied only to what the agent chooses,
+max-sum is exactly the right rule. It is used in five cases.
+
+- **Deterministic planning.** If every action leads to one next state,
+  $s' = f(s, a)$, the maximum over the possible next states has a single
+  candidate, and so has the average. The two are equal,
+
+  $$\max_{s' \,:\, p(s' \mid s, a) > 0} V(s') = V\big(f(s, a)\big) = \sum_{s'} p(s' \mid s, a)\, V(s'),$$
+
+  and max-sum is exact optimal control. Shortest paths, motion planning and
+  trajectory optimization for a deterministic robot model are all max-sum.
+- **Estimation.** With a probability lifted to its logarithm, max-sum finds
+  the most probable assignment of all variables,
+
+  $$\max_\tau \sum_i \log f_i(\tau).$$
+
+  No agent chooses anything there, so maximizing over every variable is the
+  question itself. This is Viterbi decoding, and it is every nonlinear
+  least-squares solve in SLAM.
+- **The maximum over the actions.** Optimal control borrows one piece of this
+  semiring, its sum. It keeps the pair $(p, v)$ and the average at the states,
+  and takes the maximum of the value at the action variables only,
+
+  $$V^*(s) = \max_a \Big[r(s, a) + \sum_{s'} p(s' \mid s, a)\, V^*(s')\Big].$$
+
+  Dynamic programming and value iteration ([Chapter 4](chapter04.md)) and
+  Q-learning ([Chapter 15](chapter15.md)) are built on this. Note that they
+  are **NOT** the max-sum semiring as a whole: two different sums are in use,
+  which is no longer a single semiring, and the order of elimination then
+  matters (Section 3).
+- **An optimistic bound.** An average never exceeds the largest thing being
+  averaged, so max-sum bounds the expected return of every policy, the best
+  one included:
+
+  $$J(\pi) \;\le\; J^* \;\le\; \max_{\tau \,:\, p(\tau) > 0} R(\tau),
+  \qquad\text{on the track}\quad 1.4 \le 6.1 \le 9.$$
+
+  The bound is cheap, and useful to guide a search or to rule a problem out:
+  if even the luckiest outcome is poor, no policy will do better.
+- **Planning and replanning.** Plan as if the noise will cooperate, apply the
+  first action, and plan again from where the robot really is. When the noise
+  is small compared to what the rewards care about, this is a good
+  approximation ([Chapter 9](chapter09.md)).
+
+What does **NOT** work is to take max-sum over all variables as the answer to
+a stochastic decision problem, one in which the outcome of an action is
+random. That is the case of the track.
+
+GTSAM users know the first two uses well: optimizing all the variables of a
+graph jointly is max-sum elimination, with the logarithmic lifting. The note
+below places trajectory optimization, as it is done with GTSAM, in the family,
+with what that choice gets right and wrong.
+
+::::{dropdown} Where trajectory optimization with GTSAM sits in the family
+A common way to plan with factor graphs is to put the dynamics factors and the
+cost factors of a problem in one graph and to optimize all states and actions
+together, as a nonlinear least-squares problem
+[\[16\]](#ch02-dellaert2023), [\[17\]](#ch02-ta2014), [\[18\]](#ch02-dong2016),
+[\[19\]](#ch02-yang2021), [\[20\]](#ch02-abdelkarim2025). This note says what
+that computes, in the terms of this chapter.
+
+**The answer first.** Joint optimization is **max-sum elimination, with a
+probability lifted to its logarithm**. It is a member of the family, and it
+differs from the max-sum semiring above in one row:
+
+| | Max-sum, as above | Joint optimization |
+|---|---|---|
+| entry | a value $v$ | a value $v$ |
+| product, sum | $v_1 + v_2$, $\;\max(v_1, v_2)$ | $v_1 + v_2$, $\;\max(v_1, v_2)$ |
+| a reward table $r$ becomes | $r$ | $r$ |
+| a probability table $f$ becomes | $0$ where $f > 0$, and $-\infty$ where $f = 0$ | $\log f$ |
+| an unlikely outcome costs | nothing | its log-probability |
+| eliminating every variable gives | $\max_{\tau \,:\, p(\tau) > 0} R(\tau)$ | $\max_\tau \big[R(\tau) + \log p(\tau)\big]$ |
+
+:::{dropdown} Why is a least-squares solver a max-sum eliminator?
+An optimizer in GTSAM minimizes the sum of the errors of all factors. The
+error of a Gaussian dynamics factor is minus its log-density, up to a
+constant, and the error of a cost factor is the cost, which is minus the
+reward:
+
+$$\min_\tau \sum_i \text{error}_i(\tau)
+= -\max_\tau \Big[\underbrace{\sum_{\text{dynamics}} \log f_i(\tau)}_{\log p(\tau)}
++ \underbrace{\sum_{\text{costs}} r_i(\tau)}_{R(\tau)}\Big].$$
+
+The errors add, which is the product $\otimes$ of max-sum. And eliminating a
+variable from a least-squares problem keeps, for every value of the separator,
+the best value of that variable: the Schur complement that Cholesky leaves on
+the separator is the *minimum* of the quadratic over the eliminated variable.
+[\[21\]](#ch02-dellaert2017)
+That is the sum $\oplus = \max$. It is applied to every variable alike, the
+states as well as the actions.
+
+For discrete graphs the same computation is called *max-product*, on the
+factors themselves: $\log \max_\tau \prod_i f_i = \max_\tau \sum_i \log f_i$.
+:::
+
+**The same variables, three treatments.** A planning graph has two kinds of
+variables: states and actions. The agent chooses the actions, **NOT** the
+states, which are determined by the dynamics, at random. The three
+computations below differ only in how they marginalize out the states. In all
+three the policy is the *greedy* one, which chooses the action that attains
+the maximum. On the track:
+
+| Method | Sum over the states | Sum over the actions | Result | What the number is |
+|---|---|---|---|---|
+| max-sum | maximum; any possible outcome is free | maximum | $9$ | the best trajectory that *can* occur: it counts on a slip of probability $0.2$ |
+| joint optimization | maximum; an outcome costs its log-probability | maximum | $7.08$ | the plan "start in cell 1, Right, Right", of return $8$ and probability $0.4$, scored $8 + \log 0.4$ |
+| dynamic programming (optimal control) | average | maximum | $6.1$ | what the best policy really collects on average ([Chapter 4](chapter04.md)) |
+
+Compare the first two rows. The best trajectory of max-sum ends with a move
+Left and a slip, which has probability $0.2$. For max-sum that slip is free.
+Joint optimization charges every outcome its log-probability, so states that
+the dynamics make improbable get high costs. The best trajectory of max-sum
+then scores only
+
+$$9 + \log(0.5 \cdot 0.8 \cdot 0.2) = 9 - 2.53 = 6.47,$$
+
+less than the $7.08$ of moving Right twice. So joint optimization does not
+count on the slip: it is too improbable to be worth it.
+
+Its own plan, in the second row, still treats two stochastic variables, which
+the robot cannot decide, as if they were choices: the start state $s_0$ and
+the state $s_1$ after the first move. The plan "start in cell 1, Right, Right"
+needs the robot to start in cell 1, which happens with probability $0.5$, and
+the first move to succeed, which happens with probability $0.8$. The maximum
+over the states picks both, and pays their log-probabilities,
+
+$$\log 0.5 + \log 0.8 = \log 0.4 = -0.92,$$
+
+which is the difference between the return $8$ of the plan and its score
+$7.08$. So the number in the second row is the score of one favorable
+trajectory. It is **NOT** an expected return: when the robot starts in cell 0
+or the first move fails, it collects less, and the average over all cases, for
+the best policy, is the $6.1$ of the third row.
+
+**What that choice gets right, and what it costs.**
+
+| | Joint optimization: maximum over states and actions | Semiring elimination: average over states, maximum over actions |
+|---|---|---|
+| computes | the best trajectory, and its score $R + \log p$ | the best policy, and its expected return |
+| deterministic dynamics (hard-constrained factors) | exact | exact: the two coincide |
+| linear dynamics, quadratic costs, tight dynamics factors | the right actions | the right actions |
+| noisy dynamics with soft dynamics factors | **optimistic**: it plans as if the noise will help | exact |
+| the value it reports | the score of the plan | the expected return |
+| rewards | costs only: a Gaussian factor needs a positive semidefinite matrix | of any sign |
+| what comes out | a trajectory, and feedback gains in the conditionals | values, advantages, the policy |
+| machinery | one sparse nonlinear least-squares problem, with everything GTSAM offers: any elimination order, incremental solving, constraints, manifolds, robust losses; estimation of the past and planning of the future in one graph | elimination backward in time; in this module, tables and linear-Gaussian factors |
+
+The left column is the right tool when the system is deterministic or nearly
+so, which covers much of motion planning. The right column is needed when the
+noise is comparable to what the costs care about, when a given policy has to
+be evaluated, or when the expected return itself is the quantity of interest.
+
+**One more choice matters: the weights.** In a joint graph the user chooses
+how heavily the cost factors weigh against the dynamics factors. That weight
+is not neutral: it sets how optimistic the plan is. The Tilted subsection
+below shows this with numbers, in the note
+[In joint optimization, the weight of the costs is a tilt](#ch02-weight-is-a-tilt).
+::::
 
 ### Tilted
 
@@ -300,9 +498,50 @@ trajectories count more ($\kappa > 0$) or less ($\kappa < 0$)?
 
 $$\frac{1}{\kappa} \log \sum_\tau p(\tau)\, e^{\kappa R(\tau)}$$
 
-Keep the pair $(p, v)$ and the product of the expectation semiring, and change
-how the values of two outcomes merge: use an average that leans toward the
-larger value (for $\kappa > 0$) or toward the smaller one (for $\kappa < 0$).
+This formula is called **log-sum-exp**: the logarithm of a sum of
+exponentials.
+
+**How to read it.** From the inside out, it does three things.
+
+1. *Stretch.* Each return $R$ is replaced by $e^{\kappa R}$. For $\kappa > 0$
+   this magnifies the high returns far more than the low ones.
+2. *Average.* The stretched returns are averaged in the ordinary way, with the
+   probabilities as weights: $\sum_\tau p(\tau)\, e^{\kappa R(\tau)}$.
+3. *Undo the stretch.* The logarithm, divided by $\kappa$, is the inverse of
+   the stretch. It brings the result back to the units of a return.
+
+Because the high returns were magnified before averaging, they pull the result
+upward. With $\kappa < 0$ the stretch magnifies the low returns, and they pull
+it downward. If all returns are equal to some $R$, the three steps give back
+$R$, so the result is a kind of mean.
+
+The root-mean-square is the same pattern with another stretch: square,
+average, take the square root,
+
+$$\sqrt{\textstyle\sum_\tau p(\tau)\, R(\tau)^2},$$
+
+which leans toward the returns of large size.
+
+*A small example.* Toss a coin: heads, the return is 10; tails, it is 0. Each
+has probability $0.5$, so the ordinary mean is 5. The three steps for
+$\kappa = 0.5$: the stretched values are
+$e^{0} = 1$ and $e^{5} = 148.4$, their average is $74.7$, and
+$\frac{1}{0.5} \log 74.7 = 8.63$, well above 5.
+
+**Why the exponential.** Of all possible stretches, the exponential is the one
+that fits a factor graph. The return of a trajectory is a *sum* of rewards,
+and the exponential turns a sum into a product:
+
+$$e^{\kappa (r_1 + r_2)} = e^{\kappa r_1}\, e^{\kappa r_2}.$$
+
+So the stretched return is a product with one term per reward factor, and a
+product of factors is what elimination works on. The square of a sum has no
+such form. This is made precise by the stored form below.
+
+**The semiring.** Keep the pair $(p, v)$ and the product of the expectation
+semiring, and change how the values of two outcomes merge: use an average that
+leans toward the larger value (for $\kappa > 0$) or toward the smaller one
+(for $\kappa < 0$).
 
 | | |
 |---|---|
@@ -328,8 +567,8 @@ $$\min_x v \;\;\xleftarrow{\;\kappa \to -\infty\;}\;\; \bar v_\kappa
 
 The minimum and maximum run over the outcomes with nonzero probability.
 
-*A small example.* A fair coin pays 0 or 10. Its ordinary mean is 5. The
-tilted mean is $\frac{1}{\kappa} \log\big(0.5\, e^{0} + 0.5\, e^{10 \kappa}\big)$:
+*The coin again.* For the coin toss that returns 10 or 0 with probability
+$0.5$ each, the tilted mean is $\frac{1}{\kappa} \log\big(0.5\, e^{0} + 0.5\, e^{10 \kappa}\big)$:
 
 | $\kappa$ | $-5$ | $-0.5$ | $-0.01$ | $0.01$ | $0.5$ | $5$ |
 |---|---|---|---|---|---|---|
@@ -418,6 +657,65 @@ So the expectation semiring is the first derivative of the tilted semiring
 with respect to the tilt, taken at $\kappa = 0$.
 :::
 
+(ch02-weight-is-a-tilt)=
+**For GTSAM users.** In a graph that optimizes states and actions jointly, the
+weight of the cost factors relative to the dynamics factors is a tilt:
+
+::::{dropdown} In joint optimization, the weight of the costs is a tilt
+Joint optimization with GTSAM puts the dynamics factors and the cost factors
+of a problem in one graph and optimizes all states and actions together (the
+note at the end of the Max-sum subsection). The user chooses how heavily the
+cost factors weigh against the dynamics factors. **That weight is the tilt
+$\kappa$ of this subsection, applied at the states: a risk dial.**
+
+On the line example of Chapter 1 (noise variance $\Sigma_w = 0.5$), put a
+weight $\kappa$ on the rewards, so that the plan maximizes $\kappa R + \log p$ over the actions and
+over the slips. The gains of the resulting feedback law, and the return that
+each policy really collects on the noisy system:
+
+| weight $\kappa$ of the reward factors | $\to 0$ | $0.5$ | $1$ | $2$ |
+|---|---|---|---|---|
+| gains $K_0$, $K_1$ of the joint plan | $0.6$, $0.5$ | $0.452$, $0.4$ | $0.364$, $0.333$ | $0.263$, $0.25$ |
+| true expected return | $-9.25$ | $-9.565$ | $-10.089$ | $-11.070$ |
+
+The first column is the best policy, the Riccati gains of
+[Chapter 6](chapter06.md). As the costs weigh more, the plan relies more on
+favorable slips to bring the robot home and uses weaker gains, and the real
+return drops.
+
+What matters is the product $\kappa\, \Sigma_w$: the variance of the dynamics
+factor relative to that of the cost factors. With a tight dynamics factor,
+variance $10^{-6}$, the plan has the gains $0.6$ and $0.5$ at any weight.
+That is why stiff dynamics factors work well in practice: for linear dynamics
+and quadratic costs the best action does not depend on the noise, so planning
+as if there were none gives the right actions.
+
+:::{dropdown} Why is the weight a tilt?
+Take one step. The future is worth $V(x') = -P\, x'^2$, and the next state is
+$x' = m + w$, with $m$ the predicted state and $w$ the slip, of variance
+$\Sigma_w$. Joint optimization maximizes over the slip, at the price of its
+log-probability:
+
+$$\max_w \Big[-\kappa\, P\,(m + w)^2 - \frac{w^2}{2 \Sigma_w}\Big]
+= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2.$$
+
+The tilted mean of this subsection, with a positive tilt $\kappa$, gives the same
+quadratic, plus a constant that does not affect the actions:
+
+$$\log \mathbb{E}_w\big[e^{-\kappa P (m + w)^2}\big]
+= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2 - \tfrac{1}{2} \log(1 + 2 \kappa P \Sigma_w).$$
+
+Both replace $P$ by the smaller $P / (1 + 2 \kappa P \Sigma_w)$: the future
+looks less costly than it is, because the slip is assumed to help. The correct
+average, the limit $\kappa \to 0$, keeps $P$ and adds the constant
+$P\, \Sigma_w$. So for Gaussian factors, joint optimization is the tilted
+semiring at the states, with a positive, risk-seeking tilt equal to the weight
+of the costs, and the maximum at the actions. [Chapter 8](chapter08.md)
+develops this under the name LEQG, and [Chapter 9](chapter09.md) compares
+joint optimization with the exact treatment on a nonlinear example.
+:::
+::::
+
 ### Log-sum-exp, the soft maximum
 
 **The question it answers.** What is a smooth version of the best return?
@@ -487,131 +785,6 @@ probabilities $p_1$ and $p_2$, merge:
 | expectation | $\dfrac{p_1 v_1 + p_2 v_2}{p_1 + p_2}$ | the average |
 | tilted, or soft maximum | $\dfrac{1}{\kappa} \log \dfrac{p_1 e^{\kappa v_1} + p_2 e^{\kappa v_2}}{p_1 + p_2}$ | between the average and the better (or the worse) |
 | max-sum | $\max(v_1, v_2)$ | the better |
-
-### Where trajectory optimization with GTSAM sits in the family
-
-A common way to plan with factor graphs is to put the dynamics factors and the
-cost factors of a problem in one graph and to optimize all states and actions
-together, as a nonlinear least-squares problem. This subsection says what
-that computes, in the terms of this chapter.
-
-**The answer first.** Joint optimization is **max-sum elimination, with a
-probability lifted to its logarithm**. It is a member of the family, and it
-differs from the max-sum semiring above in one row:
-
-| | Max-sum, as above | Joint optimization |
-|---|---|---|
-| entry | a value $v$ | a value $v$ |
-| product, sum | $v_1 + v_2$, $\;\max(v_1, v_2)$ | $v_1 + v_2$, $\;\max(v_1, v_2)$ |
-| a reward table $r$ becomes | $r$ | $r$ |
-| a probability table $f$ becomes | $0$ where $f > 0$, and $-\infty$ where $f = 0$ | $\log f$ |
-| an unlikely outcome costs | nothing | its log-probability |
-| eliminating every variable gives | $\max_{\tau \,:\, p(\tau) > 0} R(\tau)$ | $\max_\tau \big[R(\tau) + \log p(\tau)\big]$ |
-
-:::{dropdown} Why is a least-squares solver a max-sum eliminator?
-An optimizer in GTSAM minimizes the sum of the errors of all factors. The
-error of a Gaussian dynamics factor is minus its log-density, up to a
-constant, and the error of a cost factor is the cost, which is minus the
-reward:
-
-$$\min_\tau \sum_i \text{error}_i(\tau)
-= -\max_\tau \Big[\underbrace{\sum_{\text{dynamics}} \log f_i(\tau)}_{\log p(\tau)}
-+ \underbrace{\sum_{\text{costs}} r_i(\tau)}_{R(\tau)}\Big].$$
-
-The errors add, which is the product $\otimes$ of max-sum. And eliminating a
-variable from a least-squares problem keeps, for every value of the separator,
-the best value of that variable: the Schur complement that Cholesky leaves on
-the separator is the *minimum* of the quadratic over the eliminated variable.
-That is the sum $\oplus = \max$. It is applied to every variable alike, the
-states as well as the actions.
-
-For discrete graphs the same computation is called *max-product*, on the
-factors themselves: $\log \max_\tau \prod_i f_i = \max_\tau \sum_i \log f_i$.
-:::
-
-**The same variables, three treatments.** A planning graph has two kinds of
-variables. The agent chooses the actions. The dynamics choose the states, at
-random. The three computations below differ only in how they sum out the
-states. On the track, with no policy factor, since the actions are free:
-
-| Sum over the states | Sum over the actions | Result | What the number is |
-|---|---|---|---|
-| maximum; any possible outcome is free | maximum | $9$ | the best trajectory that *can* occur: it counts on a slip of probability $0.2$ |
-| maximum; an outcome costs its log-probability | maximum | $7.08$ | joint optimization: the plan "start in cell 1, Right, Right", of return $8$ and probability $0.4$, scored $8 + \log 0.4$ |
-| average | maximum | $6.1$ | what the best policy really collects on average ([Chapter 4](chapter04.md)) |
-
-Joint optimization does not count on the slip, which would be too improbable.
-It still chooses the start cell, and it assumes that the first move succeeds.
-Its number is the score of one favorable trajectory. It is **NOT** an
-expected return.
-
-**What that choice gets right, and what it costs.**
-
-| | Joint optimization: maximum over states and actions | Semiring elimination: average over states, maximum over actions |
-|---|---|---|
-| computes | the best trajectory, and its score $R + \log p$ | the best policy, and its expected return |
-| deterministic dynamics (hard-constrained factors) | exact | exact: the two coincide |
-| linear dynamics, quadratic costs, tight dynamics factors | the right actions | the right actions |
-| noisy dynamics with soft dynamics factors | **optimistic**: it plans as if the noise will help | exact |
-| the value it reports | the score of the plan | the expected return |
-| rewards | costs only: a Gaussian factor needs a positive semidefinite matrix | of any sign |
-| what comes out | a trajectory, and feedback gains in the conditionals | values, advantages, the policy |
-| machinery | one sparse nonlinear least-squares problem, with everything GTSAM offers: any elimination order, incremental solving, constraints, manifolds, robust losses; estimation of the past and planning of the future in one graph | elimination backward in time; in this module, tables and linear-Gaussian factors |
-
-The left column is the right tool when the system is deterministic or nearly
-so, which covers much of motion planning. The right column is needed when the
-noise is comparable to what the costs care about, when a given policy has to
-be evaluated, or when the expected return itself is the quantity of interest.
-
-**The weight between cost and dynamics factors is a risk dial.** In a joint
-graph the user chooses how heavily the cost factors weigh against the dynamics
-factors. That weight is the tilt $\kappa$ of this section. On the line example
-of Chapter 1 (noise variance $\Sigma_w = 0.5$), put a weight $\kappa$ on the
-rewards, so that the plan maximizes $\kappa R + \log p$ over the actions and
-over the slips. The gains of the resulting feedback law, and the return that
-each policy really collects on the noisy system:
-
-| weight $\kappa$ of the reward factors | $\to 0$ | $0.5$ | $1$ | $2$ |
-|---|---|---|---|---|
-| gains $K_0$, $K_1$ of the joint plan | $0.6$, $0.5$ | $0.452$, $0.4$ | $0.364$, $0.333$ | $0.263$, $0.25$ |
-| true expected return | $-9.25$ | $-9.565$ | $-10.089$ | $-11.070$ |
-
-The first column is the best policy, the Riccati gains of
-[Chapter 6](chapter06.md). As the costs weigh more, the plan relies more on
-favorable slips to bring the robot home and uses weaker gains, and the real
-return drops.
-
-What matters is the product $\kappa\, \Sigma_w$: the variance of the dynamics
-factor relative to that of the cost factors. With a tight dynamics factor,
-variance $10^{-6}$, the plan has the gains $0.6$ and $0.5$ at any weight.
-That is why stiff dynamics factors work well in practice: for linear dynamics
-and quadratic costs the best action does not depend on the noise, so planning
-as if there were none gives the right actions.
-
-:::{dropdown} Why is the weight a tilt?
-Take one step. The future is worth $V(x') = -P\, x'^2$, and the next state is
-$x' = m + w$, with $m$ the predicted state and $w$ the slip, of variance
-$\Sigma_w$. Joint optimization maximizes over the slip, at the price of its
-log-probability:
-
-$$\max_w \Big[-\kappa\, P\,(m + w)^2 - \frac{w^2}{2 \Sigma_w}\Big]
-= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2.$$
-
-The tilted mean of this section, with a positive tilt $\kappa$, gives the same
-quadratic, plus a constant that does not affect the actions:
-
-$$\log \mathbb{E}_w\big[e^{-\kappa P (m + w)^2}\big]
-= -\kappa\, \frac{P}{1 + 2 \kappa P \Sigma_w}\; m^2 - \tfrac{1}{2} \log(1 + 2 \kappa P \Sigma_w).$$
-
-Both replace $P$ by the smaller $P / (1 + 2 \kappa P \Sigma_w)$: the future
-looks less costly than it is, because the slip is assumed to help. The correct
-average, the limit $\kappa \to 0$, keeps $P$ and adds the constant
-$P\, \Sigma_w$. So for Gaussian factors, joint optimization is the tilted
-semiring at the states, with a positive, risk-seeking tilt equal to the weight
-of the costs, and the maximum at the actions. [Chapter 8](chapter08.md)
-develops this under the name LEQG, and [Chapter 9](chapter09.md) compares
-joint optimization with the exact treatment on a nonlinear example.
-:::
 
 ## 3. What elimination needs
 
@@ -927,8 +1100,8 @@ a tabular decision process.
 (ch02-jacobson1973)=
 \[11\] D. H. Jacobson, "Optimal stochastic linear systems with exponential
 performance criteria and their relation to deterministic differential games",
-*IEEE Transactions on Automatic Control*, 1973. The tilt in the linear-
-Gaussian case.
+*IEEE Transactions on Automatic Control*, 1973. The tilt in the
+linear-Gaussian case.
 
 (ch02-whittle1990)=
 \[12\] P. Whittle, *Risk-Sensitive Optimal Control*, Wiley, 1990. The
@@ -947,6 +1120,43 @@ log-sum-exp over trajectories.
 \[15\] S. Levine, "Reinforcement learning and control as probabilistic
 inference: tutorial and review", arXiv:1805.00909, 2018. The soft maximum in
 RL, with its temperature.
+
+(ch02-dellaert2023)=
+\[16\] F. Dellaert and S. Hutchinson, *Introduction to Robotics and
+Perception*, online book, roboticsbook.org, 2023. Section 7.5, "Trajectory
+Optimization", poses the planning of a drone trajectory as a nonlinear factor
+graph whose factors are objectives, solved with Levenberg-Marquardt; Sections
+3.5 and 3.6 cover Markov decision processes and reinforcement learning.
+
+(ch02-ta2014)=
+\[17\] D.-N. Ta, M. Kobilarov and F. Dellaert, "A factor graph approach to
+estimation and model predictive control on unmanned aerial vehicles",
+*International Conference on Unmanned Aircraft Systems (ICUAS)*, 2014.
+Estimation and deterministic optimal control in one factor graph, with the
+dynamics as constraint factors.
+
+(ch02-dong2016)=
+\[18\] J. Dong, M. Mukadam, F. Dellaert and B. Boots, "Motion planning as
+probabilistic inference using Gaussian processes and factor graphs",
+*Robotics: Science and Systems*, 2016. Motion planning as the most probable
+trajectory of a factor graph.
+
+(ch02-yang2021)=
+\[19\] S. Yang, G. Chen, Y. Zhang, H. Choset and F. Dellaert, "Equality
+constrained linear optimal control with factor graphs", *IEEE International
+Conference on Robotics and Automation (ICRA)*, 2021. Linear-quadratic control
+by variable elimination, with the dynamics and further constraints as hard
+constraints.
+
+(ch02-abdelkarim2025)=
+\[20\] A. Abdelkarim, H. Voos and D. Görges, "Factor graphs in
+optimization-based robotic control: a tutorial and review", *IEEE Access*,
+2025. A survey of optimal control posed on factor graphs.
+
+(ch02-dellaert2017)=
+\[21\] F. Dellaert and M. Kaess, "Factor graphs for robot perception",
+*Foundations and Trends in Robotics*, 2017. Nonlinear least squares on factor
+graphs, and elimination as its solver.
 
 ---
 
