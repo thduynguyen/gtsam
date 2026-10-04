@@ -10,8 +10,9 @@ It reads the title of every chapter from its first heading and rewrites
   - the chapter table of gtsam/semiring/README.md (between two markers).
 Chapters that do not exist yet are left out.
 
-The copyright line and the work-in-progress notice are the constants COPYRIGHT
-and NOTICE below. To remove the notice from every page, set NOTICE to None and
+The author, the copyright line, the credit for AI assistance and the
+work-in-progress notice are the constants AUTHOR, COPYRIGHT, AI_CREDIT and
+NOTICE below. To remove the notice from every page, set NOTICE to None and
 run this script.
 """
 import os
@@ -43,7 +44,10 @@ PARTS = [
 APPENDICES = ["appendix_a.md", "appendix_b.md", "appendix_c.md"]
 LICENSE = "LICENSE.md"
 
-COPYRIGHT = "Copyright © 2026 Duy Ta. All rights reserved."
+AUTHOR = "Duy Ta"
+COPYRIGHT = f"Copyright © 2026 {AUTHOR}. All rights reserved."
+# The disclosure of AI assistance, shown in the footer of every page.
+AI_CREDIT = "Written with the assistance of Claude (Anthropic)."
 # Shown in bold red under the title of every page (see custom.css).
 NOTICE = ("**This book is a work in progress.** It is still being written "
           "and revised: its content is incomplete and may contain errors.")
@@ -152,6 +156,7 @@ def write_toc():
              "  description: Optimal control and reinforcement learning as "
              "variable elimination on factor graphs, with GTSAM.",
              "  github: https://github.com/thduynguyen/gtsam",
+             "  authors:", f"    - name: {AUTHOR}",
              "  # Formulas are not referred to by number, so do not number them.",
              "  numbering:", "    equation:", "      enabled: false",
              "  toc:", "    - file: index.md"]
@@ -176,8 +181,9 @@ def write_toc():
               "    style: custom.css", "  parts:",
               "    footer: footer.md", ""]
     with open(DOC + "footer.md", "w") as f:
-        f.write(f"{COPYRIGHT} The example code is under the BSD license of "
-                f"GTSAM. See [Copyright and license]({LICENSE}).\n")
+        f.write(f"{COPYRIGHT} {AI_CREDIT} The example code is under the "
+                f"BSD license of GTSAM. See [Copyright, license and "
+                f"authorship]({LICENSE}).\n")
     with open(DOC + "myst.yml", "w") as f:
         f.write("\n".join(lines))
 
@@ -247,11 +253,15 @@ def write_index():
             "The source of the module, the chapters and the notebooks is in\n"
             "[`gtsam/semiring`](https://github.com/thduynguyen/gtsam/tree/"
             "feature/semiringfactor/gtsam/semiring).", "",
-            "## Copyright and license", "",
+            "## Author, copyright and license", "",
+            f"This book is written by {AUTHOR}, with the assistance of "
+            "Claude, an AI model made by\nAnthropic. The author defined its "
+            "scope and structure, directed and revised its\nexplanations, "
+            "and is responsible for its content.", "",
             f"{COPYRIGHT} The text and figures of this book may not be "
             "reproduced or\nredistributed without permission. The example "
             "code in the notebooks and tools is\nunder the BSD license of "
-            f"GTSAM. See [Copyright and license]({LICENSE}).", ""]
+            f"GTSAM. See [Copyright, license and authorship]({LICENSE}).", ""]
     with open(DOC + "index.md", "w") as f:
         f.write("\n".join(out))
 

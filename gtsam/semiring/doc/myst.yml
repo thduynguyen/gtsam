@@ -7,6 +7,8 @@ project:
   title: Semiring factor graphs
   description: Optimal control and reinforcement learning as variable elimination on factor graphs, with GTSAM.
   github: https://github.com/thduynguyen/gtsam
+  authors:
+    - name: Duy Ta
   # Formulas are not referred to by number, so do not number them.
   numbering:
     equation:

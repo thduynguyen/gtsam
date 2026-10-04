@@ -101,8 +101,12 @@ others need only numpy.
 The source of the module, the chapters and the notebooks is in
 [`gtsam/semiring`](https://github.com/thduynguyen/gtsam/tree/feature/semiringfactor/gtsam/semiring).
 
-## Copyright and license
+## Author, copyright and license
+
+This book is written by Duy Ta, with the assistance of Claude, an AI model made by
+Anthropic. The author defined its scope and structure, directed and revised its
+explanations, and is responsible for its content.
 
 Copyright © 2026 Duy Ta. All rights reserved. The text and figures of this book may not be reproduced or
 redistributed without permission. The example code in the notebooks and tools is
-under the BSD license of GTSAM. See [Copyright and license](LICENSE.md).
+under the BSD license of GTSAM. See [Copyright, license and authorship](LICENSE.md).
