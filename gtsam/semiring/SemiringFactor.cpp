@@ -21,9 +21,9 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-SemiringFactor::shared_ptr SemiringFactor::sum(
-    const Ordering& frontalKeys) const {
-  return eliminate(frontalKeys).second;
+SemiringFactor::shared_ptr SemiringFactor::sum(const Ordering& frontalKeys,
+                                               const SemiringSum& sum) const {
+  return eliminate(frontalKeys, sum).second;
 }
 
 }  // namespace gtsam

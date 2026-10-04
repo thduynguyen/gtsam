@@ -50,6 +50,19 @@ std::pair<std::shared_ptr<SemiringConditional>, std::shared_ptr<SemiringFactor>>
 EliminateSemiring(const SemiringFactorGraph& factors,
                   const Ordering& frontalKeys);
 
+/**
+ * An elimination function that sums out each variable by its own rule: the
+ * average, the maximum, or a tilted mean. Variables eliminated together must
+ * share a rule. Pass the result to eliminateSequential and its relatives.
+ *
+ * @param rules The rule of each variable; variables without one are averaged.
+ * @ingroup semiring
+ */
+GTSAM_EXPORT std::function<std::pair<std::shared_ptr<SemiringConditional>,
+                                     std::shared_ptr<SemiringFactor>>(
+    const SemiringFactorGraph&, const Ordering&)>
+EliminateSemiringWith(const SemiringRules& rules);
+
 template <>
 struct EliminationTraits<SemiringFactorGraph> {
   typedef SemiringFactor FactorType;  ///< Type of factors in factor graph
@@ -142,6 +155,33 @@ class GTSAM_EXPORT SemiringFactorGraph
 
   /// Expected total value, eliminating in the default (COLAMD) order.
   double expectation() const;
+
+  /**
+   * The value left at the root when each variable is summed out by its own
+   * rule, in the given order. With the maximum at the action variables and the
+   * average at the states, eliminated backward in time, it is the best
+   * expected return; with a tilted mean it is the soft or risk-sensitive
+   * value.
+   */
+  double expectation(const Ordering& ordering,
+                     const SemiringRules& rules) const;
+
+  using BaseEliminateable::eliminatePartialSequential;
+  using BaseEliminateable::eliminateSequential;
+
+  /**
+   * Sequential elimination in the given order, each variable summed out by
+   * its own rule. With more than one kind of rule the order matters: for a
+   * Markov decision process, eliminate backward in time.
+   */
+  std::shared_ptr<SemiringBayesNet> eliminateSequential(
+      const Ordering& ordering, const SemiringRules& rules) const;
+
+  /// Partial sequential elimination, each variable by its own rule.
+  std::pair<std::shared_ptr<SemiringBayesNet>,
+            std::shared_ptr<SemiringFactorGraph>>
+  eliminatePartialSequential(const Ordering& ordering,
+                             const SemiringRules& rules) const;
 
   /// @}
 };

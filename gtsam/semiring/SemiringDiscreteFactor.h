@@ -39,6 +39,10 @@ namespace gtsam {
  * Storing the weighted value keeps all three operations exact where the
  * probability is zero, in which case the value is reported as zero.
  *
+ * A variable can also be summed out by a maximum or by a tilted mean of the
+ * values, see SemiringSum. The probabilities are added in every case; only the
+ * value of the new factor differs.
+ *
  * Both tables are kept on the same keys, sorted in increasing order.
  *
  * @ingroup semiring
@@ -123,8 +127,15 @@ class GTSAM_EXPORT SemiringDiscreteFactor : public SemiringFactor {
   SemiringFactor::shared_ptr multiply(
       const SemiringFactor& other) const override;
 
-  /// Sum out the frontal variables and divide to obtain the conditional.
-  EliminationResult eliminate(const Ordering& frontalKeys) const override;
+  using SemiringFactor::eliminate;
+
+  /**
+   * Sum out the frontal variables with the given rule and divide to obtain
+   * the conditional. Outcomes with zero probability take no part in a maximum
+   * or in a tilted mean.
+   */
+  EliminationResult eliminate(const Ordering& frontalKeys,
+                              const SemiringSum& sum) const override;
 
   /// Expected value: total weighted value divided by total probability.
   double expectation() const override;
@@ -132,8 +143,9 @@ class GTSAM_EXPORT SemiringDiscreteFactor : public SemiringFactor {
   /// @}
 
  private:
-  /// Semiring sum over the frontal variables.
-  This sumOut(const Ordering& frontalKeys) const;
+  /// Semiring sum over the frontal variables, with the given rule.
+  This sumOut(const Ordering& frontalKeys,
+              const SemiringSum& sum = SemiringSum()) const;
 };
 
 /// traits

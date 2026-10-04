@@ -4,6 +4,34 @@
 
 namespace gtsam {
 
+#include <gtsam/semiring/SemiringSum.h>
+class SemiringSum {
+  SemiringSum();
+  static gtsam::SemiringSum Average();
+  static gtsam::SemiringSum Maximum();
+  static gtsam::SemiringSum Tilted(double tilt);
+  static gtsam::SemiringSum SoftMaximum(double temperature);
+  void print(string s = "") const;
+  bool equals(const gtsam::SemiringSum& other, double tol = 1e-9) const;
+  bool isAverage() const;
+  bool isMaximum() const;
+  bool isTilted() const;
+  double tilt() const;
+};
+
+class SemiringRules {
+  SemiringRules();
+  void print(string s = "SemiringRules",
+             const gtsam::KeyFormatter& formatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::SemiringRules& other, double tol = 1e-9) const;
+  void set(gtsam::Key key, const gtsam::SemiringSum& sum);
+  void setAll(const gtsam::KeyVector& keys, const gtsam::SemiringSum& sum);
+  gtsam::SemiringSum at(gtsam::Key key) const;
+  size_t size() const;
+  gtsam::SemiringSum common(const gtsam::Ordering& keys) const;
+};
+
 #include <gtsam/semiring/SemiringFactor.h>
 virtual class SemiringFactor : gtsam::Factor {
   bool equals(const gtsam::SemiringFactor& other, double tol = 1e-9) const;
@@ -11,7 +39,11 @@ virtual class SemiringFactor : gtsam::Factor {
   gtsam::SemiringFactor* multiply(const gtsam::SemiringFactor& other) const;
   pair<gtsam::SemiringConditional*, gtsam::SemiringFactor*> eliminate(
       const gtsam::Ordering& frontalKeys) const;
+  pair<gtsam::SemiringConditional*, gtsam::SemiringFactor*> eliminate(
+      const gtsam::Ordering& frontalKeys, const gtsam::SemiringSum& sum) const;
   gtsam::SemiringFactor* sum(const gtsam::Ordering& frontalKeys) const;
+  gtsam::SemiringFactor* sum(const gtsam::Ordering& frontalKeys,
+                             const gtsam::SemiringSum& sum) const;
   double expectation() const;
 };
 
@@ -65,6 +97,8 @@ virtual class SemiringDiscreteConditional : gtsam::SemiringConditional {
   const gtsam::SemiringDiscreteFactor& table() const;
   gtsam::DiscreteConditional probability() const;
   gtsam::DecisionTreeFactor surprise() const;
+  gtsam::DiscreteConditional greedy() const;
+  gtsam::DiscreteConditional tilted(double tilt) const;
   pair<double, double> evaluate(const gtsam::DiscreteValues& values) const;
 };
 
@@ -156,8 +190,17 @@ pair<gtsam::SemiringConditional*, gtsam::SemiringFactor*> EliminateSemiring(
     const gtsam::SemiringFactorGraph& factors,
     const gtsam::Ordering& frontalKeys);
 
+gtsam::SemiringFactorGraph::Eliminate EliminateSemiringWith(
+    const gtsam::SemiringRules& rules);
+
 #include <gtsam/inference/EliminateableFactorGraph.h>
 class SemiringFactorGraph {
+  std::shared_ptr<gtsam::SemiringBayesNet> eliminateSequential(
+      const gtsam::Ordering& ordering, const gtsam::SemiringRules& rules) const;
+  pair<std::shared_ptr<gtsam::SemiringBayesNet>,
+       std::shared_ptr<gtsam::SemiringFactorGraph>>
+  eliminatePartialSequential(const gtsam::Ordering& ordering,
+                             const gtsam::SemiringRules& rules) const;
   std::shared_ptr<gtsam::SemiringBayesNet> eliminateSequential(
       gtsam::SemiringFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::SemiringFactorGraph::Eliminate& function =
@@ -223,6 +266,8 @@ class SemiringFactorGraph {
 
   gtsam::SemiringFactor* product() const;
   double expectation(const gtsam::Ordering& ordering) const;
+  double expectation(const gtsam::Ordering& ordering,
+                     const gtsam::SemiringRules& rules) const;
   double expectation() const;
 };
 
