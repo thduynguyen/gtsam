@@ -89,7 +89,7 @@ literature works backward in time with two helper functions:
   $t$ to the end, given that the agent is in state $s_t = s$ and takes action
   $a_t = a$:
 
-  $$Q _t(s, a) = \mathbb{E}\Big[\sum _{k=t}^{T-1} r(s _k, a _k) + r(s _T) \thickspace \Big|\thickspace s _t = s,\ a _t = a\Big] = r(s, a) + \sum _{s'} p(s' \mid s, a)\thinspace V _{t+1}(s').$$
+  $$Q _t(s, a) = \mathbb{E}\Big[\sum _{k=t}^{T-1} r(s _k, a _k) + r(s _T) \enspace \Big|\enspace s _t = s,\ a _t = a\Big] = r(s, a) + \sum _{s'} p(s' \mid s, a)\thinspace V _{t+1}(s').$$
 
   The second form splits it into the reward received now, which is known once
   $s$ and $a$ are given, plus the value of the next state $s'$, averaged over
@@ -197,7 +197,7 @@ $$\hat\delta = r + \hat V _{t+1}(s') - \hat Q _t(s, a).$$
 
 Averaged over the next states the dynamics produce, this is
 
-$$\mathbb{E}[\hat\delta \mid s, a] = \underbrace{r + \sum _{s'} p(s' \mid s, a)\thinspace \hat V _{t+1}(s')} _{\text{what } \hat Q _t(s, a) \text{ should be}} \thickspace -\thickspace \underbrace{\hat Q _t(s, a)} _{\text{what it is}}.$$
+$$\mathbb{E}[\hat\delta \mid s, a] = \underbrace{r + \sum _{s'} p(s' \mid s, a)\thinspace \hat V _{t+1}(s')} _{\text{what } \hat Q _t(s, a) \text{ should be}} \enspace -\enspace \underbrace{\hat Q _t(s, a)} _{\text{what it is}}.$$
 
 For the true value functions this average is zero. If it is positive, the
 estimate $\hat Q_t(s, a)$ is too low; if negative, too high. So each sampled
@@ -231,7 +231,7 @@ its average" is zero.
 For the advantage, average over the actions with the policy as weights. The
 first term is the definition of $V_t(s)$, and the weights sum to one:
 
-$$\sum _a \pi(a \mid s)\thinspace A _t(s, a) = \underbrace{\sum _a \pi(a \mid s)\thinspace Q _t(s, a)} _{V _t(s)} \thickspace -\thickspace V _t(s) \underbrace{\sum _a \pi(a \mid s)} _{1} = 0.$$
+$$\sum _a \pi(a \mid s)\thinspace A _t(s, a) = \underbrace{\sum _a \pi(a \mid s)\thinspace Q _t(s, a)} _{V _t(s)} \enspace -\enspace V _t(s) \underbrace{\sum _a \pi(a \mid s)} _{1} = 0.$$
 
 Some actions are better than the policy's average and some are worse, and
 weighted by how often the policy takes them they balance exactly.
@@ -239,7 +239,7 @@ weighted by how often the policy takes them they balance exactly.
 For the TD residual, average over the next states with the dynamics as
 weights:
 
-$$\sum _{s'} p(s' \mid s, a)\thinspace \delta _t(s, a, s') = \underbrace{\sum _{s'} p(s' \mid s, a)\thinspace V _{t+1}(s')} _{\mathbb{E}[V _{t+1} \mid s, a]} \thickspace -\thickspace \mathbb{E}[V _{t+1} \mid s, a] \underbrace{\sum _{s'} p(s' \mid s, a)} _{1} = 0.$$
+$$\sum _{s'} p(s' \mid s, a)\thinspace \delta _t(s, a, s') = \underbrace{\sum _{s'} p(s' \mid s, a)\thinspace V _{t+1}(s')} _{\mathbb{E}[V _{t+1} \mid s, a]} \enspace -\enspace \mathbb{E}[V _{t+1} \mid s, a] \underbrace{\sum _{s'} p(s' \mid s, a)} _{1} = 0.$$
 
 Good luck and bad luck balance exactly.
 
@@ -474,7 +474,7 @@ a factor of 1), so it is what ordinary elimination computes: the product of all
 policy and dynamics factors after step $t$, with all future action and state
 variables marginalized out,
 
-$$\sum _{a _{t+1},\thinspace s _{t+2},\thinspace \dots,\thinspace s _T} \thickspace \thickspace \prod _{k=t+1}^{T-1} \pi(a _k \mid s _k)\thickspace p(s _{k+1} \mid s _k, a _k) \thickspace =\thickspace 1.$$
+$$\sum _{a _{t+1},\thinspace s _{t+2},\thinspace \dots,\thinspace s _T} \enspace \enspace \prod _{k=t+1}^{T-1} \pi(a _k \mid s _k)\enspace p(s _{k+1} \mid s _k, a _k) \enspace =\enspace 1.$$
 
 It equals one because every factor in the product is a conditional
 distribution, which sums to one over its own variable.
@@ -649,7 +649,7 @@ out?
 **Answer:** the joint probability of the trajectory, paired with its return
 relative to the average:
 
-$$\bigotimes _{\text{all conditionals}} c \thickspace =\thickspace \big(p(\tau),\thickspace \thickspace R(\tau) - J\big).$$
+$$\bigotimes _{\text{all conditionals}} c \enspace =\enspace \big(p(\tau),\enspace \enspace R(\tau) - J\big).$$
 
 In words: a particular trajectory collects a return $R(\tau)$ that is higher or
 lower than the average $J$. The conditionals explain that difference piece by
@@ -711,7 +711,7 @@ What this gives:
   $\big(p(\tau), R(\tau) - J\big)$ for every trajectory. Its expected value,
   the average of the value channel weighted by the probability channel, is
 
-  $$\sum _\tau p(\tau)\thinspace \big(R(\tau) - J\big) = \underbrace{\sum _\tau p(\tau)\thinspace R(\tau)} _{J} \thickspace -\thickspace J \underbrace{\sum _\tau p(\tau)} _{1} = 0.$$
+  $$\sum _\tau p(\tau)\thinspace \big(R(\tau) - J\big) = \underbrace{\sum _\tau p(\tau)\thinspace R(\tau)} _{J} \enspace -\enspace J \underbrace{\sum _\tau p(\tau)} _{1} = 0.$$
 
   The average of "return minus average return" is zero. So putting the
   conditionals of a Bayes net back into a factor graph and calling
@@ -743,7 +743,7 @@ Two things about it are awkward.
   for. If two groups of outcomes have probabilities $p_A$, $p_B$ and averages
   $v_A$, $v_B$, then
 
-  $$\text{overall average} = \frac{p _A\thinspace v _A + p _B\thinspace v _B}{p _A + p _B} \thickspace \neq\thickspace \frac{v _A + v _B}{2} \quad \text{unless } p _A = p _B.$$
+  $$\text{overall average} = \frac{p _A\thinspace v _A + p _B\thinspace v _B}{p _A + p _B} \enspace \neq\enspace \frac{v _A + v _B}{2} \quad \text{unless } p _A = p _B.$$
 
 Both problems disappear if the value is stored already multiplied by its
 probability. The module therefore stores the probability together with the
@@ -951,7 +951,7 @@ workaround, and $\varepsilon = 0$ ignores rewards altogether. For a very small
 $\varepsilon$, $e^{\varepsilon R} \approx 1 + \varepsilon R$, so the weight of a
 trajectory is
 
-$$p(\tau)\thinspace e^{\varepsilon R(\tau)} \thickspace \approx\thickspace p(\tau)\thinspace \big(1 + \varepsilon R(\tau)\big) = \underbrace{p(\tau)} _{p} \thickspace +\thickspace \varepsilon\thinspace \underbrace{p(\tau)\thinspace R(\tau)} _{w}.$$
+$$p(\tau)\thinspace e^{\varepsilon R(\tau)} \enspace \approx\enspace p(\tau)\thinspace \big(1 + \varepsilon R(\tau)\big) = \underbrace{p(\tau)} _{p} \enspace +\enspace \varepsilon\thinspace \underbrace{p(\tau)\thinspace R(\tau)} _{w}.$$
 
 The two parts are exactly the stored pair $(p, w)$:
 
@@ -1240,7 +1240,7 @@ $\phi(s_0) = (1, V_0(s_0))$.
 - *Marginalize* $s_0$: no variables are left, and the new factor is the
   constant
 
-  $$\big(1,\thickspace 0.5 \cdot 0.6 + 0.5 \cdot 2.2 + 0 \cdot 4.2\big) = (1,\thickspace 1.4).$$
+  $$\big(1,\enspace 0.5 \cdot 0.6 + 0.5 \cdot 2.2 + 0 \cdot 4.2\big) = (1,\enspace 1.4).$$
 
 - *Condition:* $c(s_0)$ is the prior with the surprise $V_0(s_0) - J$:
   $-0.8$ for cell 0 and $+0.8$ for cell 1.
@@ -1345,13 +1345,13 @@ and the final reward $(1, -x_2^2)$.
 - *Marginalize* $x_2$: the density integrates to one, and the value is averaged
   using $\mathbb{E}[x_2^2] = (x_1 + u_1)^2 + 0.5$:
 
-  $$\phi(x _1, u _1) = \big(1,\thickspace -\big((x _1 + u _1)^2 + 0.5\big)\big).$$
+  $$\phi(x _1, u _1) = \big(1,\enspace -\big((x _1 + u _1)^2 + 0.5\big)\big).$$
 
   The expected final penalty is the penalty at the position the robot aims
   for, plus 0.5 for the slip.
 - *Condition:* the conditional is the dynamics with the TD residual:
 
-  $$c(x _2 \mid x _1, u _1) = \big(N(x _2;\thickspace x _1 + u _1,\thickspace 0.5),\thickspace \thickspace -x _2^2 + (x _1 + u _1)^2 + 0.5\big).$$
+  $$c(x _2 \mid x _1, u _1) = \big(N(x _2;\enspace x _1 + u _1,\enspace 0.5),\enspace \enspace -x _2^2 + (x _1 + u _1)^2 + 0.5\big).$$
 
 ![After eliminating x2](figures/LineElimination1.svg)
 

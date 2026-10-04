@@ -274,7 +274,7 @@ The optimal policy derived above has this form.
 RL usually makes the policy **stochastic** by adding Gaussian noise to the same
 linear law,
 
-$$\pi(u \mid x) = N(u;\thickspace -K x,\thickspace \Sigma),$$
+$$\pi(u \mid x) = N(u;\enspace -K x,\enspace \Sigma),$$
 
 a *linear-Gaussian* policy. The noise makes the robot try moves other than its
 average one, which is how RL explores, and it makes $\pi(u \mid x)$ a proper
