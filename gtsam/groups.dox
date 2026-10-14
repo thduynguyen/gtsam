@@ -41,6 +41,9 @@
 \defgroup sam SAM
 @{ @}
 
+\defgroup semiring Semiring
+@{ @}
+
 \defgroup sfm SFM
 @{ @}
 
